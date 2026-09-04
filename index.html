@@ -412,7 +412,7 @@ function processScan(code) {
     showToast(currentAction + '成功', 'success');
     
     renderRecentList();
-    recalculate();
+    refreshDashboard();
   }
   
   setTimeout(() => {
@@ -579,7 +579,7 @@ function deleteSingleRecord(index) {
   // Clear filter and refresh
   filteredScanRecords = [];
   renderRecentList();
-  recalculate();
+  refreshDashboard();
   showToast('记录已删除', 'success');
 }
 
@@ -614,7 +614,7 @@ function deleteByDate() {
   filteredScanRecords = [];
   document.getElementById('scanDateFilter').value = '';
   renderRecentList();
-  recalculate();
+  refreshDashboard();
   showToast(`已删除 ${recordsToDelete.length} 条记录`, 'success');
 }
 
@@ -662,7 +662,7 @@ function loadBOMCSV(event) {
     });
     document.getElementById('bomLoadStatus').textContent = '已加载 ' + productList.length + ' 个成品';
     showToast('BOM 数据已加载：' + productList.length + ' 个成品', 'success');
-    recalculate();
+    refreshDashboard();
   };
   reader.readAsText(file, 'UTF-8');
 }
