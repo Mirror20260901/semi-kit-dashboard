@@ -425,13 +425,34 @@ function processScan(code) {
 
   // 检测扫码格式
   const isNewFormat = /工单[号]?[：:]/.test(code) || /(?:线序)?料号[：:]/.test(code) || /数量[：:]/.test(code);
+  // 管道符格式：工单号｜半品料号｜序号｜数量｜流水号（分隔符支持全角｜和半角|）
+  const isPipeFormat = /[｜|]/.test(code) && code.split(/[｜|]/).length >= 4;
   
   let halfPart = '';
   let scanQty = 1;
   let workOrder = '';
   
-  if (isNewFormat) {
-    // ===== 新格式：QR码 =====
+  if (isPipeFormat) {
+    // ===== 管道符格式：101396002｜8180900969-P1A1-P2B2｜00035｜00100｜00001 =====
+    const parts = code.split(/[｜|]/).map(s => s.trim());
+    workOrder = parts[0] || '';
+    halfPart = parts[1] || '';
+    // parts[2] = 序号（暂不使用）
+    scanQty = parts[3] ? parseInt(parts[3]) : 1;
+    if (isNaN(scanQty) || scanQty <= 0) scanQty = 1;
+    // parts[4] = 流水号（暂不使用）
+    
+    if (!halfPart) {
+      scanInput.className = 'error';
+      scanStatus.textContent = '❌ 无法识别半品料号';
+      scanStatus.className = 'scan-status err';
+      playSound('error');
+      setTimeout(() => { scanInput.className = ''; scanInput.value = ''; scanInput.focus(); }, 1500);
+      return;
+    }
+    
+  } else if (isNewFormat) {
+    // ===== QR码格式 =====
     // 工单号：101386002\n料号线序：8180914762-P1D1-PCC4\n数量：100PCS
     const woMatch = code.match(/工单[号]?[：:]\s*(\d+)/);
     const bpMatch = code.match(/(?:线序)?料号[：:]\s*([A-Za-z0-9\-]+)/);
