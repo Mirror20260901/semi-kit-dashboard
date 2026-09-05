@@ -313,7 +313,7 @@ button:focus-visible,input:focus-visible,a:focus-visible{outline:2px solid var(-
       <div class="card-body">
         <!-- Search and filter controls -->
         <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;align-items:center">
-          <input type="text" id="scanSearchInput" placeholder="搜索唯一码或料号..." style="flex:1;min-width:150px;padding:8px 12px;border:1px solid var(--border);border-radius:6px;font-size:.9rem">
+          <input type="text" id="scanSearchInput" placeholder="搜索唯一码、料号、工单号或栈板号..." style="flex:1;min-width:150px;padding:8px 12px;border:1px solid var(--border);border-radius:6px;font-size:.9rem">
           <input type="date" id="scanDateFilter" style="padding:8px 12px;border:1px solid var(--border);border-radius:6px;font-size:.9rem">
           <button class="btn btn-primary btn-sm" onclick="filterScanRecords()">🔍 查询</button>
           <button class="btn btn-outline btn-sm" onclick="clearScanFilter()">🔄 显示全部</button>
@@ -426,6 +426,8 @@ function saveData() {
       importedWorkOrders: importedWorkOrders,
       currentAction: currentAction,
       deletedRecords: deletedRecords,
+      palletPrefix: document.getElementById('palletPrefix').value,
+      palletSeq: document.getElementById('palletSeq').value,
       savedAt: new Date().toISOString()
     };
     localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
@@ -471,6 +473,13 @@ function loadData() {
     if (data.deletedRecords && Array.isArray(data.deletedRecords)) {
       deletedRecords = data.deletedRecords;
     }
+    if (data.palletPrefix) {
+      document.getElementById('palletPrefix').value = data.palletPrefix;
+    }
+    if (data.palletSeq) {
+      document.getElementById('palletSeq').value = data.palletSeq;
+    }
+    updatePalletDisplay();
     console.log('已从本地存储恢复数据，保存时间：' + (data.savedAt || '未知'));
     return true;
   } catch(e) {
@@ -1131,7 +1140,13 @@ function filterScanRecords() {
   filteredScanRecords = scanRecords.filter(r => {
     let match = true;
     if (keyword) {
-      match = match && (r.c.toLowerCase().includes(keyword) || (r.x && r.x.toLowerCase().includes(keyword)));
+      const searchFields = [
+        r.c || '',           // 唯一码
+        r.x || '',           // 线序料号
+        r.wo_no || '',       // 工单号
+        r.z || ''            // 栈板号
+      ].map(v => v.toLowerCase());
+      match = match && searchFields.some(v => v.includes(keyword));
     }
     if (dateFilter) {
       const recordDate = r.t.split(' ')[0];
