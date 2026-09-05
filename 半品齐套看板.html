@@ -429,9 +429,6 @@ function loadData() {
       scanRecords = data.scanRecords;
     }
     if (data.inventory && typeof data.inventory === 'object') {
-      // 合并：保留本地存储的增量，同时保留初始库存基础值
-      const initInv = {${Array.from(Object.entries({})).map(([k,v]) => `'${k}':${v}`).join(',')}};
-      // 直接用localStorage的inventory（已包含初始值+增量）
       inventory = data.inventory;
     }
     if (data.currentWorkOrder) {
