@@ -1,4 +1,4 @@
-﻿﻿﻿<!DOCTYPE html>
+﻿﻿﻿﻿<!DOCTYPE html>
 <html lang="zh-CN">
 <head>
 <meta charset="UTF-8">
@@ -227,13 +227,30 @@ button:focus-visible,input:focus-visible,a:focus-visible{outline:2px solid var(-
       <div class="card-body" style="padding:14px 20px">
         <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
           <span style="font-weight:600;font-size:.9rem">📋 工单设置</span>
-          <input type="text" id="woNumber" placeholder="工单号" style="width:120px;padding:8px 10px;border:1px solid var(--border);border-radius:6px;font-size:.85rem">
-          <input type="text" id="woProduct" placeholder="成品料号（如8180900969）" style="width:180px;padding:8px 10px;border:1px solid var(--border);border-radius:6px;font-size:.85rem">
+          <input type="text" id="woNumber" placeholder="工单号" style="width:140px;padding:8px 10px;border:1px solid var(--border);border-radius:6px;font-size:.85rem">
           <input type="number" id="woTargetQty" placeholder="工单数量" style="width:110px;padding:8px 10px;border:1px solid var(--border);border-radius:6px;font-size:.85rem">
           <button class="btn btn-primary btn-sm" onclick="saveWorkOrder()">✅ 确认</button>
           <span id="woStatus" style="font-size:.82rem;color:var(--text-secondary)">未设置工单</span>
         </div>
+      </div>
+    </div>
 
+    <!-- Scan Area -->
+    <div class="card" style="margin-bottom:20px">
+      <div class="card-body scan-input-area">
+        <div class="action-select">
+          <button class="action-btn active-in" id="btnIn" onclick="setAction('入库')">📥 入库</button>
+          <button class="action-btn" id="btnOut" onclick="setAction('出库')">📤 出库</button>
+        </div>
+        <div class="scan-input-wrap">
+          <input type="text" id="scanInput" placeholder="请扫描唯一码（扫码枪或点📷相机扫码）" autofocus autocomplete="off">
+          <button id="cameraBtn" onclick="openCamera()" title="手机摄像头扫码">📷</button>
+        </div>
+        <div class="scan-status" id="scanStatus"></div>
+      </div>
+    </div>
+
+    <!-- Scan Records -->
     <div class="card">
       <div class="card-header">
         <h2>📋 扫码记录</h2>
@@ -255,20 +272,6 @@ button:focus-visible,input:focus-visible,a:focus-visible{outline:2px solid var(-
       </div>
     </div>
   </div>
-    <div class="card" style="margin-top:20px">
-      <div class="card-body scan-input-area">
-        <div class="action-select">
-          <button class="action-btn active-in" id="btnIn" onclick="setAction('入库')">📥 入库</button>
-          <button class="action-btn" id="btnOut" onclick="setAction('出库')">📤 出库</button>
-        </div>
-        <div class="scan-input-wrap">
-          <input type="text" id="scanInput" placeholder="请扫描唯一码（扫码枪或点📷相机扫码）" autofocus autocomplete="off">
-          <button id="cameraBtn" onclick="openCamera()" title="手机摄像头扫码">📷</button>
-        </div>
-        <div class="scan-status" id="scanStatus"></div>
-      </div>
-    </div>
-
 
   <!-- Tab 2: Dashboard -->
   <div id="tab-dashboard" class="tab-panel">
@@ -428,6 +431,28 @@ function processScan(code) {
       playSound('error');
       setTimeout(() => { scanInput.className = ''; scanInput.value = ''; scanInput.focus(); }, 3000);
       return;
+    }
+    
+    // 从半品料号自动识别成品料号
+    if (!currentWorkOrder.product && halfPart) {
+      const pIdx = halfPart.indexOf('-P');
+      if (pIdx > 0) {
+        const detectedProduct = halfPart.substring(0, pIdx);
+        if (bomData[detectedProduct]) {
+          currentWorkOrder.product = detectedProduct;
+          const bomList = bomData[detectedProduct];
+          const perSetQty = bomList.reduce((sum, c) => sum + (c.y || 1), 0);
+          currentWorkOrder.targetQty = perSetQty * currentWorkOrder.qty;
+          showToast('✅ 已自动识别成品料号：' + detectedProduct + '（' + bomList.length + '种半品）', 'success');
+        } else {
+          scanInput.className = 'error';
+          scanStatus.textContent = '❌ 成品料号 ' + detectedProduct + ' 未在BOM中找到，请先导入BOM数据！';
+          scanStatus.className = 'scan-status err';
+          playSound('error');
+          setTimeout(() => { scanInput.className = ''; scanInput.value = ''; scanInput.focus(); }, 3000);
+          return;
+        }
+      }
     }
     
     // 检查半品料号是否在inventory中
@@ -879,34 +904,27 @@ let currentWorkOrder = { number: '', product: '', qty: 0, targetQty: 0, componen
 
 function saveWorkOrder() {
   const num = document.getElementById('woNumber').value.trim();
-  const product = document.getElementById('woProduct').value.trim();
   const qty = parseInt(document.getElementById('woTargetQty').value) || 0;
 
-  if (!num || !product || qty <= 0) {
-    alert('请输入工单号、成品料号和目标数量');
+  if (!num || qty <= 0) {
+    alert('请输入工单号和工单数量');
     return;
   }
 
-  // 从 BOM 查找半品料号，计算总目标扫码数
-  if (!bomData[product]) {
-    alert('成品料号「' + product + '」未在BOM中找到，请先导入BOM数据！');
-    return;
-  }
-
-  const bomList = bomData[product];
-  const perSetQty = bomList.reduce((sum, c) => sum + (c.y || 1), 0);
-  const targetTotal = perSetQty * qty;
-
-  currentWorkOrder = { number: num, product: product, qty: qty, targetQty: targetTotal, componentCounts: {} };
+  // 成品料号将在首次扫码时从条码自动识别
+  currentWorkOrder = { number: num, product: '', qty: qty, targetQty: 0, componentCounts: {} };
   updateWorkOrderDisplay();
-
-  const partNames = bomList.map(c => c.p).join('、');
-  showToast('工单已设置：' + num + '，成品：' + product + '，' + bomList.length + '种半品各需' + qty + '次，共' + targetTotal + '次', 'success');
+  showToast('工单已设置：' + num + '，数量：' + qty + '，请开始扫码', 'success');
 }
 
 function updateWorkOrderDisplay() {
   const el = document.getElementById('woStatus');
   if (currentWorkOrder.number) {
+    if (!currentWorkOrder.product) {
+      // 工单已设置但还未识别成品料号
+      el.innerHTML = `已设置工单 | <b>${currentWorkOrder.number}</b> | 数量：<b>${currentWorkOrder.qty}</b> | <span style="color:var(--warning)">等待扫码识别成品料号...</span>`;
+      return;
+    }
     const woBomList = bomData[currentWorkOrder.product] || [];
     const totalScanned = Object.values(currentWorkOrder.componentCounts).reduce((a, b) => a + b, 0);
     const pct = currentWorkOrder.targetQty > 0 ? Math.round((totalScanned / currentWorkOrder.targetQty) * 100) : 0;
@@ -921,7 +939,7 @@ function updateWorkOrderDisplay() {
       return `<span style="color:${cColor}">${c.p}：${scanned}/${limit}</span>`;
     }).join(' &nbsp;|&nbsp; ');
     
-    el.innerHTML = `工单：<b>${currentWorkOrder.number}</b> | 成品：${currentWorkOrder.product} | 总进度：<span style="color:${color};font-weight:700">${totalScanned}/${currentWorkOrder.targetQty}（${pct}%）</span><br><span style="font-size:.78rem;margin-top:4px;display:inline-block">${compDetails}</span>`;
+    el.innerHTML = `已设置工单 | <b>${currentWorkOrder.number}</b> | 成品：${currentWorkOrder.product} | 进度：<span style="color:${color};font-weight:700">${totalScanned}/${currentWorkOrder.targetQty}（${pct}%）</span><br><span style="font-size:.78rem;margin-top:4px;display:inline-block">${compDetails}</span>`;
   } else {
     el.textContent = '未设置工单';
   }
