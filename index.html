@@ -230,8 +230,30 @@ button:focus-visible,input:focus-visible,a:focus-visible{outline:2px solid var(-
           <input type="text" id="woNumber" placeholder="工单号" style="width:140px;padding:8px 10px;border:1px solid var(--border);border-radius:6px;font-size:.85rem">
           <input type="number" id="woTargetQty" placeholder="工单数量" style="width:110px;padding:8px 10px;border:1px solid var(--border);border-radius:6px;font-size:.85rem">
           <button class="btn btn-primary btn-sm" onclick="saveWorkOrder()">✅ 确认</button>
+          <button class="btn btn-sm" onclick="toggleBatchImport()" style="background:var(--warning);color:#fff;border:none;padding:5px 12px;border-radius:6px;font-size:.8rem;cursor:pointer">📋 批量录入</button>
           <button class="btn btn-sm" onclick="clearWorkOrder()" style="background:var(--danger);color:#fff;border:none;padding:5px 12px;border-radius:6px;font-size:.8rem;cursor:pointer">🗑️ 清除</button>
           <span id="woStatus" style="font-size:.82rem;color:var(--text-secondary)">未设置工单</span>
+        </div>
+        <!-- Batch Import Panel -->
+        <div id="batchImportPanel" style="display:none;margin-top:12px;padding:12px;background:#f8f9fa;border-radius:8px;border:1px solid var(--border)">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+            <span style="font-weight:600;font-size:.85rem">📋 批量录入工单</span>
+            <span style="font-size:.75rem;color:var(--text-secondary)">从Excel粘贴：工单号 | 成品料号 | 数量（每行一个工单）</span>
+          </div>
+          <textarea id="batchImportText" placeholder="101396001&#9;8180900969&#9;100&#10;101396002&#9;8180914762&#9;50&#10;..." style="width:100%;min-height:120px;padding:10px;border:1px solid var(--border);border-radius:6px;font-size:.82rem;font-family:monospace;resize:vertical" oninput="previewBatchImport()"></textarea>
+          <div style="display:flex;align-items:center;gap:12px;margin-top:8px">
+            <button class="btn btn-primary btn-sm" onclick="confirmBatchImport()">✅ 确认导入</button>
+            <button class="btn btn-sm" onclick="toggleBatchImport()" style="background:#999;color:#fff;border:none;padding:5px 12px;border-radius:6px;font-size:.8rem;cursor:pointer">取消</button>
+            <span id="batchPreview" style="font-size:.8rem;color:var(--text-secondary)"></span>
+          </div>
+        </div>
+        <!-- Imported Work Orders List -->
+        <div id="workOrderList" style="display:none;margin-top:12px;padding:10px;background:#e8f4fd;border-radius:8px;border:1px solid #b3d7ff">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+            <span style="font-weight:600;font-size:.85rem;color:#1a73e8">📦 已导入工单列表</span>
+            <span id="workOrderCount" style="font-size:.78rem;color:var(--text-secondary)"></span>
+          </div>
+          <div id="workOrderListContent" style="max-height:200px;overflow-y:auto"></div>
         </div>
         <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-top:10px;padding-top:10px;border-top:1px dashed var(--border)">
           <span style="font-weight:600;font-size:.9rem">🏷️ 栈板号</span>
@@ -243,6 +265,7 @@ button:focus-visible,input:focus-visible,a:focus-visible{outline:2px solid var(-
           </select>
           <span style="color:var(--text-secondary);font-size:.9rem">-</span>
           <input type="number" id="palletSeq" min="1" max="1000" placeholder="0001" oninput="updatePalletDisplay()" style="width:100px;padding:8px 10px;border:1px solid var(--border);border-radius:6px;font-size:.85rem">
+          <input type="text" id="palletScanInput" placeholder="扫码识别栈板号" style="width:180px;padding:8px 10px;border:2px solid var(--primary);border-radius:6px;font-size:.85rem;background:#f0f8ff" onkeydown="handlePalletScan(event)">
           <span id="palletDisplay" style="font-size:.85rem;color:var(--text-secondary);font-weight:500">未设置栈板号</span>
         </div>
       </div>
@@ -1030,6 +1053,157 @@ function clearWorkOrder() {
   updatePalletDisplay();
   updateWorkOrderDisplay();
   showToast('工单已清除', 'success');
+}
+
+// ====== BATCH WORK ORDER IMPORT ======
+let importedWorkOrders = []; // 批量导入的工单列表 [{number, product, qty}]
+
+function toggleBatchImport() {
+  const panel = document.getElementById('batchImportPanel');
+  panel.style.display = panel.style.display === 'none' ? 'block' : 'none';
+  if (panel.style.display === 'block') {
+    document.getElementById('batchImportText').focus();
+  }
+}
+
+function previewBatchImport() {
+  const text = document.getElementById('batchImportText').value.trim();
+  const previewEl = document.getElementById('batchPreview');
+  if (!text) {
+    previewEl.textContent = '';
+    return;
+  }
+  const lines = text.split('\n').filter(l => l.trim());
+  let validCount = 0;
+  let invalidLines = [];
+  lines.forEach((line, i) => {
+    const parts = line.split(/\t|,|\|/).map(s => s.trim());
+    if (parts.length >= 3 && parts[0] && parts[1] && parseInt(parts[2]) > 0) {
+      validCount++;
+    } else {
+      invalidLines.push(i + 1);
+    }
+  });
+  let msg = `识别到 ${validCount} 条工单`;
+  if (invalidLines.length > 0) {
+    msg += `，第 ${invalidLines.join(',')} 行格式有误`;
+  }
+  previewEl.textContent = msg;
+  previewEl.style.color = invalidLines.length > 0 ? 'var(--danger)' : 'var(--success)';
+}
+
+function confirmBatchImport() {
+  const text = document.getElementById('batchImportText').value.trim();
+  if (!text) {
+    alert('请先粘贴工单数据');
+    return;
+  }
+  const lines = text.split('\n').filter(l => l.trim());
+  const newOrders = [];
+  let hasError = false;
+  lines.forEach((line, i) => {
+    const parts = line.split(/\t|,|\|/).map(s => s.trim());
+    if (parts.length >= 3 && parts[0] && parts[1] && parseInt(parts[2]) > 0) {
+      newOrders.push({
+        number: parts[0],
+        product: parts[1],
+        qty: parseInt(parts[2])
+      });
+    } else {
+      hasError = true;
+    }
+  });
+  if (newOrders.length === 0) {
+    alert('未识别到有效工单数据，请检查格式：工单号 | 成品料号 | 数量');
+    return;
+  }
+  // 合并到已导入列表（去重：同工单号则更新）
+  newOrders.forEach(order => {
+    const existIdx = importedWorkOrders.findIndex(w => w.number === order.number);
+    if (existIdx >= 0) {
+      importedWorkOrders[existIdx] = order;
+    } else {
+      importedWorkOrders.push(order);
+    }
+  });
+  // 自动选中第一个导入的工单（如果当前无工单）
+  if (!currentWorkOrder.number && newOrders.length > 0) {
+    selectWorkOrder(0);
+  }
+  renderWorkOrderList();
+  toggleBatchImport();
+  document.getElementById('batchImportText').value = '';
+  document.getElementById('batchPreview').textContent = '';
+  showToast(`成功导入 ${newOrders.length} 条工单${hasError ? '（部分行格式有误已跳过）' : ''}`, hasError ? 'warning' : 'success');
+}
+
+function selectWorkOrder(index) {
+  if (index < 0 || index >= importedWorkOrders.length) return;
+  const order = importedWorkOrders[index];
+  currentWorkOrder = { number: order.number, product: order.product || '', qty: order.qty, targetQty: 0, componentCounts: {} };
+  document.getElementById('woNumber').value = order.number;
+  document.getElementById('woTargetQty').value = order.qty;
+  updateWorkOrderDisplay();
+  renderWorkOrderList();
+  showToast('已切换至工单：' + order.number, 'success');
+}
+
+function renderWorkOrderList() {
+  const listEl = document.getElementById('workOrderList');
+  const contentEl = document.getElementById('workOrderListContent');
+  const countEl = document.getElementById('workOrderCount');
+  if (importedWorkOrders.length === 0) {
+    listEl.style.display = 'none';
+    return;
+  }
+  listEl.style.display = 'block';
+  countEl.textContent = `共 ${importedWorkOrders.length} 条`;
+  contentEl.innerHTML = importedWorkOrders.map((order, idx) => {
+    const isActive = currentWorkOrder.number === order.number;
+    return `<div style="display:flex;align-items:center;gap:8px;padding:6px 8px;margin-bottom:4px;border-radius:6px;cursor:pointer;${isActive ? 'background:#1a73e8;color:#fff' : 'background:#fff;border:1px solid #ddd'}" onclick="selectWorkOrder(${idx})">
+      <span style="font-weight:${isActive ? '700' : '500'};font-size:.83rem;flex:1">${order.number}</span>
+      <span style="font-size:.78rem;${isActive ? 'color:#fff' : 'color:var(--text-secondary)'}">${order.product || '未识别成品'}</span>
+      <span style="font-size:.78rem;font-weight:600;${isActive ? 'color:#fff' : 'color:var(--primary)'}">${order.qty} pcs</span>
+      <button onclick="event.stopPropagation();removeWorkOrder(${idx})" style="background:none;border:none;cursor:pointer;font-size:.75rem;${isActive ? 'color:#fff' : 'color:var(--danger)'}" title="删除">✕</button>
+    </div>`;
+  }).join('');
+}
+
+function removeWorkOrder(index) {
+  if (index < 0 || index >= importedWorkOrders.length) return;
+  const order = importedWorkOrders[index];
+  if (!confirm('确认删除工单 ' + order.number + '？')) return;
+  importedWorkOrders.splice(index, 1);
+  if (currentWorkOrder.number === order.number) {
+    if (importedWorkOrders.length > 0) {
+      selectWorkOrder(0);
+    } else {
+      clearWorkOrder();
+      return;
+    }
+  }
+  renderWorkOrderList();
+  showToast('已删除工单：' + order.number, 'info');
+}
+
+// ====== PALLET SCAN ======
+function handlePalletScan(event) {
+  if (event.key !== 'Enter') return;
+  event.preventDefault();
+  const input = document.getElementById('palletScanInput');
+  const code = input.value.trim();
+  if (!code) return;
+  // 解析栈板号：尝试匹配 5B3F-0001 / 2B3F-0001 / 2B4F-0001 格式
+  const match = code.match(/^(5B3F|2B3F|2B4F)[-_]?\s*(\d{1,4})/i);
+  if (match) {
+    document.getElementById('palletPrefix').value = match[1].toUpperCase();
+    document.getElementById('palletSeq').value = parseInt(match[2]);
+    updatePalletDisplay();
+    showToast('栈板号已识别：' + match[1].toUpperCase() + '-' + String(parseInt(match[2])).padStart(4, '0'), 'success');
+  } else {
+    showToast('无法识别栈板号格式：' + code + '（需包含5B3F/2B3F/2B4F+序号）', 'error');
+  }
+  input.value = '';
 }
 
 function updateWorkOrderDisplay() {
