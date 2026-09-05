@@ -238,9 +238,9 @@ button:focus-visible,input:focus-visible,a:focus-visible{outline:2px solid var(-
         <div id="batchImportPanel" style="display:none;margin-top:12px;padding:12px;background:#f8f9fa;border-radius:8px;border:1px solid var(--border)">
           <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
             <span style="font-weight:600;font-size:.85rem">📋 批量录入工单</span>
-            <span style="font-size:.75rem;color:var(--text-secondary)">从Excel粘贴：工单号 | 成品料号 | 数量（每行一个工单）</span>
+            <span style="font-size:.75rem;color:var(--text-secondary)">从Excel粘贴：工单号 | 数量（每行一个工单）</span>
           </div>
-          <textarea id="batchImportText" placeholder="101396001&#9;8180900969&#9;100&#10;101396002&#9;8180914762&#9;50&#10;..." style="width:100%;min-height:120px;padding:10px;border:1px solid var(--border);border-radius:6px;font-size:.82rem;font-family:monospace;resize:vertical" oninput="previewBatchImport()"></textarea>
+          <textarea id="batchImportText" placeholder="101396001&#9;100&#10;101396002&#9;50&#10;..." style="width:100%;min-height:120px;padding:10px;border:1px solid var(--border);border-radius:6px;font-size:.82rem;font-family:monospace;resize:vertical" oninput="previewBatchImport()"></textarea>
           <div style="display:flex;align-items:center;gap:12px;margin-top:8px">
             <button class="btn btn-primary btn-sm" onclick="confirmBatchImport()">✅ 确认导入</button>
             <button class="btn btn-sm" onclick="toggleBatchImport()" style="background:#999;color:#fff;border:none;padding:5px 12px;border-radius:6px;font-size:.8rem;cursor:pointer">取消</button>
@@ -1081,7 +1081,7 @@ function previewBatchImport() {
   let invalidLines = [];
   lines.forEach((line, i) => {
     const parts = line.split(/\t|,|\|/).map(s => s.trim());
-    if (parts.length >= 3 && parts[0] && parts[1] && parseInt(parts[2]) > 0) {
+    if (parts.length >= 2 && parts[0] && parseInt(parts[1]) > 0) {
       validCount++;
     } else {
       invalidLines.push(i + 1);
@@ -1106,18 +1106,18 @@ function confirmBatchImport() {
   let hasError = false;
   lines.forEach((line, i) => {
     const parts = line.split(/\t|,|\|/).map(s => s.trim());
-    if (parts.length >= 3 && parts[0] && parts[1] && parseInt(parts[2]) > 0) {
+    if (parts.length >= 2 && parts[0] && parseInt(parts[1]) > 0) {
       newOrders.push({
         number: parts[0],
-        product: parts[1],
-        qty: parseInt(parts[2])
+        product: '',
+        qty: parseInt(parts[1])
       });
     } else {
       hasError = true;
     }
   });
   if (newOrders.length === 0) {
-    alert('未识别到有效工单数据，请检查格式：工单号 | 成品料号 | 数量');
+    alert('未识别到有效工单数据，请检查格式：工单号 | 数量');
     return;
   }
   // 合并到已导入列表（去重：同工单号则更新）
@@ -1165,7 +1165,6 @@ function renderWorkOrderList() {
     const isActive = currentWorkOrder.number === order.number;
     return `<div style="display:flex;align-items:center;gap:8px;padding:6px 8px;margin-bottom:4px;border-radius:6px;cursor:pointer;${isActive ? 'background:#1a73e8;color:#fff' : 'background:#fff;border:1px solid #ddd'}" onclick="selectWorkOrder(${idx})">
       <span style="font-weight:${isActive ? '700' : '500'};font-size:.83rem;flex:1">${order.number}</span>
-      <span style="font-size:.78rem;${isActive ? 'color:#fff' : 'color:var(--text-secondary)'}">${order.product || '未识别成品'}</span>
       <span style="font-size:.78rem;font-weight:600;${isActive ? 'color:#fff' : 'color:var(--primary)'}">${order.qty} pcs</span>
       <button onclick="event.stopPropagation();removeWorkOrder(${idx})" style="background:none;border:none;cursor:pointer;font-size:.75rem;${isActive ? 'color:#fff' : 'color:var(--danger)'}" title="删除">✕</button>
     </div>`;
