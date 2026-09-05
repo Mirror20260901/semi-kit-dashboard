@@ -1139,6 +1139,11 @@ function deleteSingleRecord(index) {
     else if (record.a === '出库') inventory[hp] += qty;
   }
   
+  // Reverse workOrder componentCounts
+  if (hp && currentWorkOrder.componentCounts[hp] !== undefined) {
+    currentWorkOrder.componentCounts[hp] = Math.max(0, currentWorkOrder.componentCounts[hp] - qty);
+  }
+  
   // Record deletion for sync
   deletedRecords.push(record.c + '||' + record.t);
   if (deletedRecords.length > 5000) deletedRecords = deletedRecords.slice(-5000);
@@ -1150,6 +1155,7 @@ function deleteSingleRecord(index) {
   filteredScanRecords = [];
   saveData();
   renderRecentList();
+  updateWorkOrderDisplay();
   refreshDashboard();
   showToast('记录已删除', 'success');
 }
@@ -1169,13 +1175,17 @@ function deleteByDate() {
   
   if (!confirm(`确定要删除 ${dateFilter} 的所有扫码记录吗？\n\n共 ${recordsToDelete.length} 条记录\n\n删除后将同步更新库存和齐套数据。`)) return;
   
-  // Reverse inventory changes
+  // Reverse inventory changes and workOrder componentCounts
   recordsToDelete.forEach(record => {
     const hp = record.x || extractHalfPart(record.c);
     const qty = record.q || 1;
     if (hp && hp in inventory) {
       if (record.a === '入库') inventory[hp] = Math.max(0, inventory[hp] - qty);
       else if (record.a === '出库') inventory[hp] += qty;
+    }
+    // Reverse workOrder componentCounts
+    if (hp && currentWorkOrder.componentCounts[hp] !== undefined) {
+      currentWorkOrder.componentCounts[hp] = Math.max(0, currentWorkOrder.componentCounts[hp] - qty);
     }
   });
   
@@ -1193,6 +1203,7 @@ function deleteByDate() {
   document.getElementById('scanDateFilter').value = '';
   saveData();
   renderRecentList();
+  updateWorkOrderDisplay();
   refreshDashboard();
   showToast(`已删除 ${recordsToDelete.length} 条记录`, 'success');
 }
