@@ -578,11 +578,11 @@ function processScan(code) {
       return;
     }
     
-    // 超限检查：限制 = 工单数量（按单个半品计数）
+    // 超限检查：限制 = 工单数量（按扫码次数计数）
     const compLimit = currentWorkOrder.qty;
     const currentCompCount = currentWorkOrder.componentCounts[halfPart] || 0;
     
-    if (currentCompCount + scanQty > compLimit) {
+    if (currentCompCount + 1 > compLimit) {
       scanInput.className = 'error';
       scanInput.style.animation = 'shake 0.5s ease-in-out';
       setTimeout(() => { scanInput.style.animation = ''; }, 500);
@@ -637,9 +637,9 @@ function processScan(code) {
       else if (currentAction === '出库') inventory[halfPart] = Math.max(0, inventory[halfPart] - scanQty);
     }
     
-    // Update per-component work order progress
+    // Update per-component work order progress（按扫码次数+1，不按标签数量）
     if (currentWorkOrder.number && halfPart && currentAction === "入库") {
-      currentWorkOrder.componentCounts[halfPart] = (currentWorkOrder.componentCounts[halfPart] || 0) + scanQty;
+      currentWorkOrder.componentCounts[halfPart] = (currentWorkOrder.componentCounts[halfPart] || 0) + 1;
       updateWorkOrderDisplay();
     }
     
