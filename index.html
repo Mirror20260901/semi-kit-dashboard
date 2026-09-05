@@ -194,14 +194,47 @@ button:focus-visible,input:focus-visible,a:focus-visible{outline:2px solid var(-
   <div id="tab-scan" class="tab-panel active">
     <!-- BOM Load Section -->
     <div class="card" style="margin-bottom:20px">
-      <div class="card-body" style="padding:16px 20px">
-        <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
-          <span style="font-weight:600;font-size:.9rem">📂 加载 BOM 清单 CSV</span>
-          <input type="file" accept=".csv" onchange="loadBOMCSV(event)" style="font-size:.85rem">
-          <span style="font-size:.8rem;color:var(--text-secondary)" id="bomLoadStatus">半品库存已内置，加载BOM可更新成品列表</span>
+      <div class="card-header" style="cursor:pointer" onclick="document.getElementById('bomDetail').style.display=document.getElementById('bomDetail').style.display==='none'?'block':'none'">
+        <h2>📂 BOM 数据管理</h2>
+        <span style="font-size:.8rem;color:var(--text-secondary)" id="bomLoadStatus">点击展开 ▼</span>
+      </div>
+      <div class="card-body" id="bomDetail" style="display:none">
+        <!-- Excel/CSV Upload -->
+        <div style="margin-bottom:16px">
+          <div style="font-weight:600;margin-bottom:8px">📊 从 Excel/CSV 导入（覆盖现有数据）</div>
+          <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+            <input type="file" id="bomFileInput" accept=".xlsx,.xls,.csv" onchange="loadBOMFile(event)" style="font-size:.85rem">
+            <span style="font-size:.78rem;color:var(--text-secondary)">列顺序：成品料号 | 半品料号 | 接头规格 | 线长 | 用量</span>
+          </div>
+        </div>
+        <!-- Manual Entry -->
+        <div style="border-top:1px solid var(--border);padding-top:16px">
+          <div style="font-weight:600;margin-bottom:8px">✍️ 手动新增 BOM 条目</div>
+          <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center">
+            <input type="text" id="manualCP" placeholder="成品料号" style="width:140px;padding:8px 10px;border:1px solid var(--border);border-radius:6px;font-size:.85rem">
+            <input type="text" id="manualBP" placeholder="半品料号" style="width:160px;padding:8px 10px;border:1px solid var(--border);border-radius:6px;font-size:.85rem">
+            <input type="text" id="manualJ" placeholder="接头规格" style="width:100px;padding:8px 10px;border:1px solid var(--border);border-radius:6px;font-size:.85rem">
+            <input type="number" id="manualL" placeholder="线长" value="0" style="width:80px;padding:8px 10px;border:1px solid var(--border);border-radius:6px;font-size:.85rem">
+            <input type="number" id="manualY" placeholder="用量" value="1" style="width:70px;padding:8px 10px;border:1px solid var(--border);border-radius:6px;font-size:.85rem">
+            <button class="btn btn-primary btn-sm" onclick="addBOMManual()">➕ 添加</button>
+          </div>
         </div>
       </div>
     </div>
+
+    <!-- Work Order Settings -->
+    <div class="card" style="margin-bottom:20px">
+      <div class="card-body" style="padding:14px 20px">
+        <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+          <span style="font-weight:600;font-size:.9rem">📋 工单设置</span>
+          <input type="text" id="woNumber" placeholder="工单号" style="width:140px;padding:8px 10px;border:1px solid var(--border);border-radius:6px;font-size:.85rem">
+          <input type="number" id="woTargetQty" placeholder="目标数量" style="width:110px;padding:8px 10px;border:1px solid var(--border);border-radius:6px;font-size:.85rem">
+          <button class="btn btn-primary btn-sm" onclick="saveWorkOrder()">✅ 确认</button>
+          <span id="woStatus" style="font-size:.82rem;color:var(--text-secondary)">未设置工单</span>
+        </div>
+      </div>
+    </div>
+
     <div class="card">
       <div class="card-body scan-input-area">
         <div class="action-select">
@@ -339,29 +372,87 @@ scanInput.addEventListener('keydown', function(e) {
 function processScan(code) {
   if (!code) return;
   
-  // 格式校验
-  const errMsg = validateScanCode(code);
-  if (errMsg) {
-    scanInput.className = 'error';
-    scanStatus.textContent = '❌ ' + errMsg;
-    scanStatus.className = 'scan-status err';
-    scanStatus.style.fontWeight = 'bold';
-    scanStatus.style.fontSize = '1.1rem';
-    playSound('error');
-    showToast(errMsg, 'error');
-    scanInput.style.animation = 'shake 0.5s ease-in-out';
-    setTimeout(() => { scanInput.style.animation = ''; }, 500);
-    setTimeout(() => {
-      scanInput.className = '';
-      scanInput.value = '';
-      scanInput.focus();
-    }, 1500);
-    return;
-  }
+  // 检测扫码格式
+  const isNewFormat = /工单号/.test(code) || /料号线序/.test(code);
   
-  // Parse the unique code: WP-{半品料号}-{date}-{seq}
-  // Extract half-part number from the code
-  let halfPart = extractHalfPart(code);
+  let halfPart = '';
+  let scanQty = 1;
+  let workOrder = '';
+  
+  if (isNewFormat) {
+    // ===== 新格式：QR码 =====
+    // 工单号：101386002\n料号线序：8180914762-P1D1-PCC4\n数量：100PCS
+    const woMatch = code.match(/工单号[：:]\s*(\S+)/);
+    const bpMatch = code.match(/料号线序[：:]\s*(.+)/);
+    const qtyMatch = code.match(/数量[：:]\s*(\d+)/);
+    
+    workOrder = woMatch ? woMatch[1].trim() : '';
+    halfPart = bpMatch ? bpMatch[1].trim() : '';
+    scanQty = qtyMatch ? parseInt(qtyMatch[1]) : 1;
+    
+    if (!halfPart) {
+      scanInput.className = 'error';
+      scanStatus.textContent = '❌ 无法识别料号线序';
+      scanStatus.className = 'scan-status err';
+      playSound('error');
+      setTimeout(() => { scanInput.className = ''; scanInput.value = ''; scanInput.focus(); }, 1500);
+      return;
+    }
+    
+    // 检查工单匹配
+    if (currentWorkOrder.number) {
+      if (workOrder && workOrder !== currentWorkOrder.number) {
+        scanInput.className = 'error';
+        scanStatus.textContent = '⚠️ 扫码工单（' + workOrder + '）与设置（' + currentWorkOrder.number + '）不一致！';
+        scanStatus.className = 'scan-status err';
+        playSound('error');
+        setTimeout(() => { scanInput.className = ''; scanInput.value = ''; scanInput.focus(); }, 2500);
+        return;
+      }
+      // 检查数量超限
+      if (currentWorkOrder.currentQty + scanQty > currentWorkOrder.targetQty) {
+        scanInput.className = 'error';
+        scanStatus.textContent = '🚫 已超工单数量限制！当前：' + currentWorkOrder.currentQty + '/' + currentWorkOrder.targetQty + '，请更换工单号。';
+        scanStatus.className = 'scan-status err';
+        playSound('error');
+        setTimeout(() => { scanInput.className = ''; scanInput.value = ''; scanInput.focus(); }, 2500);
+        return;
+      }
+    }
+    
+    // 检查半品料号是否在inventory中
+    if (!(halfPart in inventory)) {
+      scanInput.className = 'error';
+      scanStatus.textContent = '❌ 未识别的半品料号：' + halfPart;
+      scanStatus.className = 'scan-status err';
+      playSound('error');
+      setTimeout(() => { scanInput.className = ''; scanInput.value = ''; scanInput.focus(); }, 1500);
+      return;
+    }
+    
+  } else {
+    // ===== 旧格式：WP-唯一码 =====
+    const errMsg = validateScanCode(code);
+    if (errMsg) {
+      scanInput.className = 'error';
+      scanStatus.textContent = '❌ ' + errMsg;
+      scanStatus.className = 'scan-status err';
+      scanStatus.style.fontWeight = 'bold';
+      scanStatus.style.fontSize = '1.1rem';
+      playSound('error');
+      showToast(errMsg, 'error');
+      scanInput.style.animation = 'shake 0.5s ease-in-out';
+      setTimeout(() => { scanInput.style.animation = ''; }, 500);
+      setTimeout(() => {
+        scanInput.className = '';
+        scanInput.value = '';
+        scanInput.focus();
+      }, 1500);
+      return;
+    }
+    halfPart = extractHalfPart(code);
+    scanQty = 1;
+  }
   
   // Check duplicate
   const isDup = scanRecords.some(r => r.c === code && r.a === currentAction);
@@ -380,20 +471,19 @@ function processScan(code) {
     x: halfPart || '',
     r: '',
     d: '',
-    w: '',
-    a: currentAction
+    w: workOrder || '',
+    a: currentAction,
+    q: scanQty
   };
   
   if (isDup) {
     scanInput.className = 'duplicate';
-    scanStatus.textContent = '🚨 重复扫码警报！该唯一码已' + currentAction + '过！';
+    scanStatus.textContent = '🚨 重复扫码警报！该码已' + currentAction + '过！';
     scanStatus.className = 'scan-status err';
     scanStatus.style.fontWeight = 'bold';
     scanStatus.style.fontSize = '1.1rem';
     playSound('duplicate');
     showToast('🚨 重复扫码警报！', 'error');
-    
-    // 闪烁效果
     scanInput.style.animation = 'shake 0.5s ease-in-out';
     setTimeout(() => { scanInput.style.animation = ''; }, 500);
   } else {
@@ -401,12 +491,18 @@ function processScan(code) {
     
     // Update inventory
     if (halfPart && halfPart in inventory) {
-      if (currentAction === '入库') inventory[halfPart]++;
-      else if (currentAction === '出库') inventory[halfPart] = Math.max(0, inventory[halfPart] - 1);
+      if (currentAction === '入库') inventory[halfPart] += scanQty;
+      else if (currentAction === '出库') inventory[halfPart] = Math.max(0, inventory[halfPart] - scanQty);
+    }
+    
+    // Update work order quantity
+    if (currentWorkOrder.number) {
+      currentWorkOrder.currentQty += scanQty;
+      updateWorkOrderDisplay();
     }
     
     scanInput.className = 'success';
-    scanStatus.textContent = '✅ ' + currentAction + '成功！' + (halfPart ? ' 半品：' + halfPart : '') + ' 当前库存：' + (inventory[halfPart] || 0);
+    scanStatus.textContent = '✅ ' + currentAction + '成功！半品：' + halfPart + ' +' + scanQty + ' 当前库存：' + (inventory[halfPart] || 0);
     scanStatus.className = 'scan-status ok';
     playSound('success');
     showToast(currentAction + '成功', 'success');
@@ -521,11 +617,13 @@ function renderRecentList() {
   
   el.innerHTML = records.map((r, idx) => {
     const realIdx = scanRecords.indexOf(r);
+    const qtyStr = (r.q && r.q > 1) ? `<span style="color:var(--primary);font-weight:600">×${r.q}</span>` : '';
+    const displayCode = r.c.length > 40 ? r.c.substring(0, 40) + '...' : r.c;
     return `
     <div class="recent-item" style="display:flex;align-items:center;gap:8px">
       <span class="recent-time" style="min-width:120px">${r.t}</span>
-      <span class="recent-code" style="flex:1;font-size:.75rem;word-break:break-all">${r.c}</span>
-      <span style="min-width:80px">${r.x || '-'}</span>
+      <span class="recent-code" style="flex:1;font-size:.75rem;word-break:break-all" title="${r.c.replace(/"/g, '&quot;')}">${displayCode}</span>
+      <span style="min-width:80px">${r.x || '-'} ${qtyStr}</span>
       <span class="badge ${r.a === '入库' ? 'badge-green' : 'badge-red'}" style="min-width:45px;text-align:center">${r.a}</span>
       <button class="btn btn-sm" style="padding:4px 8px;background:var(--danger);color:#fff;font-size:.75rem" onclick="deleteSingleRecord(${realIdx})" title="删除此记录">🗑️</button>
     </div>
@@ -567,10 +665,11 @@ function deleteSingleRecord(index) {
   if (!confirm(`确定要删除这条记录吗？\n\n唯一码：${record.c}\n时间：${record.t}\n动作：${record.a}\n\n删除后将同步更新库存和齐套数据。`)) return;
   
   // Reverse the inventory change
-  const hp = extractHalfPart(record.c);
+  const hp = record.x || extractHalfPart(record.c);
+  const qty = record.q || 1;
   if (hp && hp in inventory) {
-    if (record.a === '入库') inventory[hp] = Math.max(0, inventory[hp] - 1);
-    else if (record.a === '出库') inventory[hp]++;
+    if (record.a === '入库') inventory[hp] = Math.max(0, inventory[hp] - qty);
+    else if (record.a === '出库') inventory[hp] += qty;
   }
   
   // Remove record
@@ -600,10 +699,11 @@ function deleteByDate() {
   
   // Reverse inventory changes
   recordsToDelete.forEach(record => {
-    const hp = extractHalfPart(record.c);
+    const hp = record.x || extractHalfPart(record.c);
+    const qty = record.q || 1;
     if (hp && hp in inventory) {
-      if (record.a === '入库') inventory[hp] = Math.max(0, inventory[hp] - 1);
-      else if (record.a === '出库') inventory[hp]++;
+      if (record.a === '入库') inventory[hp] = Math.max(0, inventory[hp] - qty);
+      else if (record.a === '出库') inventory[hp] += qty;
     }
   });
   
@@ -638,35 +738,89 @@ function exportScanCSV() {
   showToast('CSV 已导出', 'success');
 }
 
-// ====== CSV IMPORT ======
-function loadBOMCSV(event) {
+// ====== BOM IMPORT (Excel + CSV) ======
+function loadBOMFile(event) {
   const file = event.target.files[0];
   if (!file) return;
-  const reader = new FileReader();
-  reader.onload = function(e) {
-    const lines = e.target.result.split('\n');
-    let headerSkipped = false;
-    bomData = {};
-    productList = [];
-    lines.forEach(line => {
-      if (!line.trim()) return;
-      const cols = parseCSVLine(line);
-      if (!headerSkipped) { headerSkipped = true; return; }
-      if (cols.length >= 2) {
-        const cp = cols[0], bp = cols[1];
-        if (!bomData[cp]) bomData[cp] = [];
-        bomData[cp].push({p: bp, j: cols[2]||'', l: parseInt(cols[3])||0, y: parseInt(cols[4])||1});
-        if (!productList.includes(cp)) productList.push(cp);
-        if (!(bp in inventory)) inventory[bp] = 0;
+  const ext = file.name.split('.').pop().toLowerCase();
+  
+  if (ext === 'csv') {
+    const reader = new FileReader();
+    reader.onload = function(e) {
+      let text = e.target.result;
+      // 自动检测编码：如果包含乱码特征，尝试GBK
+      if (/[\ufffd]/.test(text) || /[锟斤拷]/.test(text)) {
+        const reader2 = new FileReader();
+        reader2.onload = function(e2) { parseCSVText(e2.target.result); };
+        reader2.readAsText(file, 'GBK');
+      } else {
+        parseCSVText(text);
       }
-    });
-    document.getElementById('bomLoadStatus').textContent = '已加载 ' + productList.length + ' 个成品';
-    showToast('BOM 数据已加载：' + productList.length + ' 个成品', 'success');
-    refreshDashboard();
-  };
-  reader.readAsText(file, 'UTF-8');
+    };
+    reader.readAsText(file, 'UTF-8');
+  } else {
+    // Excel file
+    const reader = new FileReader();
+    reader.onload = function(e) {
+      try {
+        const data = new Uint8Array(e.target.result);
+        const workbook = XLSX.read(data, { type: 'array' });
+        const sheet = workbook.Sheets[workbook.SheetNames[0]];
+        const rows = XLSX.utils.sheet_to_json(sheet, { header: 1 });
+        loadBOMFromRows(rows);
+      } catch (err) {
+        alert('Excel 解析失败：' + err.message);
+      }
+    };
+    reader.readAsArrayBuffer(file);
+  }
 }
 
+function parseCSVText(text) {
+  const lines = text.split(/\r?\n/);
+  const rows = [];
+  lines.forEach(line => {
+    if (!line.trim()) return;
+    rows.push(parseCSVLine(line));
+  });
+  loadBOMFromRows(rows);
+}
+
+function loadBOMFromRows(rows) {
+  bomData = {};
+  productList = [];
+  let headerSkipped = false;
+  let count = 0;
+  
+  rows.forEach(row => {
+    if (!row || row.length === 0) return;
+    // 跳过表头（第一行或包含中文"料号"的行）
+    if (!headerSkipped) {
+      const first = String(row[0] || '').trim();
+      if (/料号|成品|编号|product/i.test(first)) { headerSkipped = true; return; }
+      headerSkipped = true;
+    }
+    
+    const cp = String(row[0] || '').trim();
+    const bp = String(row[1] || '').trim();
+    if (!cp || !bp) return;
+    
+    if (!bomData[cp]) bomData[cp] = [];
+    bomData[cp].push({
+      p: bp,
+      j: String(row[2] || '').trim(),
+      l: parseInt(row[3]) || 0,
+      y: parseInt(row[4]) || 1
+    });
+    if (!productList.includes(cp)) productList.push(cp);
+    if (!(bp in inventory)) inventory[bp] = 0;
+    count++;
+  });
+  
+  document.getElementById('bomLoadStatus').textContent = '✅ 已加载 ' + productList.length + ' 个成品，' + count + ' 条BOM';
+  showToast('BOM 数据已加载：' + productList.length + ' 个成品', 'success');
+  refreshDashboard();
+}
 
 function parseCSVLine(line) {
   const result = [];
@@ -685,6 +839,85 @@ function parseCSVLine(line) {
   }
   result.push(current.trim());
   return result;
+}
+
+// ====== MANUAL BOM ENTRY ======
+function addBOMManual() {
+  const cp = document.getElementById('manualCP').value.trim();
+  const bp = document.getElementById('manualBP').value.trim();
+  const j = document.getElementById('manualJ').value.trim();
+  const l = parseInt(document.getElementById('manualL').value) || 0;
+  const y = parseInt(document.getElementById('manualY').value) || 1;
+  
+  if (!cp || !bp) {
+    alert('成品料号和半品料号不能为空');
+    return;
+  }
+  
+  if (!bomData[cp]) {
+    bomData[cp] = [];
+    productList.push(cp);
+  }
+  bomData[cp].push({p: bp, j: j, l: l, y: y});
+  if (!(bp in inventory)) inventory[bp] = 0;
+  
+  // 清空输入
+  document.getElementById('manualBP').value = '';
+  document.getElementById('manualJ').value = '';
+  document.getElementById('manualL').value = '0';
+  document.getElementById('manualY').value = '1';
+  
+  refreshDashboard();
+  showToast('已添加：' + cp + ' → ' + bp, 'success');
+}
+
+// ====== WORK ORDER MANAGEMENT ======
+let currentWorkOrder = { number: '', targetQty: 0, currentQty: 0 };
+
+function saveWorkOrder() {
+  const num = document.getElementById('woNumber').value.trim();
+  const qty = parseInt(document.getElementById('woTargetQty').value) || 0;
+  
+  if (!num || qty <= 0) {
+    alert('请输入工单号和目标数量');
+    return;
+  }
+  
+  currentWorkOrder = { number: num, targetQty: qty, currentQty: 0 };
+  updateWorkOrderDisplay();
+  showToast('工单已设置：' + num + '，目标：' + qty, 'success');
+}
+
+function updateWorkOrderDisplay() {
+  const el = document.getElementById('woStatus');
+  if (currentWorkOrder.number) {
+    const pct = Math.round((currentWorkOrder.currentQty / currentWorkOrder.targetQty) * 100);
+    const color = pct >= 100 ? 'var(--danger)' : pct >= 80 ? 'var(--warning)' : 'var(--success)';
+    el.innerHTML = `工单：<b>${currentWorkOrder.number}</b> | 进度：<span style="color:${color};font-weight:700">${currentWorkOrder.currentQty}</span> / ${currentWorkOrder.targetQty}（${pct}%）`;
+  } else {
+    el.textContent = '未设置工单';
+  }
+}
+
+function checkWorkOrderLimit(scanCode, scanQty) {
+  // 如果没设置工单，不限制
+  if (!currentWorkOrder.number) return null;
+  
+  // 从扫码内容提取工单号
+  const woMatch = scanCode.match(/工单号[：:]\s*(\S+)/);
+  const scannedWO = woMatch ? woMatch[1].trim() : '';
+  
+  // 如果码里有工单号且和设置不一致
+  if (scannedWO && scannedWO !== currentWorkOrder.number) {
+    return '⚠️ 扫码工单号（' + scannedWO + '）与当前设置（' + currentWorkOrder.number + '）不一致，请检查！';
+  }
+  
+  // 检查数量是否超限
+  if (currentWorkOrder.currentQty + scanQty > currentWorkOrder.targetQty) {
+    return '🚫 已超工单数量限制！当前：' + currentWorkOrder.currentQty + '，目标：' + currentWorkOrder.targetQty + '，无法再录入' + scanQty + '。请更换工单号。';
+  }
+  
+  return null;
 }
 
 // ====== CALCULATION ======
@@ -997,7 +1230,10 @@ async function startCamera() {
       startConfig,
       {
         fps: 15,
-        qrbox: { width: 280, height: 120 },
+        qrbox: function(vw, vh) {
+          const s = Math.min(vw, vh);
+          return { width: Math.floor(s * 0.75), height: Math.floor(s * 0.75) };
+        },
         formatsToSupport: [
           Html5QrcodeSupportedFormats.CODE_128,
           Html5QrcodeSupportedFormats.CODE_39,
