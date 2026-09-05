@@ -378,6 +378,76 @@ let productList = Object.keys(INIT_DATA.bom);
 // 半品总数（用于KPI显示）
 const SEMI_TOTAL_COUNT = 276;
 
+// ====== LOCAL STORAGE 持久化 ======
+const STORAGE_KEY = 'semiKitDashboard';
+
+function saveData() {
+  try {
+    const data = {
+      scanRecords: scanRecords,
+      inventory: inventory,
+      currentWorkOrder: currentWorkOrder,
+      importedWorkOrders: importedWorkOrders,
+      currentAction: currentAction,
+      savedAt: new Date().toISOString()
+    };
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+  } catch(e) {
+    console.warn('保存数据到本地存储失败:', e);
+  }
+}
+
+// 防抖保存（避免频繁写入）
+let saveTimer = null;
+function saveDataDebounced() {
+  if (saveTimer) clearTimeout(saveTimer);
+  saveTimer = setTimeout(saveData, 500);
+}
+
+function loadData() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return false;
+    const data = JSON.parse(raw);
+    if (data.scanRecords && Array.isArray(data.scanRecords)) {
+      scanRecords = data.scanRecords;
+    }
+    if (data.inventory && typeof data.inventory === 'object') {
+      // 合并：保留本地存储的增量，同时保留初始库存基础值
+      const initInv = {${Array.from(Object.entries({})).map(([k,v]) => `'${k}':${v}`).join(',')}};
+      // 直接用localStorage的inventory（已包含初始值+增量）
+      inventory = data.inventory;
+    }
+    if (data.currentWorkOrder) {
+      currentWorkOrder = data.currentWorkOrder;
+    }
+    if (data.importedWorkOrders && Array.isArray(data.importedWorkOrders)) {
+      importedWorkOrders = data.importedWorkOrders;
+    }
+    if (data.currentAction) {
+      currentAction = data.currentAction;
+    }
+    console.log('已从本地存储恢复数据，保存时间：' + (data.savedAt || '未知'));
+    return true;
+  } catch(e) {
+    console.warn('从本地存储恢复数据失败:', e);
+    return false;
+  }
+}
+
+// 页面加载时恢复数据
+const restored = loadData();
+if (restored) {
+  // 延迟刷新UI（等DOM准备好）
+  setTimeout(() => {
+    updateWorkOrderDisplay();
+    renderWorkOrderList();
+    renderRecentList();
+    renderTable();
+    refreshDashboard();
+  }, 100);
+}
+
 // ====== TAB SWITCHING ======
 function switchTab(tab) {
   document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
@@ -630,6 +700,7 @@ function processScan(code) {
     setTimeout(() => { scanInput.style.animation = ''; }, 500);
   } else {
     scanRecords.unshift(record);
+    saveDataDebounced(); // 持久化保存
     
     // Update inventory（每根线扫一次记一根，不按标签数量）
     if (halfPart && halfPart in inventory) {
@@ -1158,6 +1229,7 @@ function confirmBatchImport() {
   toggleBatchImport();
   document.getElementById('batchImportText').value = '';
   document.getElementById('batchPreview').textContent = '';
+  saveData(); // 持久化保存
   showToast(`成功导入 ${newOrders.length} 条工单${hasError ? '（部分行格式有误已跳过）' : ''}`, hasError ? 'warning' : 'success');
 }
 
@@ -1169,6 +1241,7 @@ function selectWorkOrder(index) {
   document.getElementById('woTargetQty').value = order.qty;
   updateWorkOrderDisplay();
   renderWorkOrderList();
+  saveData(); // 持久化保存
   showToast('已切换至工单：' + order.number, 'success');
 }
 
@@ -1206,6 +1279,7 @@ function removeWorkOrder(index) {
     }
   }
   renderWorkOrderList();
+  saveData(); // 持久化保存
   showToast('已删除工单：' + order.number, 'info');
 }
 
