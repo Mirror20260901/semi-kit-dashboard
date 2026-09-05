@@ -308,6 +308,7 @@ button:focus-visible,input:focus-visible,a:focus-visible{outline:2px solid var(-
       <div class="card-header">
         <h2>📋 扫码记录</h2>
         <button class="btn btn-outline btn-sm" onclick="exportScanCSV()">💾 导出 CSV</button>
+        <button class="btn btn-outline btn-sm" style="color:var(--danger);border-color:var(--danger);margin-left:6px" onclick="clearAllData()">🗑️ 清除所有数据</button>
       </div>
       <div class="card-body">
         <!-- Search and filter controls -->
@@ -1834,6 +1835,62 @@ function exportToExcel() {
   XLSX.writeFile(wb, `半品管理台账_${dateStr}.xlsx`);
   
   showToast('Excel导出成功！');
+}
+
+// ====== CLEAR ALL DATA ======
+async function clearAllData() {
+  if (!confirm('确定要清除所有数据吗？\n\n包括：扫码记录、库存、工单、齐套数据\n\n此操作不可恢复！建议先导出CSV备份。')) return;
+  if (!confirm('再次确认：清除所有数据？')) return;
+  
+  // Clear localStorage
+  localStorage.removeItem(STORAGE_KEY);
+  
+  // Reset state
+  scanRecords = [];
+  inventory = {};
+  currentWorkOrder = { number: '', product: '', qty: 0, targetQty: 0, componentCounts: {} };
+  importedWorkOrders = [];
+  deletedRecords = [];
+  currentAction = '入库';
+  filteredScanRecords = [];
+  
+  // Clear UI inputs
+  document.getElementById('woNumber').value = '';
+  document.getElementById('woTargetQty').value = '';
+  document.getElementById('palletPrefix').value = '';
+  document.getElementById('palletSeq').value = '';
+  
+  // Reset init inventory
+  for (const key of Object.keys(INIT_DATA.bom)) {
+    const bomList = INIT_DATA.bom[key];
+    if (bomList) {
+      bomList.forEach(item => { inventory[item.p] = 0; });
+    }
+  }
+  
+  // Push empty state to remote
+  try {
+    await pushSharedData({
+      scanRecords: [],
+      inventory: inventory,
+      importedWorkOrders: [],
+      deletedRecords: [],
+      currentWorkOrder: { number:'', product:'', qty:0, targetQty:0, componentCounts:{} },
+      updatedAt: new Date().toISOString()
+    });
+  } catch(e) { console.warn('Remote clear failed:', e); }
+  
+  // Refresh UI
+  updateWorkOrderDisplay();
+  renderWorkOrderList();
+  updatePalletDisplay();
+  renderRecentList();
+  renderTable();
+  refreshDashboard();
+  recalculate();
+  saveData();
+  
+  showToast('所有数据已清除', 'success');
 }
 
 // ====== INIT ======
