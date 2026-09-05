@@ -535,7 +535,6 @@ function processScan(code) {
       currentWorkOrder.componentCounts[halfPart] = (currentWorkOrder.componentCounts[halfPart] || 0) + 1;
       updateWorkOrderDisplay();
     }
-    }
     
     scanInput.className = 'success';
     scanStatus.textContent = '✅ ' + currentAction + '成功！半品：' + halfPart + ' +' + scanQty + ' 当前库存：' + (inventory[halfPart] || 0);
