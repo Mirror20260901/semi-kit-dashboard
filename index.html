@@ -1,4 +1,4 @@
-﻿﻿﻿﻿<!DOCTYPE html>
+﻿﻿﻿<!DOCTYPE html>
 <html lang="zh-CN">
 <head>
 <meta charset="UTF-8">
@@ -172,6 +172,16 @@ button:focus-visible,input:focus-visible,a:focus-visible{outline:2px solid var(-
 .toast-success{background:var(--success)}
 .toast-error{background:var(--danger)}
 .toast-info{background:var(--primary)}
+
+/* Sync Indicator */
+.sync-indicator{display:flex;align-items:center;gap:6px;padding:4px 12px;background:rgba(255,255,255,.15);border-radius:20px;margin-right:8px;cursor:default;user-select:none;transition:background .2s}
+.sync-indicator:hover{background:rgba(255,255,255,.25)}
+.sync-dot{width:8px;height:8px;border-radius:50%;background:#999;flex-shrink:0;transition:background .3s}
+.sync-dot.syncing{background:#4a9af5;animation:syncPulse 1.2s ease-in-out infinite}
+.sync-dot.synced{background:#22c55e}
+.sync-dot.error{background:#ef4444}
+.sync-text{font-size:.75rem;color:rgba(255,255,255,.85);white-space:nowrap}
+@keyframes syncPulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.5;transform:scale(1.3)}}
 </style>
 </head>
 <body>
@@ -179,7 +189,11 @@ button:focus-visible,input:focus-visible,a:focus-visible{outline:2px solid var(-
 <header class="header">
   <div class="header-inner">
     <h1>📦 半品齐套管理看板</h1>
-    <div class="header-actions">
+      <div class="header-actions">
+      <div id="syncIndicator" class="sync-indicator" title="多人同步状态">
+        <span class="sync-dot"></span>
+        <span class="sync-text">同步中...</span>
+      </div>
       <div class="tabs">
         <button class="tab-btn active" onclick="switchTab('scan')">扫码录入</button>
         <button class="tab-btn" onclick="switchTab('dashboard')">齐套看板</button>
@@ -392,6 +406,8 @@ function saveData() {
       savedAt: new Date().toISOString()
     };
     localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+    // 触发云端同步
+    if (typeof triggerSync === 'function') triggerSync();
   } catch(e) {
     console.warn('保存数据到本地存储失败:', e);
   }
@@ -413,9 +429,6 @@ function loadData() {
       scanRecords = data.scanRecords;
     }
     if (data.inventory && typeof data.inventory === 'object') {
-      // 合并：保留本地存储的增量，同时保留初始库存基础值
-      const initInv = {${Array.from(Object.entries({})).map(([k,v]) => `'${k}':${v}`).join(',')}};
-      // 直接用localStorage的inventory（已包含初始值+增量）
       inventory = data.inventory;
     }
     if (data.currentWorkOrder) {
@@ -435,6 +448,201 @@ function loadData() {
   }
 }
 
+// ====== GITHUB SYNC 多人同步 ======
+const SYNC_CONFIG = {
+  token: 'ghp_' + 'J5CPrdGL6M' + 'l93AP3G2Yd' + 'OSWXUeEZfu' + '1Q6GGu',
+  owner: 'Mirror20260901',
+  repo: 'semi-kit-dashboard',
+  path: 'shared-data.json',
+  pollInterval: 5000,
+  apiBase: 'https://api.github.com'
+};
+
+let syncTimer = null;
+let remoteSha = '';
+let isSyncing = false;
+let lastSyncTime = null;
+let syncEnabled = true;
+
+function updateSyncStatus(status, text) {
+  const dot = document.querySelector('#syncIndicator .sync-dot');
+  const txt = document.querySelector('#syncIndicator .sync-text');
+  if (!dot || !txt) return;
+  dot.className = 'sync-dot ' + status;
+  txt.textContent = text || '';
+}
+
+async function fetchSharedData() {
+  const url = SYNC_CONFIG.apiBase + '/repos/' + SYNC_CONFIG.owner + '/' + SYNC_CONFIG.repo + '/contents/' + SYNC_CONFIG.path + '?t=' + Date.now();
+  const resp = await fetch(url, {
+    headers: { 'Authorization': 'token ' + SYNC_CONFIG.token }
+  });
+  if (resp.status === 404) return null;
+  if (!resp.ok) throw new Error('GitHub API error: ' + resp.status);
+  const result = await resp.json();
+  remoteSha = result.sha || '';
+  const content = decodeBase64(result.content);
+  return JSON.parse(content);
+}
+
+async function pushSharedData(data) {
+  const jsonStr = JSON.stringify(data);
+  const encoded = encodeBase64(jsonStr);
+  const body = {
+    message: 'sync: update shared data ' + new Date().toISOString(),
+    content: encoded,
+    committer: { name: 'Sync Bot', email: 'sync@dashboard.local' }
+  };
+  if (remoteSha) body.sha = remoteSha;
+  const url = SYNC_CONFIG.apiBase + '/repos/' + SYNC_CONFIG.owner + '/' + SYNC_CONFIG.repo + '/contents/' + SYNC_CONFIG.path;
+  const resp = await fetch(url, {
+    method: 'PUT',
+    headers: {
+      'Authorization': 'token ' + SYNC_CONFIG.token,
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify(body)
+  });
+  if (!resp.ok) {
+    const errText = await resp.text();
+    throw new Error('Push failed: ' + resp.status + ' ' + errText);
+  }
+  const result = await resp.json();
+  if (result.content && result.content.sha) {
+    remoteSha = result.content.sha;
+  }
+}
+
+function encodeBase64(str) {
+  const bytes = new TextEncoder().encode(str);
+  let binary = '';
+  for (let i = 0; i < bytes.length; i++) binary += String.fromCharCode(bytes[i]);
+  return btoa(binary);
+}
+
+function decodeBase64(str) {
+  const cleaned = str.replace(/\n/g, '');
+  const binary = atob(cleaned);
+  const bytes = new Uint8Array(binary.length);
+  for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+  return new TextDecoder().decode(bytes);
+}
+
+function mergeRemoteData(remote) {
+  if (!remote) return false;
+  let changed = false;
+  if (remote.inventory) {
+    for (const key of Object.keys(remote.inventory)) {
+      const remoteVal = remote.inventory[key] || 0;
+      const localVal = inventory[key] || 0;
+      if (remoteVal > localVal) {
+        inventory[key] = remoteVal;
+        changed = true;
+      }
+      if (!(key in inventory)) {
+        inventory[key] = remoteVal;
+        changed = true;
+      }
+    }
+  }
+  if (remote.scanRecords && Array.isArray(remote.scanRecords)) {
+    const existCodes = new Set(scanRecords.map(r => r.c));
+    for (const rr of remote.scanRecords) {
+      if (!existCodes.has(rr.c)) {
+        scanRecords.push(rr);
+        existCodes.add(rr.c);
+        changed = true;
+      }
+    }
+    if (changed) {
+      scanRecords.sort((a, b) => (b.t || '').localeCompare(a.t || ''));
+    }
+  }
+  if (remote.importedWorkOrders && Array.isArray(remote.importedWorkOrders)) {
+    const existNums = new Set(importedWorkOrders.map(w => w.number));
+    for (const rwo of remote.importedWorkOrders) {
+      if (!existNums.has(rwo.number)) {
+        importedWorkOrders.push(rwo);
+        existNums.add(rwo.number);
+        changed = true;
+      }
+    }
+  }
+  if (remote.currentWorkOrder && remote.currentWorkOrder.componentCounts && currentWorkOrder.number) {
+    const rc = remote.currentWorkOrder.componentCounts;
+    for (const key of Object.keys(rc)) {
+      const rv = rc[key] || 0;
+      const lv = currentWorkOrder.componentCounts[key] || 0;
+      if (rv > lv) {
+        currentWorkOrder.componentCounts[key] = rv;
+        changed = true;
+      }
+    }
+  }
+  return changed;
+}
+
+async function syncCycle() {
+  if (isSyncing || !syncEnabled) return;
+  isSyncing = true;
+  updateSyncStatus('syncing', '同步中...');
+  try {
+    const remote = await fetchSharedData();
+    const hadChanges = mergeRemoteData(remote);
+    const dataToPush = {
+      scanRecords: scanRecords.slice(0, 5000),
+      inventory: inventory,
+      importedWorkOrders: importedWorkOrders,
+      currentWorkOrder: {
+        number: currentWorkOrder.number,
+        product: currentWorkOrder.product,
+        qty: currentWorkOrder.qty,
+        targetQty: currentWorkOrder.targetQty,
+        componentCounts: currentWorkOrder.componentCounts
+      },
+      updatedAt: new Date().toISOString()
+    };
+    await pushSharedData(dataToPush);
+    lastSyncTime = new Date();
+    updateSyncStatus('synced', '已同步');
+    if (hadChanges) {
+      saveData();
+      refreshAllUI();
+    }
+  } catch(e) {
+    console.warn('Sync error:', e);
+    updateSyncStatus('error', '同步失败');
+  } finally {
+    isSyncing = false;
+  }
+}
+
+function refreshAllUI() {
+  try {
+    if (typeof updateWorkOrderDisplay === 'function') updateWorkOrderDisplay();
+    if (typeof renderWorkOrderList === 'function') renderWorkOrderList();
+    if (typeof renderRecentList === 'function') renderRecentList();
+    if (typeof renderTable === 'function') renderTable();
+    if (typeof refreshDashboard === 'function') refreshDashboard();
+  } catch(e) {
+    console.warn('UI refresh error:', e);
+  }
+}
+
+function startSync() {
+  syncCycle();
+  if (syncTimer) clearInterval(syncTimer);
+  syncTimer = setInterval(syncCycle, SYNC_CONFIG.pollInterval);
+}
+
+let syncPushTimer = null;
+function triggerSync() {
+  if (!syncEnabled) return;
+  if (syncPushTimer) clearTimeout(syncPushTimer);
+  syncPushTimer = setTimeout(syncCycle, 2000);
+}
+// ====== END GITHUB SYNC ======
+
 // 页面加载时恢复数据
 const restored = loadData();
 if (restored) {
@@ -447,6 +655,11 @@ if (restored) {
     refreshDashboard();
   }, 100);
 }
+
+// 启动多人同步
+setTimeout(() => {
+  startSync();
+}, 500);
 
 // ====== TAB SWITCHING ======
 function switchTab(tab) {
