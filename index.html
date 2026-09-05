@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+﻿﻿<!DOCTYPE html>
 <html lang="zh-CN">
 <head>
 <meta charset="UTF-8">
@@ -372,6 +372,16 @@ scanInput.addEventListener('keydown', function(e) {
 function processScan(code) {
   if (!code) return;
   
+  // 必须先设置工单才能扫码
+  if (!currentWorkOrder.number) {
+    scanInput.className = 'error';
+    scanStatus.textContent = '⚠️ 请先在上方设置工单号和数量后再扫码！';
+    scanStatus.className = 'scan-status err';
+    playSound('error');
+    setTimeout(() => { scanInput.className = ''; scanInput.value = ''; scanInput.focus(); }, 2000);
+    return;
+  }
+
   // 检测扫码格式
   const isNewFormat = /工单[号]?[：:]/.test(code) || /(?:线序)?料号[：:]/.test(code) || /数量[：:]/.test(code);
   
@@ -399,17 +409,27 @@ function processScan(code) {
       return;
     }
     
-    // 检查工单匹配
-    if (currentWorkOrder.number) {
-      if (workOrder && workOrder !== currentWorkOrder.number) {
-        scanInput.className = 'error';
-        scanStatus.textContent = '⚠️ 扫码工单（' + workOrder + '）与设置（' + currentWorkOrder.number + '）不一致！';
-        scanStatus.className = 'scan-status err';
-        playSound('error');
-        setTimeout(() => { scanInput.className = ''; scanInput.value = ''; scanInput.focus(); }, 2500);
-        return;
-      }
-      // 工单号匹配已检查，数量超限检查已移至 BOM 进度逻辑
+    // 检查该半品料号是否已达到工单数量上限
+    const woBomList = bomData[currentWorkOrder.product] || [];
+    const bomComp = woBomList.find(c => c.p === halfPart);
+    if (!bomComp) {
+      scanInput.className = 'error';
+      scanStatus.textContent = '❌ 半品料号 ' + halfPart + ' 不在当前工单BOM中！';
+      scanStatus.className = 'scan-status err';
+      playSound('error');
+      setTimeout(() => { scanInput.className = ''; scanInput.value = ''; scanInput.focus(); }, 2500);
+      return;
+    }
+    const compLimit = (bomComp.y || 1) * currentWorkOrder.qty;
+    const currentCompCount = currentWorkOrder.componentCounts[halfPart] || 0;
+    if (currentCompCount >= compLimit) {
+      scanInput.className = 'error';
+      scanStatus.textContent = '🚫 ' + halfPart + ' 已超工单数量！已扫 ' + currentCompCount + '/' + compLimit + '，该半品不能再扫入了。';
+      scanStatus.className = 'scan-status err';
+      playSound('error');
+      setTimeout(() => { scanInput.className = ''; scanInput.value = ''; scanInput.focus(); }, 3000);
+      return;
+    }
     
     // 检查半品料号是否在inventory中
     if (!(halfPart in inventory)) {
@@ -486,14 +506,10 @@ function processScan(code) {
       else if (currentAction === '出库') inventory[halfPart] = Math.max(0, inventory[halfPart] - scanQty);
     }
     
-    // Update work order progress based on BOM
-    if (currentWorkOrder.number && currentWorkOrder.product && halfPart && currentAction === "入库") {
-      const woBom = bomData[currentWorkOrder.product] || [];
-      const matched = woBom.find(c => c.p === halfPart);
-      if (matched) {
-        currentWorkOrder.woScannedQty += (matched.y || 1);
-        updateWorkOrderDisplay();
-      }
+    // Update per-component work order progress
+    if (currentWorkOrder.number && halfPart && currentAction === "入库") {
+      currentWorkOrder.componentCounts[halfPart] = (currentWorkOrder.componentCounts[halfPart] || 0) + 1;
+      updateWorkOrderDisplay();
     }
     }
     
@@ -860,7 +876,7 @@ function addBOMManual() {
 }
 
 // ====== WORK ORDER MANAGEMENT ======
-let currentWorkOrder = { number: '', product: '', targetQty: 0, woScannedQty: 0 };
+let currentWorkOrder = { number: '', product: '', qty: 0, targetQty: 0, componentCounts: {} };
 
 function saveWorkOrder() {
   const num = document.getElementById('woNumber').value.trim();
@@ -882,20 +898,31 @@ function saveWorkOrder() {
   const perSetQty = bomList.reduce((sum, c) => sum + (c.y || 1), 0);
   const targetTotal = perSetQty * qty;
 
-  currentWorkOrder = { number: num, product: product, targetQty: targetTotal, woScannedQty: 0 };
+  currentWorkOrder = { number: num, product: product, qty: qty, targetQty: targetTotal, componentCounts: {} };
   updateWorkOrderDisplay();
 
   const partNames = bomList.map(c => c.p).join('、');
-  showToast('工单已设置：' + num + '，成品：' + product + '（' + bomList.length + '种半品×' + qty + '套=需扫' + targetTotal + '次）', 'success');
+  showToast('工单已设置：' + num + '，成品：' + product + '，' + bomList.length + '种半品各需' + qty + '次，共' + targetTotal + '次', 'success');
 }
 
 function updateWorkOrderDisplay() {
   const el = document.getElementById('woStatus');
   if (currentWorkOrder.number) {
-    const pct = currentWorkOrder.targetQty > 0 ? Math.round((currentWorkOrder.woScannedQty / currentWorkOrder.targetQty) * 100) : 0;
+    const woBomList = bomData[currentWorkOrder.product] || [];
+    const totalScanned = Object.values(currentWorkOrder.componentCounts).reduce((a, b) => a + b, 0);
+    const pct = currentWorkOrder.targetQty > 0 ? Math.round((totalScanned / currentWorkOrder.targetQty) * 100) : 0;
     const color = pct >= 100 ? 'var(--danger)' : pct >= 80 ? 'var(--warning)' : 'var(--success)';
-    const bomCount = bomData[currentWorkOrder.product] ? bomData[currentWorkOrder.product].length : 0;
-    el.innerHTML = `工单：<b>${currentWorkOrder.number}</b> | 成品：${currentWorkOrder.product}（${bomCount}种半品）| 进度：<span style="color:${color};font-weight:700">${currentWorkOrder.woScannedQty}</span> / ${currentWorkOrder.targetQty}（${pct}%）`;
+    
+    // Per-component progress
+    const compDetails = woBomList.map(c => {
+      const scanned = currentWorkOrder.componentCounts[c.p] || 0;
+      const limit = (c.y || 1) * currentWorkOrder.qty;
+      const done = scanned >= limit;
+      const cColor = done ? 'var(--danger)' : scanned > 0 ? 'var(--warning)' : 'var(--success)';
+      return `<span style="color:${cColor}">${c.p}：${scanned}/${limit}</span>`;
+    }).join(' &nbsp;|&nbsp; ');
+    
+    el.innerHTML = `工单：<b>${currentWorkOrder.number}</b> | 成品：${currentWorkOrder.product} | 总进度：<span style="color:${color};font-weight:700">${totalScanned}/${currentWorkOrder.targetQty}（${pct}%）</span><br><span style="font-size:.78rem;margin-top:4px;display:inline-block">${compDetails}</span>`;
   } else {
     el.textContent = '未设置工单';
   }
