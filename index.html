@@ -1239,7 +1239,7 @@ function exportScanCSV() {
   if (scanRecords.length === 0) { showToast('暂无数据可导出', 'info'); return; }
   let csv = '\uFEFF时间,唯一码,线序料号,操作人,关联单号,工单号,工单数量,库位,批次,动作,栈板号\n';
   scanRecords.forEach(r => {
-    csv += `"${r.t}","${r.c}","${r.x}","${r.r}","${r.d}","${r.wo_no || ''}","${r.wo_qty || ''}","${r.w}","${r.a}","${r.z || ''}"\n`.replace(/,"",/g, ',"",').replace(/"undefined"/g, '""');
+    csv += `"${r.t}","${r.c}","${r.x}","${r.r}","${r.d}","${r.wo_no || ''}","${r.wo_qty || ''}","${r.w}","","${r.a}","${r.z || ''}"\n`.replace(/,"",/g, ',"",').replace(/"undefined"/g, '""');
   });
   // Clean up undefined
   csv = csv.replace(/undefined/g, '');
