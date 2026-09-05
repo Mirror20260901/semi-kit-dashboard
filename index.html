@@ -373,7 +373,7 @@ function processScan(code) {
   if (!code) return;
   
   // 检测扫码格式
-  const isNewFormat = /工单号/.test(code) || /料号线序/.test(code);
+  const isNewFormat = /工单[号]?[：:]/.test(code) || /(?:线序)?料号[：:]/.test(code) || /数量[：:]/.test(code);
   
   let halfPart = '';
   let scanQty = 1;
@@ -540,15 +540,7 @@ function extractHalfPart(code) {
 }
 
 function validateScanCode(code) {
-  if (!code || !code.startsWith('WP-')) return '唯一码必须以WP-开头';
-  // 末尾必须是 6位日期-6位序号
-  if (!/-\d{6}-\d{6}$/.test(code)) return '唯一码格式错误，末尾应为 日期(6位)-序号(6位)';
-  // 至少5段：WP-半品-日期-序号 或更多
-  const parts = code.split('-');
-  if (parts.length < 4) return '唯一码段数不足，缺少短横线分隔';
-  // 解析出的半品料号必须存在于库存中
-  const halfPart = extractHalfPart(code);
-  if (!halfPart || !(halfPart in inventory)) return '未识别的半品料号：' + (halfPart || '无法解析') + '，请检查码格式';
+  if (!code) return '条码内容为空';
   return '';
 }
 
