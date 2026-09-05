@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="zh-CN">
 <head>
 <meta charset="UTF-8">
@@ -226,14 +226,14 @@ button:focus-visible,input:focus-visible,a:focus-visible{outline:2px solid var(-
     <div class="card" style="margin-bottom:20px">
       <div class="card-body" style="padding:14px 20px">
         <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+        <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
           <span style="font-weight:600;font-size:.9rem">📋 工单设置</span>
-          <input type="text" id="woNumber" placeholder="工单号" style="width:140px;padding:8px 10px;border:1px solid var(--border);border-radius:6px;font-size:.85rem">
-          <input type="number" id="woTargetQty" placeholder="目标数量" style="width:110px;padding:8px 10px;border:1px solid var(--border);border-radius:6px;font-size:.85rem">
+          <input type="text" id="woNumber" placeholder="工单号" style="width:120px;padding:8px 10px;border:1px solid var(--border);border-radius:6px;font-size:.85rem">
+          <input type="text" id="woProduct" placeholder="成品料号（如8180900969）" style="width:180px;padding:8px 10px;border:1px solid var(--border);border-radius:6px;font-size:.85rem">
+          <input type="number" id="woTargetQty" placeholder="工单数量" style="width:110px;padding:8px 10px;border:1px solid var(--border);border-radius:6px;font-size:.85rem">
           <button class="btn btn-primary btn-sm" onclick="saveWorkOrder()">✅ 确认</button>
           <span id="woStatus" style="font-size:.82rem;color:var(--text-secondary)">未设置工单</span>
         </div>
-      </div>
-    </div>
 
     <div class="card">
       <div class="card-body scan-input-area">
@@ -409,16 +409,7 @@ function processScan(code) {
         setTimeout(() => { scanInput.className = ''; scanInput.value = ''; scanInput.focus(); }, 2500);
         return;
       }
-      // 检查数量超限
-      if (currentWorkOrder.currentQty + scanQty > currentWorkOrder.targetQty) {
-        scanInput.className = 'error';
-        scanStatus.textContent = '🚫 已超工单数量限制！当前：' + currentWorkOrder.currentQty + '/' + currentWorkOrder.targetQty + '，请更换工单号。';
-        scanStatus.className = 'scan-status err';
-        playSound('error');
-        setTimeout(() => { scanInput.className = ''; scanInput.value = ''; scanInput.focus(); }, 2500);
-        return;
-      }
-    }
+      // 工单号匹配已检查，数量超限检查已移至 BOM 进度逻辑
     
     // 检查半品料号是否在inventory中
     if (!(halfPart in inventory)) {
@@ -495,10 +486,15 @@ function processScan(code) {
       else if (currentAction === '出库') inventory[halfPart] = Math.max(0, inventory[halfPart] - scanQty);
     }
     
-    // Update work order quantity
-    if (currentWorkOrder.number) {
-      currentWorkOrder.currentQty += scanQty;
-      updateWorkOrderDisplay();
+    // Update work order progress based on BOM
+    if (currentWorkOrder.number && currentWorkOrder.product && halfPart && currentAction === "入库") {
+      const woBom = bomData[currentWorkOrder.product] || [];
+      const matched = woBom.find(c => c.p === halfPart);
+      if (matched) {
+        currentWorkOrder.woScannedQty += (matched.y || 1);
+        updateWorkOrderDisplay();
+      }
+    }
     }
     
     scanInput.className = 'success';
@@ -864,28 +860,42 @@ function addBOMManual() {
 }
 
 // ====== WORK ORDER MANAGEMENT ======
-let currentWorkOrder = { number: '', targetQty: 0, currentQty: 0 };
+let currentWorkOrder = { number: '', product: '', targetQty: 0, woScannedQty: 0 };
 
 function saveWorkOrder() {
   const num = document.getElementById('woNumber').value.trim();
+  const product = document.getElementById('woProduct').value.trim();
   const qty = parseInt(document.getElementById('woTargetQty').value) || 0;
-  
-  if (!num || qty <= 0) {
-    alert('请输入工单号和目标数量');
+
+  if (!num || !product || qty <= 0) {
+    alert('请输入工单号、成品料号和目标数量');
     return;
   }
-  
-  currentWorkOrder = { number: num, targetQty: qty, currentQty: 0 };
+
+  // 从 BOM 查找半品料号，计算总目标扫码数
+  if (!bomData[product]) {
+    alert('成品料号「' + product + '」未在BOM中找到，请先导入BOM数据！');
+    return;
+  }
+
+  const bomList = bomData[product];
+  const perSetQty = bomList.reduce((sum, c) => sum + (c.y || 1), 0);
+  const targetTotal = perSetQty * qty;
+
+  currentWorkOrder = { number: num, product: product, targetQty: targetTotal, woScannedQty: 0 };
   updateWorkOrderDisplay();
-  showToast('工单已设置：' + num + '，目标：' + qty, 'success');
+
+  const partNames = bomList.map(c => c.p).join('、');
+  showToast('工单已设置：' + num + '，成品：' + product + '（' + bomList.length + '种半品×' + qty + '套=需扫' + targetTotal + '次）', 'success');
 }
 
 function updateWorkOrderDisplay() {
   const el = document.getElementById('woStatus');
   if (currentWorkOrder.number) {
-    const pct = Math.round((currentWorkOrder.currentQty / currentWorkOrder.targetQty) * 100);
+    const pct = currentWorkOrder.targetQty > 0 ? Math.round((currentWorkOrder.woScannedQty / currentWorkOrder.targetQty) * 100) : 0;
     const color = pct >= 100 ? 'var(--danger)' : pct >= 80 ? 'var(--warning)' : 'var(--success)';
-    el.innerHTML = `工单：<b>${currentWorkOrder.number}</b> | 进度：<span style="color:${color};font-weight:700">${currentWorkOrder.currentQty}</span> / ${currentWorkOrder.targetQty}（${pct}%）`;
+    const bomCount = bomData[currentWorkOrder.product] ? bomData[currentWorkOrder.product].length : 0;
+    el.innerHTML = `工单：<b>${currentWorkOrder.number}</b> | 成品：${currentWorkOrder.product}（${bomCount}种半品）| 进度：<span style="color:${color};font-weight:700">${currentWorkOrder.woScannedQty}</span> / ${currentWorkOrder.targetQty}（${pct}%）`;
   } else {
     el.textContent = '未设置工单';
   }
@@ -894,21 +904,16 @@ function updateWorkOrderDisplay() {
 function checkWorkOrderLimit(scanCode, scanQty) {
   // 如果没设置工单，不限制
   if (!currentWorkOrder.number) return null;
-  
+
   // 从扫码内容提取工单号
   const woMatch = scanCode.match(/工单[号]?[：:]\s*(\d+)/);
   const scannedWO = woMatch ? woMatch[1].trim() : '';
-  
+
   // 如果码里有工单号且和设置不一致
   if (scannedWO && scannedWO !== currentWorkOrder.number) {
     return '⚠️ 扫码工单号（' + scannedWO + '）与当前设置（' + currentWorkOrder.number + '）不一致，请检查！';
   }
-  
-  // 检查数量是否超限
-  if (currentWorkOrder.currentQty + scanQty > currentWorkOrder.targetQty) {
-    return '🚫 已超工单数量限制！当前：' + currentWorkOrder.currentQty + '，目标：' + currentWorkOrder.targetQty + '，无法再录入' + scanQty + '。请更换工单号。';
-  }
-  
+
   return null;
 }
 
@@ -1164,6 +1169,7 @@ document.addEventListener('click', function(e) {
       !e.target.closest('#scanSearchInput') && 
       !e.target.closest('#scanDateFilter') &&
       !e.target.closest('#woNumber') &&
+      !e.target.closest('#woProduct') &&
       !e.target.closest('#woTargetQty') &&
       !e.target.closest('.bom-input') &&
       !e.target.closest('select')) {
