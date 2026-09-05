@@ -437,15 +437,21 @@ function processScan(code) {
   
   // ===== 通用检查：BOM验证 + 超限报警（新旧格式共用）=====
   if (halfPart) {
+    // 从半品料号提取成品料号（-P之前的部分）
+    const pIdx = halfPart.indexOf('-P');
+    const productFromHalfPart = pIdx > 0 ? halfPart.substring(0, pIdx) : '';
+    
     // 自动识别成品料号（如果还未识别）
     if (!currentWorkOrder.product && halfPart) {
       let detectedProduct = '';
-      const pIdx = halfPart.indexOf('-P');
-      if (pIdx > 0) {
-        detectedProduct = halfPart.substring(0, pIdx);
+      
+      // 方式1：通过-P提取成品料号，直接在BOM中查找
+      if (productFromHalfPart && bomData[productFromHalfPart]) {
+        detectedProduct = productFromHalfPart;
       }
-      // 如果-P方式没找到，在BOM中搜索包含该半品的成品
-      if (!detectedProduct || !bomData[detectedProduct]) {
+      
+      // 方式2：完整半品料号匹配（BOM的组件p字段是完整半品料号）
+      if (!detectedProduct) {
         for (const cp in bomData) {
           if (bomData[cp].some(c => c.p === halfPart)) {
             detectedProduct = cp;
@@ -453,7 +459,18 @@ function processScan(code) {
           }
         }
       }
-      if (detectedProduct && bomData[detectedProduct]) {
+      
+      // 方式3：仅成品料号匹配（BOM的组件p字段只是成品料号）
+      if (!detectedProduct && productFromHalfPart) {
+        for (const cp in bomData) {
+          if (bomData[cp].some(c => c.p === productFromHalfPart)) {
+            detectedProduct = cp;
+            break;
+          }
+        }
+      }
+      
+      if (detectedProduct) {
         currentWorkOrder.product = detectedProduct;
         const bomList = bomData[detectedProduct];
         currentWorkOrder.targetQty = bomList.length * currentWorkOrder.qty;
@@ -462,28 +479,59 @@ function processScan(code) {
       }
     }
     
-    // 检查BOM + 超限
+    // BOM匹配 + 超限检查
+    let bomMatched = false;
+    
     if (currentWorkOrder.product) {
       const woBomList = bomData[currentWorkOrder.product] || [];
-      const bomComp = woBomList.find(c => c.p === halfPart);
-      
-      if (bomComp) {
-        // 限制 = 工单数量（不以BOM倍数放大）
-        const compLimit = currentWorkOrder.qty;
-        const currentCompCount = currentWorkOrder.componentCounts[halfPart] || 0;
-        
-        if (currentCompCount + scanQty > compLimit) {
-          scanInput.className = 'error';
-          scanInput.style.animation = 'shake 0.5s ease-in-out';
-          setTimeout(() => { scanInput.style.animation = ''; }, 500);
-          scanStatus.innerHTML = '<span style="font-size:1.2rem;font-weight:bold;color:var(--danger)">🚨 超工单报警！</span><br>' + halfPart + ' 已扫 <b>' + currentCompCount + '</b>/' + compLimit + '，已达上限，<b>不允许再扫入！</b>';
-          scanStatus.className = 'scan-status err';
-          playSound('overlimit');
-          showToast('🚨 ' + halfPart + ' 已超工单数量！禁止扫入！', 'error');
-          setTimeout(() => { scanInput.className = ''; scanInput.value = ''; scanInput.focus(); }, 4000);
-          return;
+      // 尝试完整半品料号匹配
+      if (woBomList.some(c => c.p === halfPart)) {
+        bomMatched = true;
+      }
+      // 尝试成品料号匹配
+      if (!bomMatched && productFromHalfPart && woBomList.some(c => c.p === productFromHalfPart)) {
+        bomMatched = true;
+      }
+    }
+    
+    // 如果当前工单产品未识别，尝试在全局BOM中搜索
+    if (!bomMatched && !currentWorkOrder.product) {
+      for (const cp in bomData) {
+        if (bomData[cp].some(c => c.p === halfPart || (productFromHalfPart && c.p === productFromHalfPart))) {
+          currentWorkOrder.product = cp;
+          bomMatched = true;
+          const bomList = bomData[cp];
+          currentWorkOrder.targetQty = bomList.length * currentWorkOrder.qty;
+          showToast('✅ 已自动识别成品料号：' + cp + '（' + bomList.length + '种半品）', 'success');
+          updateWorkOrderDisplay();
+          break;
         }
       }
+    }
+    
+    if (!bomMatched && halfPart) {
+      scanInput.className = 'error';
+      scanStatus.textContent = '❌ 半品料号 ' + halfPart + ' 不在当前工单BOM中！';
+      scanStatus.className = 'scan-status err';
+      playSound('error');
+      setTimeout(() => { scanInput.className = ''; scanInput.value = ''; scanInput.focus(); }, 2500);
+      return;
+    }
+    
+    // 超限检查：限制 = 工单数量
+    const compLimit = currentWorkOrder.qty;
+    const currentCompCount = currentWorkOrder.componentCounts[halfPart] || 0;
+    
+    if (currentCompCount + scanQty > compLimit) {
+      scanInput.className = 'error';
+      scanInput.style.animation = 'shake 0.5s ease-in-out';
+      setTimeout(() => { scanInput.style.animation = ''; }, 500);
+      scanStatus.innerHTML = '<span style="font-size:1.2rem;font-weight:bold;color:var(--danger)">🚨 超工单报警！</span><br>' + halfPart + ' 已扫 <b>' + currentCompCount + '</b>/' + compLimit + '，已达上限，<b>不允许再扫入！</b>';
+      scanStatus.className = 'scan-status err';
+      playSound('overlimit');
+      showToast('🚨 ' + halfPart + ' 已超工单数量！禁止扫入！', 'error');
+      setTimeout(() => { scanInput.className = ''; scanInput.value = ''; scanInput.focus(); }, 4000);
+      return;
     }
   }
   
@@ -552,23 +600,25 @@ function processScan(code) {
 }
 
 function extractHalfPart(code) {
-  // Format: WP-{成品}-{Pxx}-{Pyz}-{date}-{seq}
-  // Or: WP-{半品料号}-{date}-{seq}
-  if (!code.startsWith('WP-')) return '';
   const parts = code.split('-');
-  // Try to find the half-part: everything between WP- and the date pattern
-  // WP-8180922863-P1A4-P5-260904-000012
-  // Half part = 8180922863-P1A4-P5
-  if (parts.length >= 5) {
-    // Find where date starts (6-digit number)
+  
+  // 旧格式: WP-{product}-{positions}-{date}-{seq}
+  if (code.startsWith('WP-') && parts.length >= 5) {
     for (let i = 2; i < parts.length; i++) {
       if (/^\d{6}$/.test(parts[i])) {
         return parts.slice(1, i).join('-');
       }
     }
-    // Fallback: take parts 1 to length-2
     return parts.slice(1, -2).join('-');
   }
+  
+  // 新WP格式: {工单号}-{成品料号}-{Pxx}-{Pyy}-{数量}-{流水号}
+  // 如: 101396002-8180900969-P1A1-P2B2-100-000001
+  // 特征: 第一段全数字(工单号), >=5段, 最后2段是数量+流水号
+  if (parts.length >= 5 && /^\d+$/.test(parts[0])) {
+    return parts.slice(1, -2).join('-');
+  }
+  
   return '';
 }
 
