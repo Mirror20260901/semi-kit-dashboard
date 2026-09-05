@@ -1,4 +1,4 @@
-﻿﻿<!DOCTYPE html>
+﻿﻿﻿<!DOCTYPE html>
 <html lang="zh-CN">
 <head>
 <meta charset="UTF-8">
@@ -226,7 +226,6 @@ button:focus-visible,input:focus-visible,a:focus-visible{outline:2px solid var(-
     <div class="card" style="margin-bottom:20px">
       <div class="card-body" style="padding:14px 20px">
         <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
-        <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
           <span style="font-weight:600;font-size:.9rem">📋 工单设置</span>
           <input type="text" id="woNumber" placeholder="工单号" style="width:120px;padding:8px 10px;border:1px solid var(--border);border-radius:6px;font-size:.85rem">
           <input type="text" id="woProduct" placeholder="成品料号（如8180900969）" style="width:180px;padding:8px 10px;border:1px solid var(--border);border-radius:6px;font-size:.85rem">
@@ -236,20 +235,6 @@ button:focus-visible,input:focus-visible,a:focus-visible{outline:2px solid var(-
         </div>
 
     <div class="card">
-      <div class="card-body scan-input-area">
-        <div class="action-select">
-          <button class="action-btn active-in" id="btnIn" onclick="setAction('入库')">📥 入库</button>
-          <button class="action-btn" id="btnOut" onclick="setAction('出库')">📤 出库</button>
-        </div>
-        <div class="scan-input-wrap">
-          <input type="text" id="scanInput" placeholder="请扫描唯一码（扫码枪或点📷相机扫码）" autofocus autocomplete="off">
-          <button id="cameraBtn" onclick="openCamera()" title="手机摄像头扫码">📷</button>
-        </div>
-        <div class="scan-status" id="scanStatus"></div>
-      </div>
-    </div>
-
-    <div class="card" style="margin-top:20px">
       <div class="card-header">
         <h2>📋 扫码记录</h2>
         <button class="btn btn-outline btn-sm" onclick="exportScanCSV()">💾 导出 CSV</button>
@@ -270,6 +255,20 @@ button:focus-visible,input:focus-visible,a:focus-visible{outline:2px solid var(-
       </div>
     </div>
   </div>
+    <div class="card" style="margin-top:20px">
+      <div class="card-body scan-input-area">
+        <div class="action-select">
+          <button class="action-btn active-in" id="btnIn" onclick="setAction('入库')">📥 入库</button>
+          <button class="action-btn" id="btnOut" onclick="setAction('出库')">📤 出库</button>
+        </div>
+        <div class="scan-input-wrap">
+          <input type="text" id="scanInput" placeholder="请扫描唯一码（扫码枪或点📷相机扫码）" autofocus autocomplete="off">
+          <button id="cameraBtn" onclick="openCamera()" title="手机摄像头扫码">📷</button>
+        </div>
+        <div class="scan-status" id="scanStatus"></div>
+      </div>
+    </div>
+
 
   <!-- Tab 2: Dashboard -->
   <div id="tab-dashboard" class="tab-panel">
@@ -1187,19 +1186,10 @@ document.getElementById('scanSearchInput').addEventListener('keydown', function(
   }
 });
 
-// Auto-focus scan input when on scan tab
+// Auto-focus scan input - exclude all form elements and cards
 document.addEventListener('click', function(e) {
   if (document.getElementById('tab-scan').classList.contains('active') && 
-      !e.target.closest('.card-header') && 
-      !e.target.closest('button') && 
-      !e.target.closest('input[type=file]') && 
-      !e.target.closest('#scanSearchInput') && 
-      !e.target.closest('#scanDateFilter') &&
-      !e.target.closest('#woNumber') &&
-      !e.target.closest('#woProduct') &&
-      !e.target.closest('#woTargetQty') &&
-      !e.target.closest('.bom-input') &&
-      !e.target.closest('select')) {
+      !e.target.closest('input, button, select, textarea, .card-header, label, a, [onclick]')) {
     document.getElementById('scanInput').focus();
   }
 });
