@@ -230,6 +230,7 @@ button:focus-visible,input:focus-visible,a:focus-visible{outline:2px solid var(-
           <input type="text" id="woNumber" placeholder="工单号" style="width:140px;padding:8px 10px;border:1px solid var(--border);border-radius:6px;font-size:.85rem">
           <input type="number" id="woTargetQty" placeholder="工单数量" style="width:110px;padding:8px 10px;border:1px solid var(--border);border-radius:6px;font-size:.85rem">
           <button class="btn btn-primary btn-sm" onclick="saveWorkOrder()">✅ 确认</button>
+          <button class="btn btn-sm" onclick="clearWorkOrder()" style="background:var(--danger);color:#fff;border:none;padding:5px 12px;border-radius:6px;font-size:.8rem;cursor:pointer">🗑️ 清除</button>
           <span id="woStatus" style="font-size:.82rem;color:var(--text-secondary)">未设置工单</span>
         </div>
       </div>
@@ -975,6 +976,16 @@ function saveWorkOrder() {
   currentWorkOrder = { number: num, product: '', qty: qty, targetQty: 0, componentCounts: {} };
   updateWorkOrderDisplay();
   showToast('工单已设置：' + num + '，数量：' + qty + '，请开始扫码', 'success');
+}
+
+function clearWorkOrder() {
+  if (!currentWorkOrder.number) return;
+  if (!confirm('确认清除当前工单（' + currentWorkOrder.number + '）？已记录的扫码数据不会删除。')) return;
+  currentWorkOrder = { number: '', product: '', qty: 0, targetQty: 0, componentCounts: {} };
+  document.getElementById('woNumber').value = '';
+  document.getElementById('woTargetQty').value = '';
+  updateWorkOrderDisplay();
+  showToast('工单已清除', 'success');
 }
 
 function updateWorkOrderDisplay() {
