@@ -861,26 +861,43 @@ function processScan(code) {
       }
     }
     
-    // BOM匹配 + 超限检查
+    // BOM匹配：一个工单可对应多个成品料号，允许匹配任意成品的半品
     let bomMatched = false;
-    
+    let matchedProduct = ''; // 匹配到的成品料号，用于超限检查
+
     if (currentWorkOrder.product) {
+      // 先尝试匹配当前已识别的成品
       const woBomList = bomData[currentWorkOrder.product] || [];
-      // 尝试完整半品料号匹配
       if (woBomList.some(c => c.p === halfPart)) {
         bomMatched = true;
+        matchedProduct = currentWorkOrder.product;
       }
-      // 尝试成品料号匹配
       if (!bomMatched && productFromHalfPart && woBomList.some(c => c.p === productFromHalfPart)) {
         bomMatched = true;
+        matchedProduct = currentWorkOrder.product;
       }
-    }
-    
-    // 如果当前工单产品未识别，尝试在全局BOM中搜索
-    if (!bomMatched && !currentWorkOrder.product) {
+      // 当前成品没匹配到，再尝试全局BOM中其他成品的半品
+      if (!bomMatched) {
+        for (const cp in bomData) {
+          if (cp === currentWorkOrder.product) continue;
+          if (bomData[cp].some(c => c.p === halfPart)) {
+            bomMatched = true;
+            matchedProduct = cp;
+            break;
+          }
+          if (productFromHalfPart && bomData[cp].some(c => c.p === productFromHalfPart)) {
+            bomMatched = true;
+            matchedProduct = cp;
+            break;
+          }
+        }
+      }
+    } else {
+      // 当前工单产品未识别，尝试在全局BOM中搜索
       for (const cp in bomData) {
         if (bomData[cp].some(c => c.p === halfPart || (productFromHalfPart && c.p === productFromHalfPart))) {
           currentWorkOrder.product = cp;
+          matchedProduct = cp;
           bomMatched = true;
           const bomList = bomData[cp];
           currentWorkOrder.targetQty = bomList.length * currentWorkOrder.qty;
