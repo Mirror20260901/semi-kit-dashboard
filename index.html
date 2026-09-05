@@ -411,66 +411,6 @@ function processScan(code) {
       return;
     }
     
-    // 第一步：从半品料号自动识别成品料号（必须在BOM检查之前）
-    if (!currentWorkOrder.product && halfPart) {
-      const pIdx = halfPart.indexOf('-P');
-      if (pIdx > 0) {
-        const detectedProduct = halfPart.substring(0, pIdx);
-        if (bomData[detectedProduct]) {
-          currentWorkOrder.product = detectedProduct;
-          const bomList = bomData[detectedProduct];
-          const perSetQty = bomList.reduce((sum, c) => sum + (c.y || 1), 0);
-          currentWorkOrder.targetQty = perSetQty * currentWorkOrder.qty;
-          showToast('✅ 已自动识别成品料号：' + detectedProduct + '（' + bomList.length + '种半品）', 'success');
-          updateWorkOrderDisplay();
-        } else {
-          scanInput.className = 'error';
-          scanStatus.textContent = '❌ 成品料号 ' + detectedProduct + ' 未在BOM中找到，请先导入BOM数据！';
-          scanStatus.className = 'scan-status err';
-          playSound('error');
-          setTimeout(() => { scanInput.className = ''; scanInput.value = ''; scanInput.focus(); }, 3000);
-          return;
-        }
-      }
-    }
-    
-    // 第二步：检查该半品料号是否在当前工单BOM中
-    const woBomList = bomData[currentWorkOrder.product] || [];
-    const bomComp = woBomList.find(c => c.p === halfPart);
-    if (!bomComp) {
-      scanInput.className = 'error';
-      scanStatus.textContent = '❌ 半品料号 ' + halfPart + ' 不在当前工单BOM中！';
-      scanStatus.className = 'scan-status err';
-      playSound('error');
-      setTimeout(() => { scanInput.className = ''; scanInput.value = ''; scanInput.focus(); }, 2500);
-      return;
-    }
-    
-    // 第三步：检查是否超过工单数量上限（超限报警）
-    const compLimit = (bomComp.y || 1) * currentWorkOrder.qty;
-    const currentCompCount = currentWorkOrder.componentCounts[halfPart] || 0;
-    if (currentCompCount >= compLimit) {
-      scanInput.className = 'error';
-      scanInput.style.animation = 'shake 0.5s ease-in-out';
-      setTimeout(() => { scanInput.style.animation = ''; }, 500);
-      scanStatus.innerHTML = '<span style="font-size:1.2rem;font-weight:bold;color:var(--danger)">🚨 超工单报警！</span><br>' + halfPart + ' 已扫 <b>' + currentCompCount + '</b>/' + compLimit + '，已达上限，<b>不允许再扫入！</b>';
-      scanStatus.className = 'scan-status err';
-      playSound('overlimit');
-      showToast('🚨 ' + halfPart + ' 已超工单数量！禁止扫入！', 'error');
-      setTimeout(() => { scanInput.className = ''; scanInput.value = ''; scanInput.focus(); }, 4000);
-      return;
-    }
-    
-    // 第四步：检查半品料号是否在inventory中
-    if (!(halfPart in inventory)) {
-      scanInput.className = 'error';
-      scanStatus.textContent = '❌ 未识别的半品料号：' + halfPart;
-      scanStatus.className = 'scan-status err';
-      playSound('error');
-      setTimeout(() => { scanInput.className = ''; scanInput.value = ''; scanInput.focus(); }, 1500);
-      return;
-    }
-    
   } else {
     // ===== 旧格式：WP-唯一码 =====
     const errMsg = validateScanCode(code);
@@ -493,6 +433,58 @@ function processScan(code) {
     }
     halfPart = extractHalfPart(code);
     scanQty = 1;
+  }
+  
+  // ===== 通用检查：BOM验证 + 超限报警（新旧格式共用）=====
+  if (halfPart) {
+    // 自动识别成品料号（如果还未识别）
+    if (!currentWorkOrder.product && halfPart) {
+      let detectedProduct = '';
+      const pIdx = halfPart.indexOf('-P');
+      if (pIdx > 0) {
+        detectedProduct = halfPart.substring(0, pIdx);
+      }
+      // 如果-P方式没找到，在BOM中搜索包含该半品的成品
+      if (!detectedProduct || !bomData[detectedProduct]) {
+        for (const cp in bomData) {
+          if (bomData[cp].some(c => c.p === halfPart)) {
+            detectedProduct = cp;
+            break;
+          }
+        }
+      }
+      if (detectedProduct && bomData[detectedProduct]) {
+        currentWorkOrder.product = detectedProduct;
+        const bomList = bomData[detectedProduct];
+        currentWorkOrder.targetQty = bomList.length * currentWorkOrder.qty;
+        showToast('✅ 已自动识别成品料号：' + detectedProduct + '（' + bomList.length + '种半品）', 'success');
+        updateWorkOrderDisplay();
+      }
+    }
+    
+    // 检查BOM + 超限
+    if (currentWorkOrder.product) {
+      const woBomList = bomData[currentWorkOrder.product] || [];
+      const bomComp = woBomList.find(c => c.p === halfPart);
+      
+      if (bomComp) {
+        // 限制 = 工单数量（不以BOM倍数放大）
+        const compLimit = currentWorkOrder.qty;
+        const currentCompCount = currentWorkOrder.componentCounts[halfPart] || 0;
+        
+        if (currentCompCount + scanQty > compLimit) {
+          scanInput.className = 'error';
+          scanInput.style.animation = 'shake 0.5s ease-in-out';
+          setTimeout(() => { scanInput.style.animation = ''; }, 500);
+          scanStatus.innerHTML = '<span style="font-size:1.2rem;font-weight:bold;color:var(--danger)">🚨 超工单报警！</span><br>' + halfPart + ' 已扫 <b>' + currentCompCount + '</b>/' + compLimit + '，已达上限，<b>不允许再扫入！</b>';
+          scanStatus.className = 'scan-status err';
+          playSound('overlimit');
+          showToast('🚨 ' + halfPart + ' 已超工单数量！禁止扫入！', 'error');
+          setTimeout(() => { scanInput.className = ''; scanInput.value = ''; scanInput.focus(); }, 4000);
+          return;
+        }
+      }
+    }
   }
   
   // Check duplicate
@@ -538,7 +530,7 @@ function processScan(code) {
     
     // Update per-component work order progress
     if (currentWorkOrder.number && halfPart && currentAction === "入库") {
-      currentWorkOrder.componentCounts[halfPart] = (currentWorkOrder.componentCounts[halfPart] || 0) + 1;
+      currentWorkOrder.componentCounts[halfPart] = (currentWorkOrder.componentCounts[halfPart] || 0) + scanQty;
       updateWorkOrderDisplay();
     }
     
@@ -944,20 +936,21 @@ function updateWorkOrderDisplay() {
       return;
     }
     const woBomList = bomData[currentWorkOrder.product] || [];
+    const compLimit = currentWorkOrder.qty;
     const totalScanned = Object.values(currentWorkOrder.componentCounts).reduce((a, b) => a + b, 0);
-    const pct = currentWorkOrder.targetQty > 0 ? Math.round((totalScanned / currentWorkOrder.targetQty) * 100) : 0;
+    const totalTarget = woBomList.length * compLimit;
+    const pct = totalTarget > 0 ? Math.round((totalScanned / totalTarget) * 100) : 0;
     const color = pct >= 100 ? 'var(--danger)' : pct >= 80 ? 'var(--warning)' : 'var(--success)';
     
-    // Per-component progress
+    // Per-component progress - 限制统一为工单数量
     const compDetails = woBomList.map(c => {
       const scanned = currentWorkOrder.componentCounts[c.p] || 0;
-      const limit = (c.y || 1) * currentWorkOrder.qty;
-      const done = scanned >= limit;
+      const done = scanned >= compLimit;
       const cColor = done ? 'var(--danger)' : scanned > 0 ? 'var(--warning)' : 'var(--success)';
-      return `<span style="color:${cColor}">${c.p}：${scanned}/${limit}</span>`;
+      return `<span style="color:${cColor}">${c.p}：${scanned}/${compLimit}</span>`;
     }).join(' &nbsp;|&nbsp; ');
     
-    el.innerHTML = `已设置工单 | <b>${currentWorkOrder.number}</b> | 成品：${currentWorkOrder.product} | 进度：<span style="color:${color};font-weight:700">${totalScanned}/${currentWorkOrder.targetQty}（${pct}%）</span><br><span style="font-size:.78rem;margin-top:4px;display:inline-block">${compDetails}</span>`;
+    el.innerHTML = `已设置工单 | <b>${currentWorkOrder.number}</b> | 成品：${currentWorkOrder.product} | 进度：<span style="color:${color};font-weight:700">${totalScanned}/${totalTarget}（${pct}%）</span><br><span style="font-size:.78rem;margin-top:4px;display:inline-block">${compDetails}</span>`;
   } else {
     el.textContent = '未设置工单';
   }
