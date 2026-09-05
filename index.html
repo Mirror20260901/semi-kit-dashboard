@@ -396,10 +396,12 @@ const SEMI_TOTAL_COUNT = 276;
 
 // ====== LOCAL STORAGE 持久化 ======
 const STORAGE_KEY = 'semiKitDashboard';
+const DATA_VERSION = 'v2'; // 数据版本号，用于检测旧数据自动清理
 
 function saveData() {
   try {
     const data = {
+      _version: DATA_VERSION,
       scanRecords: scanRecords,
       inventory: inventory,
       currentWorkOrder: currentWorkOrder,
@@ -428,6 +430,12 @@ function loadData() {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) return false;
     const data = JSON.parse(raw);
+    // 版本检查：旧数据自动清除，避免与新代码冲突
+    if (data._version !== DATA_VERSION) {
+      console.log('检测到旧版数据(v' + (data._version || '未知') + ')，自动清除...');
+      localStorage.removeItem(STORAGE_KEY);
+      return false;
+    }
     if (data.scanRecords && Array.isArray(data.scanRecords)) {
       scanRecords = data.scanRecords;
     }
@@ -1891,6 +1899,12 @@ async function clearAllData() {
   saveData();
   
   showToast('所有数据已清除', 'success');
+}
+
+// ====== URL参数检测：?reset=1 强制重置 ======
+if (new URLSearchParams(window.location.search).has('reset')) {
+  localStorage.removeItem(STORAGE_KEY);
+  console.log('URL参数 ?reset=1 检测到，已清除本地数据');
 }
 
 // ====== INIT ======
