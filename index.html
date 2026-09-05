@@ -557,20 +557,43 @@ function processScan(code) {
       return;
     }
     
-    // 超限检查：限制 = 工单数量
-    const compLimit = currentWorkOrder.qty;
-    const currentCompCount = currentWorkOrder.componentCounts[halfPart] || 0;
-    
-    if (currentCompCount + scanQty > compLimit) {
-      scanInput.className = 'error';
-      scanInput.style.animation = 'shake 0.5s ease-in-out';
-      setTimeout(() => { scanInput.style.animation = ''; }, 500);
-      scanStatus.innerHTML = '<span style="font-size:1.2rem;font-weight:bold;color:var(--danger)">🚨 超工单报警！</span><br>' + halfPart + ' 已扫 <b>' + currentCompCount + '</b>/' + compLimit + '，已达上限，<b>不允许再扫入！</b>';
-      scanStatus.className = 'scan-status err';
-      playSound('overlimit');
-      showToast('🚨 ' + halfPart + ' 已超工单数量！禁止扫入！', 'error');
-      setTimeout(() => { scanInput.className = ''; scanInput.value = ''; scanInput.focus(); }, 4000);
-      return;
+    // 超限检查：以成品完成数为准（所有BOM半品最少扫过的次数 = 已完成的成品数）
+    if (currentWorkOrder.product && bomData[currentWorkOrder.product]) {
+      const woBomList = bomData[currentWorkOrder.product];
+      const compLimit = currentWorkOrder.qty;
+      
+      // 工单号匹配检查
+      if (workOrder && workOrder !== currentWorkOrder.number) {
+        scanInput.className = 'error';
+        scanStatus.innerHTML = '⚠️ 扫码工单号（' + workOrder + '）与当前设置（' + currentWorkOrder.number + '）不一致！';
+        scanStatus.className = 'scan-status err';
+        playSound('error');
+        setTimeout(() => { scanInput.className = ''; scanInput.value = ''; scanInput.focus(); }, 3000);
+        return;
+      }
+      
+      // 计算已完成的成品数（所有BOM半品最少扫过的次数）
+      let minCount = Infinity;
+      woBomList.forEach(c => {
+        const cnt = currentWorkOrder.componentCounts[c.p] || 0;
+        if (cnt < minCount) minCount = cnt;
+      });
+      if (woBomList.length === 0) minCount = 0;
+      
+      const completedProducts = minCount;
+      
+      // 当已完成成品数 >= 工单数量时，触发超限报警
+      if (completedProducts >= compLimit) {
+        scanInput.className = 'error';
+        scanInput.style.animation = 'shake 0.5s ease-in-out';
+        setTimeout(() => { scanInput.style.animation = ''; }, 500);
+        scanStatus.innerHTML = '<span style="font-size:1.2rem;font-weight:bold;color:var(--danger)">🚨 超工单报警！</span><br>成品 <b>' + currentWorkOrder.product + '</b> 已完成 <b>' + completedProducts + '</b> 个（工单数量 ' + compLimit + '），<b>不允许再扫入！</b>';
+        scanStatus.className = 'scan-status err';
+        playSound('overlimit');
+        showToast('🚨 工单已完成，不允许再扫入！', 'error');
+        setTimeout(() => { scanInput.className = ''; scanInput.value = ''; scanInput.focus(); }, 4000);
+        return;
+      }
     }
   }
   
@@ -1218,12 +1241,22 @@ function updateWorkOrderDisplay() {
     }
     const woBomList = bomData[currentWorkOrder.product] || [];
     const compLimit = currentWorkOrder.qty;
+    
+    // 计算已完成成品数（所有BOM半品最少扫过的次数）
+    let minCount = Infinity;
+    woBomList.forEach(c => {
+      const cnt = currentWorkOrder.componentCounts[c.p] || 0;
+      if (cnt < minCount) minCount = cnt;
+    });
+    if (woBomList.length === 0) minCount = 0;
+    const completedProducts = minCount;
+    
     const totalScanned = Object.values(currentWorkOrder.componentCounts).reduce((a, b) => a + b, 0);
     const totalTarget = woBomList.length * compLimit;
     const pct = totalTarget > 0 ? Math.round((totalScanned / totalTarget) * 100) : 0;
-    const color = pct >= 100 ? 'var(--danger)' : pct >= 80 ? 'var(--warning)' : 'var(--success)';
+    const mainColor = completedProducts >= compLimit ? 'var(--danger)' : pct >= 80 ? 'var(--warning)' : 'var(--success)';
     
-    // Per-component progress - 限制统一为工单数量
+    // Per-component progress
     const compDetails = woBomList.map(c => {
       const scanned = currentWorkOrder.componentCounts[c.p] || 0;
       const done = scanned >= compLimit;
@@ -1231,7 +1264,7 @@ function updateWorkOrderDisplay() {
       return `<span style="color:${cColor}">${c.p}：${scanned}/${compLimit}</span>`;
     }).join(' &nbsp;|&nbsp; ');
     
-    el.innerHTML = `已设置工单 | <b>${currentWorkOrder.number}</b> | 成品：${currentWorkOrder.product} | 进度：<span style="color:${color};font-weight:700">${totalScanned}/${totalTarget}（${pct}%）</span><br><span style="font-size:.78rem;margin-top:4px;display:inline-block">${compDetails}</span>`;
+    el.innerHTML = `已设置工单 | <b>${currentWorkOrder.number}</b> | 成品：${currentWorkOrder.product} | 完成：<span style="color:${mainColor};font-weight:700;font-size:1.1rem">${completedProducts}/${compLimit} 个</span> | 总进度：${totalScanned}/${totalTarget}（${pct}%）<br><span style="font-size:.78rem;margin-top:4px;display:inline-block">${compDetails}</span>`;
   } else {
     el.textContent = '未设置工单';
   }
