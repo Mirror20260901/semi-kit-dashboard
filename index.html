@@ -1158,7 +1158,15 @@ document.getElementById('scanSearchInput').addEventListener('keydown', function(
 // Auto-focus scan input when on scan tab
 document.addEventListener('click', function(e) {
   if (document.getElementById('tab-scan').classList.contains('active') && 
-      !e.target.closest('.card-header') && !e.target.closest('button') && !e.target.closest('input[type=file]') && !e.target.closest('#scanSearchInput') && !e.target.closest('#scanDateFilter')) {
+      !e.target.closest('.card-header') && 
+      !e.target.closest('button') && 
+      !e.target.closest('input[type=file]') && 
+      !e.target.closest('#scanSearchInput') && 
+      !e.target.closest('#scanDateFilter') &&
+      !e.target.closest('#workOrderNumber') &&
+      !e.target.closest('#workOrderQty') &&
+      !e.target.closest('.bom-input') &&
+      !e.target.closest('select')) {
     document.getElementById('scanInput').focus();
   }
 });
