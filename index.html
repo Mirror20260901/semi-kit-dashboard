@@ -233,6 +233,18 @@ button:focus-visible,input:focus-visible,a:focus-visible{outline:2px solid var(-
           <button class="btn btn-sm" onclick="clearWorkOrder()" style="background:var(--danger);color:#fff;border:none;padding:5px 12px;border-radius:6px;font-size:.8rem;cursor:pointer">🗑️ 清除</button>
           <span id="woStatus" style="font-size:.82rem;color:var(--text-secondary)">未设置工单</span>
         </div>
+        <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-top:10px;padding-top:10px;border-top:1px dashed var(--border)">
+          <span style="font-weight:600;font-size:.9rem">🏷️ 栈板号</span>
+          <select id="palletPrefix" onchange="updatePalletDisplay()" style="padding:8px 10px;border:1px solid var(--border);border-radius:6px;font-size:.85rem;background:#fff;cursor:pointer">
+            <option value="">选择前缀</option>
+            <option value="5B3F">5B3F</option>
+            <option value="2B3F">2B3F</option>
+            <option value="2B4F">2B4F</option>
+          </select>
+          <span style="color:var(--text-secondary);font-size:.9rem">-</span>
+          <input type="number" id="palletSeq" min="1" max="1000" placeholder="0001" oninput="updatePalletDisplay()" style="width:100px;padding:8px 10px;border:1px solid var(--border);border-radius:6px;font-size:.85rem">
+          <span id="palletDisplay" style="font-size:.85rem;color:var(--text-secondary);font-weight:500">未设置栈板号</span>
+        </div>
       </div>
     </div>
 
@@ -555,7 +567,8 @@ function processScan(code) {
     d: '',
     w: workOrder || '',
     a: currentAction,
-    q: scanQty
+    q: scanQty,
+    z: getCurrentPallet()
   };
   
   if (isDup) {
@@ -708,11 +721,13 @@ function renderRecentList() {
     const realIdx = scanRecords.indexOf(r);
     const qtyStr = (r.q && r.q > 1) ? `<span style="color:var(--primary);font-weight:600">×${r.q}</span>` : '';
     const displayCode = r.c.length > 40 ? r.c.substring(0, 40) + '...' : r.c;
+    const palletStr = r.z ? `<span style="background:#e8f4fd;color:#1a73e8;padding:1px 6px;border-radius:4px;font-size:.72rem;font-weight:500">${r.z}</span>` : '';
     return `
     <div class="recent-item" style="display:flex;align-items:center;gap:8px">
       <span class="recent-time" style="min-width:120px">${r.t}</span>
       <span class="recent-code" style="flex:1;font-size:.75rem;word-break:break-all" title="${r.c.replace(/"/g, '&quot;')}">${displayCode}</span>
       <span style="min-width:80px">${r.x || '-'} ${qtyStr}</span>
+      ${palletStr}
       <span class="badge ${r.a === '入库' ? 'badge-green' : 'badge-red'}" style="min-width:45px;text-align:center">${r.a}</span>
       <button class="btn btn-sm" style="padding:4px 8px;background:var(--danger);color:#fff;font-size:.75rem" onclick="deleteSingleRecord(${realIdx})" title="删除此记录">🗑️</button>
     </div>
@@ -810,9 +825,9 @@ function deleteByDate() {
 // ====== CSV EXPORT ======
 function exportScanCSV() {
   if (scanRecords.length === 0) { showToast('暂无数据可导出', 'info'); return; }
-  let csv = '\uFEFF时间,唯一码,线序料号,操作人,关联单号,库位,批次,动作\n';
+  let csv = '\uFEFF时间,唯一码,线序料号,操作人,关联单号,库位,批次,动作,栈板号\n';
   scanRecords.forEach(r => {
-    csv += `"${r.t}","${r.c}","${r.x}","${r.r}","${r.d}","${r.w}","${r.a}"\n`.replace(/,"",/g, ',"",').replace(/"undefined"/g, '""');
+    csv += `"${r.t}","${r.c}","${r.x}","${r.r}","${r.d}","${r.w}","${r.a}","${r.z || ''}"\n`.replace(/,"",/g, ',"",').replace(/"undefined"/g, '""');
   });
   // Clean up undefined
   csv = csv.replace(/undefined/g, '');
@@ -963,6 +978,32 @@ function addBOMManual() {
 // ====== WORK ORDER MANAGEMENT ======
 let currentWorkOrder = { number: '', product: '', qty: 0, targetQty: 0, componentCounts: {} };
 
+// ====== PALLET NUMBER MANAGEMENT ======
+function updatePalletDisplay() {
+  const prefix = document.getElementById('palletPrefix').value;
+  const seq = document.getElementById('palletSeq').value;
+  const display = document.getElementById('palletDisplay');
+  if (prefix && seq) {
+    const seqStr = String(seq).padStart(4, '0');
+    display.textContent = '栈板号：' + prefix + '-' + seqStr;
+    display.style.color = 'var(--primary)';
+    display.style.fontWeight = '600';
+  } else {
+    display.textContent = '未设置栈板号';
+    display.style.color = 'var(--text-secondary)';
+    display.style.fontWeight = '500';
+  }
+}
+
+function getCurrentPallet() {
+  const prefix = document.getElementById('palletPrefix').value;
+  const seq = document.getElementById('palletSeq').value;
+  if (prefix && seq) {
+    return prefix + '-' + String(seq).padStart(4, '0');
+  }
+  return '';
+}
+
 function saveWorkOrder() {
   const num = document.getElementById('woNumber').value.trim();
   const qty = parseInt(document.getElementById('woTargetQty').value) || 0;
@@ -984,6 +1025,9 @@ function clearWorkOrder() {
   currentWorkOrder = { number: '', product: '', qty: 0, targetQty: 0, componentCounts: {} };
   document.getElementById('woNumber').value = '';
   document.getElementById('woTargetQty').value = '';
+  document.getElementById('palletPrefix').value = '';
+  document.getElementById('palletSeq').value = '';
+  updatePalletDisplay();
   updateWorkOrderDisplay();
   showToast('工单已清除', 'success');
 }
@@ -1240,13 +1284,13 @@ function exportToExcel() {
   
   // Sheet 4: 扫码区
   const scanData = [];
-  scanData.push(['时间', '唯一码', '线序料号', '操作人', '关联单号', '库位', '批次', '动作', '操作人']);
+  scanData.push(['时间', '唯一码', '线序料号', '操作人', '关联单号', '库位', '批次', '动作', '栈板号']);
   scanRecords.forEach(r => {
     // 从唯一码中提取线序料号和批次
     const code = r.c;
     const partNum = code.substring(3, 21);
     const batch = code.substring(22, 28);
-    scanData.push([r.t, code, partNum, r.r, r.d, r.w, batch, r.a, r.r]);
+    scanData.push([r.t, code, partNum, r.r, r.d, r.w, batch, r.a, r.z || '']);
   });
   const ws4 = XLSX.utils.aoa_to_sheet(scanData);
   XLSX.utils.book_append_sheet(wb, ws4, '扫码区');
