@@ -614,7 +614,7 @@ function processScan(code) {
     d: '',
     w: workOrder || '',
     a: currentAction,
-    q: scanQty,
+    q: 1,
     z: getCurrentPallet()
   };
   
@@ -631,10 +631,10 @@ function processScan(code) {
   } else {
     scanRecords.unshift(record);
     
-    // Update inventory
+    // Update inventory（每根线扫一次记一根，不按标签数量）
     if (halfPart && halfPart in inventory) {
-      if (currentAction === '入库') inventory[halfPart] += scanQty;
-      else if (currentAction === '出库') inventory[halfPart] = Math.max(0, inventory[halfPart] - scanQty);
+      if (currentAction === '入库') inventory[halfPart] += 1;
+      else if (currentAction === '出库') inventory[halfPart] = Math.max(0, inventory[halfPart] - 1);
     }
     
     // Update per-component work order progress（按扫码次数+1，不按标签数量）
@@ -644,7 +644,7 @@ function processScan(code) {
     }
     
     scanInput.className = 'success';
-    scanStatus.textContent = '✅ ' + currentAction + '成功！半品：' + halfPart + ' +' + scanQty + ' 当前库存：' + (inventory[halfPart] || 0);
+    scanStatus.textContent = '✅ ' + currentAction + '成功！半品：' + halfPart + ' +1 当前库存：' + (inventory[halfPart] || 0);
     scanStatus.className = 'scan-status ok';
     playSound('success');
     showToast(currentAction + '成功', 'success');
