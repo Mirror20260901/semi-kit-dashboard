@@ -411,29 +411,7 @@ function processScan(code) {
       return;
     }
     
-    // 检查该半品料号是否已达到工单数量上限
-    const woBomList = bomData[currentWorkOrder.product] || [];
-    const bomComp = woBomList.find(c => c.p === halfPart);
-    if (!bomComp) {
-      scanInput.className = 'error';
-      scanStatus.textContent = '❌ 半品料号 ' + halfPart + ' 不在当前工单BOM中！';
-      scanStatus.className = 'scan-status err';
-      playSound('error');
-      setTimeout(() => { scanInput.className = ''; scanInput.value = ''; scanInput.focus(); }, 2500);
-      return;
-    }
-    const compLimit = (bomComp.y || 1) * currentWorkOrder.qty;
-    const currentCompCount = currentWorkOrder.componentCounts[halfPart] || 0;
-    if (currentCompCount >= compLimit) {
-      scanInput.className = 'error';
-      scanStatus.textContent = '🚫 ' + halfPart + ' 已超工单数量！已扫 ' + currentCompCount + '/' + compLimit + '，该半品不能再扫入了。';
-      scanStatus.className = 'scan-status err';
-      playSound('error');
-      setTimeout(() => { scanInput.className = ''; scanInput.value = ''; scanInput.focus(); }, 3000);
-      return;
-    }
-    
-    // 从半品料号自动识别成品料号
+    // 第一步：从半品料号自动识别成品料号（必须在BOM检查之前）
     if (!currentWorkOrder.product && halfPart) {
       const pIdx = halfPart.indexOf('-P');
       if (pIdx > 0) {
@@ -444,6 +422,7 @@ function processScan(code) {
           const perSetQty = bomList.reduce((sum, c) => sum + (c.y || 1), 0);
           currentWorkOrder.targetQty = perSetQty * currentWorkOrder.qty;
           showToast('✅ 已自动识别成品料号：' + detectedProduct + '（' + bomList.length + '种半品）', 'success');
+          updateWorkOrderDisplay();
         } else {
           scanInput.className = 'error';
           scanStatus.textContent = '❌ 成品料号 ' + detectedProduct + ' 未在BOM中找到，请先导入BOM数据！';
@@ -455,7 +434,34 @@ function processScan(code) {
       }
     }
     
-    // 检查半品料号是否在inventory中
+    // 第二步：检查该半品料号是否在当前工单BOM中
+    const woBomList = bomData[currentWorkOrder.product] || [];
+    const bomComp = woBomList.find(c => c.p === halfPart);
+    if (!bomComp) {
+      scanInput.className = 'error';
+      scanStatus.textContent = '❌ 半品料号 ' + halfPart + ' 不在当前工单BOM中！';
+      scanStatus.className = 'scan-status err';
+      playSound('error');
+      setTimeout(() => { scanInput.className = ''; scanInput.value = ''; scanInput.focus(); }, 2500);
+      return;
+    }
+    
+    // 第三步：检查是否超过工单数量上限（超限报警）
+    const compLimit = (bomComp.y || 1) * currentWorkOrder.qty;
+    const currentCompCount = currentWorkOrder.componentCounts[halfPart] || 0;
+    if (currentCompCount >= compLimit) {
+      scanInput.className = 'error';
+      scanInput.style.animation = 'shake 0.5s ease-in-out';
+      setTimeout(() => { scanInput.style.animation = ''; }, 500);
+      scanStatus.innerHTML = '<span style="font-size:1.2rem;font-weight:bold;color:var(--danger)">🚨 超工单报警！</span><br>' + halfPart + ' 已扫 <b>' + currentCompCount + '</b>/' + compLimit + '，已达上限，<b>不允许再扫入！</b>';
+      scanStatus.className = 'scan-status err';
+      playSound('overlimit');
+      showToast('🚨 ' + halfPart + ' 已超工单数量！禁止扫入！', 'error');
+      setTimeout(() => { scanInput.className = ''; scanInput.value = ''; scanInput.focus(); }, 4000);
+      return;
+    }
+    
+    // 第四步：检查半品料号是否在inventory中
     if (!(halfPart in inventory)) {
       scanInput.className = 'error';
       scanStatus.textContent = '❌ 未识别的半品料号：' + halfPart;
@@ -608,6 +614,19 @@ function playSound(type) {
       gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.9);
       osc.start(ctx.currentTime);
       osc.stop(ctx.currentTime + 0.9);
+    } else if (type === 'overlimit') {
+      // 超工单报警：持续急促高频警报（5声）
+      osc.type = 'square';
+      const alarmInterval = 0.12;
+      for (let i = 0; i < 5; i++) {
+        const startTime = ctx.currentTime + i * alarmInterval * 2;
+        osc.frequency.setValueAtTime(1500, startTime);
+        osc.frequency.setValueAtTime(800, startTime + alarmInterval);
+      }
+      gain.gain.setValueAtTime(0.6, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 1.2);
+      osc.start(ctx.currentTime);
+      osc.stop(ctx.currentTime + 1.2);
     } else {
       osc.frequency.setValueAtTime(300, ctx.currentTime);
       osc.frequency.setValueAtTime(200, ctx.currentTime + 0.15);
