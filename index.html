@@ -313,7 +313,7 @@ button:focus-visible,input:focus-visible,a:focus-visible{outline:2px solid var(-
       <div class="card-body">
         <!-- Search and filter controls -->
         <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;align-items:center">
-          <input type="text" id="scanSearchInput" placeholder="搜索唯一码、料号、工单号、栈板号或生产日期..." style="flex:1;min-width:150px;padding:8px 12px;border:1px solid var(--border);border-radius:6px;font-size:.9rem">
+          <input type="text" id="scanSearchInput" placeholder="搜索唯一码、料号、工单号、栈板号或批次..." style="flex:1;min-width:150px;padding:8px 12px;border:1px solid var(--border);border-radius:6px;font-size:.9rem">
           <input type="date" id="scanDateFilter" style="padding:8px 12px;border:1px solid var(--border);border-radius:6px;font-size:.9rem">
           <button class="btn btn-primary btn-sm" onclick="filterScanRecords()">🔍 查询</button>
           <button class="btn btn-outline btn-sm" onclick="clearScanFilter()">🔄 显示全部</button>
@@ -426,6 +426,8 @@ function saveData() {
       importedWorkOrders: importedWorkOrders,
       currentAction: currentAction,
       deletedRecords: deletedRecords,
+      palletPrefix: document.getElementById('palletPrefix').value,
+      palletSeq: document.getElementById('palletSeq').value,
       savedAt: new Date().toISOString()
     };
     localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
@@ -471,6 +473,13 @@ function loadData() {
     if (data.deletedRecords && Array.isArray(data.deletedRecords)) {
       deletedRecords = data.deletedRecords;
     }
+    if (data.palletPrefix) {
+      document.getElementById('palletPrefix').value = data.palletPrefix;
+    }
+    if (data.palletSeq) {
+      document.getElementById('palletSeq').value = data.palletSeq;
+    }
+    updatePalletDisplay();
     console.log('已从本地存储恢复数据，保存时间：' + (data.savedAt || '未知'));
     return true;
   } catch(e) {
@@ -747,13 +756,13 @@ function processScan(code) {
 
   // 检测扫码格式
   const isNewFormat = /工单[号]?[：:]/.test(code) || /(?:线序)?料号[：:]/.test(code) || /数量[：:]/.test(code);
-  // 管道符格式：工单号｜半品料号｜序号｜数量｜生产日期｜流水号（分隔符支持全角｜和半角|）
+  // 管道符格式：工单号｜半品料号｜序号｜数量｜批次(6位日期)｜流水号（分隔符支持全角｜和半角|）
   const isPipeFormat = /[｜|]/.test(code) && code.split(/[｜|]/).length >= 4;
   
   let halfPart = '';
   let scanQty = 1;
   let workOrder = '';
-  let productionDate = ''; // 生产日期（从二维码第5段提取）
+  let productionDate = ''; // 批次（从二维码第5段提取的6位日期）
   
   if (isPipeFormat) {
     // ===== 管道符格式：101396002｜8180900969-P1A1-P2B2｜00035｜00100｜260905｜00001 =====
@@ -763,7 +772,7 @@ function processScan(code) {
     // parts[2] = 线长（暂不使用）
     scanQty = parts[3] ? parseInt(parts[3]) : 1;
     if (isNaN(scanQty) || scanQty <= 0) scanQty = 1;
-    // 兼容5段旧格式（无生产日期）和6段新格式（含生产日期）
+    // 兼容5段旧格式（无批次）和6段新格式（含批次6位日期）
     if (parts.length >= 6) {
       productionDate = parts[4] || '';
       // parts[5] = 流水号（暂不使用）
@@ -1118,7 +1127,7 @@ function renderRecentList() {
     const qtyStr = (r.q && r.q > 1) ? `<span style="color:var(--primary);font-weight:600">×${r.q}</span>` : '';
     const displayCode = r.c.length > 40 ? r.c.substring(0, 40) + '...' : r.c;
     const palletStr = r.z ? `<span style="background:#e8f4fd;color:#1a73e8;padding:1px 6px;border-radius:4px;font-size:.72rem;font-weight:500">${r.z}</span>` : '';
-    const pdStr = r.pd ? `<span style="background:#fff8e1;color:#e65100;padding:1px 6px;border-radius:4px;font-size:.72rem;font-weight:500">📅${r.pd}</span>` : '';
+    const pdStr = r.pd ? `<span style="background:#fff8e1;color:#e65100;padding:1px 6px;border-radius:4px;font-size:.72rem;font-weight:500">📦${r.pd}</span>` : '';
     return `
     <div class="recent-item" style="display:flex;align-items:center;gap:8px">
       <span class="recent-time" style="min-width:120px">${r.t}</span>
@@ -1144,7 +1153,7 @@ function filterScanRecords() {
         r.x || '',           // 线序料号
         r.wo_no || '',       // 工单号
         r.z || '',           // 栈板号
-        r.pd || ''           // 生产日期
+        r.pd || ''           // 批次
       ].map(v => v.toLowerCase());
       match = match && searchFields.some(v => v.includes(keyword));
     }
@@ -1252,9 +1261,9 @@ function deleteByDate() {
 // ====== CSV EXPORT ======
 function exportScanCSV() {
   if (scanRecords.length === 0) { showToast('暂无数据可导出', 'info'); return; }
-  let csv = '\uFEFF时间,唯一码,线序料号,操作人,关联单号,工单号,工单数量,库位,生产日期,批次,动作,栈板号\n';
+  let csv = '\uFEFF时间,唯一码,线序料号,操作人,工单号,工单数量,库位,批次,动作,栈板号\n';
   scanRecords.forEach(r => {
-    csv += `"${r.t}","${r.c}","${r.x}","${r.r}","${r.d}","${r.wo_no || ''}","${r.wo_qty || ''}","${r.w}","${r.pd || ''}","","${r.a}","${r.z || ''}"\n`.replace(/,"",/g, ',"",').replace(/"undefined"/g, '""');
+    csv += `"${r.t}","${r.c}","${r.x}","${r.r}","${r.wo_no || ''}","${r.wo_qty || ''}","${r.w}","${r.pd || ''}","${r.a}","${r.z || ''}"\n`.replace(/"undefined"/g, '""');
   });
   // Clean up undefined
   csv = csv.replace(/undefined/g, '');
@@ -1874,13 +1883,11 @@ function exportToExcel() {
   
   // Sheet 4: 扫码区
   const scanData = [];
-  scanData.push(['时间', '唯一码', '线序料号', '操作人', '关联单号', '工单号', '工单数量', '库位', '批次', '动作', '栈板号']);
+  scanData.push(['时间', '唯一码', '线序料号', '操作人', '工单号', '工单数量', '库位', '批次', '动作', '栈板号']);
   scanRecords.forEach(r => {
-    // 从唯一码中提取线序料号和批次
     const code = r.c;
     const partNum = code.substring(3, 21);
-    const batch = code.substring(22, 28);
-    scanData.push([r.t, code, partNum, r.r, r.d, r.wo_no || '', r.wo_qty || '', r.w, batch, r.a, r.z || '']);
+    scanData.push([r.t, code, partNum, r.r, r.wo_no || '', r.wo_qty || '', r.w, r.pd || '', r.a, r.z || '']);
   });
   const ws4 = XLSX.utils.aoa_to_sheet(scanData);
   XLSX.utils.book_append_sheet(wb, ws4, '扫码区');
