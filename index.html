@@ -382,8 +382,8 @@ function processScan(code) {
   if (isNewFormat) {
     // ===== 新格式：QR码 =====
     // 工单号：101386002\n料号线序：8180914762-P1D1-PCC4\n数量：100PCS
-    const woMatch = code.match(/工单号[：:]\s*(\S+)/);
-    const bpMatch = code.match(/料号线序[：:]\s*(.+)/);
+    const woMatch = code.match(/工单[号]?[：:]\s*(\d+)/);
+    const bpMatch = code.match(/(?:线序)?料号[：:]\s*([A-Za-z0-9\-]+)/);
     const qtyMatch = code.match(/数量[：:]\s*(\d+)/);
     
     workOrder = woMatch ? woMatch[1].trim() : '';
@@ -904,7 +904,7 @@ function checkWorkOrderLimit(scanCode, scanQty) {
   if (!currentWorkOrder.number) return null;
   
   // 从扫码内容提取工单号
-  const woMatch = scanCode.match(/工单号[：:]\s*(\S+)/);
+  const woMatch = scanCode.match(/工单[号]?[：:]\s*(\d+)/);
   const scannedWO = woMatch ? woMatch[1].trim() : '';
   
   // 如果码里有工单号且和设置不一致
