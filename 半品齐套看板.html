@@ -1196,25 +1196,25 @@ function deleteSingleRecord(index) {
   const record = scanRecords[index];
   if (!confirm(`确定要删除这条记录吗？\n\n唯一码：${record.c}\n时间：${record.t}\n动作：${record.a}\n\n删除后将同步更新库存和齐套数据。`)) return;
   
-  // Reverse the inventory change
-  const hp = record.x || extractHalfPart(record.c);
-  const qty = record.q || 1;
-  if (hp && hp in inventory) {
-    if (record.a === '入库') inventory[hp] = Math.max(0, inventory[hp] - qty);
-    else if (record.a === '出库') inventory[hp] += qty;
-  }
-  
-  // Reverse workOrder componentCounts
-  if (hp && currentWorkOrder.componentCounts[hp] !== undefined) {
-    currentWorkOrder.componentCounts[hp] = Math.max(0, currentWorkOrder.componentCounts[hp] - qty);
-  }
-  
   // Record deletion for sync
   deletedRecords.push(record.c + '||' + record.t);
   if (deletedRecords.length > 5000) deletedRecords = deletedRecords.slice(-5000);
   
   // Remove record
   scanRecords.splice(index, 1);
+  
+  // 从剩余扫码记录重新计算库存（避免手动回退的精度问题）
+  recomputeInventory();
+  // 同步重算工单组件计数
+  if (currentWorkOrder.number) {
+    currentWorkOrder.componentCounts = {};
+    scanRecords.forEach(r => {
+      if (r.a === '入库' && r.w === currentWorkOrder.number) {
+        const hp = r.x || '';
+        if (hp) currentWorkOrder.componentCounts[hp] = (currentWorkOrder.componentCounts[hp] || 0) + 1;
+      }
+    });
+  }
   
   // Clear filter and refresh
   filteredScanRecords = [];
@@ -1240,20 +1240,6 @@ function deleteByDate() {
   
   if (!confirm(`确定要删除 ${dateFilter} 的所有扫码记录吗？\n\n共 ${recordsToDelete.length} 条记录\n\n删除后将同步更新库存和齐套数据。`)) return;
   
-  // Reverse inventory changes and workOrder componentCounts
-  recordsToDelete.forEach(record => {
-    const hp = record.x || extractHalfPart(record.c);
-    const qty = record.q || 1;
-    if (hp && hp in inventory) {
-      if (record.a === '入库') inventory[hp] = Math.max(0, inventory[hp] - qty);
-      else if (record.a === '出库') inventory[hp] += qty;
-    }
-    // Reverse workOrder componentCounts
-    if (hp && currentWorkOrder.componentCounts[hp] !== undefined) {
-      currentWorkOrder.componentCounts[hp] = Math.max(0, currentWorkOrder.componentCounts[hp] - qty);
-    }
-  });
-  
   // Record deletions for sync
   recordsToDelete.forEach(r => {
     deletedRecords.push(r.c + '||' + r.t);
@@ -1262,6 +1248,19 @@ function deleteByDate() {
   
   // Remove records
   scanRecords = scanRecords.filter(r => !r.t.startsWith(dateFilter));
+  
+  // 从剩余扫码记录重新计算库存（避免手动回退的精度问题）
+  recomputeInventory();
+  // 同步重算工单组件计数
+  if (currentWorkOrder.number) {
+    currentWorkOrder.componentCounts = {};
+    scanRecords.forEach(r => {
+      if (r.a === '入库' && r.w === currentWorkOrder.number) {
+        const hp = r.x || '';
+        if (hp) currentWorkOrder.componentCounts[hp] = (currentWorkOrder.componentCounts[hp] || 0) + 1;
+      }
+    });
+  }
   
   // Clear filter and refresh
   filteredScanRecords = [];
@@ -1945,13 +1944,8 @@ async function clearAllData() {
   document.getElementById('palletPrefix').value = '';
   document.getElementById('palletSeq').value = '';
   
-  // Reset init inventory
-  for (const key of Object.keys(INIT_DATA.bom)) {
-    const bomList = INIT_DATA.bom[key];
-    if (bomList) {
-      bomList.forEach(item => { inventory[item.p] = 0; });
-    }
-  }
+  // Reset init inventory - 直接从 INITIAL_INVENTORY 重算（scanRecords已清空，结果必为全0）
+  recomputeInventory();
   
   // Push empty state to remote
   try {
