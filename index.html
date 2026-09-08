@@ -668,9 +668,31 @@ async function syncCycle() {
   updateSyncStatus('syncing', '同步中...');
   try {
     const remote = await fetchSharedData();
+    // 【关键修复】在合并前，先记录远程的墓碑集合
+    // 推送时过滤掉已被删除的记录，防止旧标签页把已删除数据推回远程
+    const remoteDeletedSet = new Set();
+    if (remote && remote.deletedRecords && Array.isArray(remote.deletedRecords)) {
+      remote.deletedRecords.forEach(d => remoteDeletedSet.add(d));
+    }
     const hadChanges = mergeRemoteData(remote);
+    // 推送前过滤：移除已在远程墓碑列表中的记录（防止旧标签页复活已删除数据）
+    let pushRecords = scanRecords.slice(0, 5000);
+    if (remoteDeletedSet.size > 0) {
+      pushRecords = pushRecords.filter(r => {
+        const rid = recordKey(r.c, r.t);
+        return !remoteDeletedSet.has(rid);
+      });
+    }
+    // 推送前合并本地和远程的墓碑（确保墓碑只增不减）
+    const mergedDeleted = [...deletedRecords];
+    if (remote && remote.deletedRecords && Array.isArray(remote.deletedRecords)) {
+      const localDelSet = new Set(mergedDeleted);
+      for (const dr of remote.deletedRecords) {
+        if (!localDelSet.has(dr)) mergedDeleted.push(dr);
+      }
+    }
     const dataToPush = {
-      scanRecords: scanRecords.slice(0, 5000),
+      scanRecords: pushRecords,
       // inventory 不在远程同步，各设备从 INITIAL_INVENTORY + scanRecords 重新计算
       importedWorkOrders: importedWorkOrders,
       currentWorkOrder: {
@@ -680,7 +702,7 @@ async function syncCycle() {
         targetQty: currentWorkOrder.targetQty,
         componentCounts: currentWorkOrder.componentCounts
       },
-      deletedRecords: deletedRecords,
+      deletedRecords: mergedDeleted,
       updatedAt: new Date().toISOString()
     };
     await pushSharedData(dataToPush);
