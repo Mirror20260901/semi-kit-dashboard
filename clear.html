@@ -1,13 +1,69 @@
 <!DOCTYPE html>
-<html><head><meta charset="UTF-8">
-<title>清理数据中...</title>
-<style>body{display:flex;align-items:center;justify-content:center;height:100vh;font-family:sans-serif;background:#f0f4f8}
-.box{text-align:center;padding:40px;background:#fff;border-radius:16px;box-shadow:0 4px 20px rgba(0,0,0,.1)}
-h2{color:#1a73e8;margin-bottom:12px}p{color:#5a6a7e}</style></head>
-<body><div class="box"><h2 id="status">正在清理数据...</h2><p id="msg">请稍候</p></div>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>清理数据 - 半品齐套看板</title>
+<style>
+body {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100vh;
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  background: #f0f2f5;
+}
+.spinner {
+  width: 48px;
+  height: 48px;
+  border: 5px solid #e0e0e0;
+  border-top-color: #1890ff;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+  margin-bottom: 20px;
+}
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+.msg {
+  font-size: 18px;
+  color: #333;
+  text-align: center;
+  line-height: 1.6;
+}
+.sub {
+  font-size: 14px;
+  color: #888;
+  margin-top: 8px;
+}
+</style>
+</head>
+<body>
+<div class="spinner"></div>
+<div class="msg" id="msg">正在清理数据...</div>
+<div class="sub" id="sub"></div>
 <script>
-localStorage.removeItem("semiKitDashboard");
-document.getElementById("status").textContent = "✅ 清理完成！";
-document.getElementById("msg").textContent = "3秒后自动跳转...";
-setTimeout(function(){ window.location.href = "https://mirror20260901.github.io/semi-kit-dashboard/"; }, 3000);
-</script></body></html>
+(function() {
+  var STORAGE_KEY = 'semiKitDashboard';
+  var msgEl = document.getElementById('msg');
+  var subEl = document.getElementById('sub');
+  
+  // Step 1: Clear localStorage
+  localStorage.removeItem(STORAGE_KEY);
+  
+  // Step 2: Also try sessionStorage just in case
+  try { sessionStorage.removeItem(STORAGE_KEY); } catch(e) {}
+  
+  msgEl.textContent = '数据已清理完成！';
+  subEl.textContent = '3秒后自动跳转到主页面...';
+  
+  // Step 3: Redirect to main page after 3 seconds
+  setTimeout(function() {
+    window.location.href = './';
+  }, 3000);
+})();
+</script>
+</body>
+</html>
