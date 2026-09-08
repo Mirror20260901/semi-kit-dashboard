@@ -429,7 +429,7 @@ const SEMI_TOTAL_COUNT = 277;
 
 // ====== LOCAL STORAGE 持久化 ======
 const STORAGE_KEY = 'semiKitDashboard';
-const DATA_VERSION = 'v4'; // 数据版本号，用于检测旧数据自动清理（v4: 修复清除数据后复活bug）
+const DATA_VERSION = 'v5'; // v5: 切换数据文件+版本升级，彻底隔离旧标签页数据
 
 function saveData() {
   try {
@@ -518,7 +518,7 @@ const SYNC_CONFIG = {
   token: 'ghp_' + 'J5CPrdGL6M' + 'l93AP3G2Yd' + 'OSWXUeEZfu' + '1Q6GGu',
   owner: 'Mirror20260901',
   repo: 'semi-kit-dashboard',
-  path: 'shared-data.json',
+  path: 'shared-v2.json',
   pollInterval: 5000,
   apiBase: 'https://api.github.com'
 };
