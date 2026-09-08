@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="zh-CN">
 <head>
 <meta charset="UTF-8">
@@ -597,38 +597,9 @@ function mergeRemoteData(remote) {
   // inventory 不再通过远程合并，改为各设备从 scanRecords 重新计算（防止污染数据覆盖正确值）
 
   // 【自动修复】检测远程数据是否被旧代码污染（无 _version 或版本不匹配）
-  // 如果远程数据是旧的，说明有人用旧代码推送了未过滤的数据，需要自动清理
   const remoteIsStale = !remote._version || remote._version !== DATA_VERSION;
 
-  if (remote.scanRecords && Array.isArray(remote.scanRecords)) {
-    // 用稳定的 key（抹平换行/管道符）匹配删除记录，同时兼容旧格式 deletedRecords（未清洗的）
-    const deletedSet = new Set(deletedRecords);
-    const deletedTsSet = new Set();
-    deletedRecords.forEach(dk => {
-      // 旧格式："code||time" — 取最后一段"||"后的时间戳做兜底
-      const idx = dk.lastIndexOf('||');
-      if (idx >= 0) deletedTsSet.add(dk.substring(idx + 2));
-      deletedTsSet.add(String(dk).replace(/[\r\n|｜]/g, ''));
-    });
-    const existCodes = new Set(scanRecords.map(r => recordKey(r.c, r.t)));
-    for (const rr of remote.scanRecords) {
-      const rid = recordKey(rr.c, rr.t);
-      const tsId = recordTimestamp(rr.t);
-      // 精准匹配 key，或时间戳匹配旧 deletedRecords 格式
-      if (deletedSet.has(rid) || deletedTsSet.has(rid) || deletedTsSet.has(tsId)) continue;
-      // 如果远程数据是旧代码污染的，跳过合并（这些记录不应存在）
-      if (remoteIsStale) continue;
-      if (!existCodes.has(rid)) {
-        scanRecords.push(rr);
-        existCodes.add(rid);
-        changed = true;
-      }
-    }
-    if (changed) {
-      scanRecords.sort((a, b) => (b.t || '').localeCompare(a.t || ''));
-    }
-  }
-  // Merge deleted records tracking（墓碑永远只增不减）
+  // ===== 第一步：先合并远程墓碑（deletedRecords）=====
   if (remote.deletedRecords && Array.isArray(remote.deletedRecords)) {
     const existDel = new Set(deletedRecords);
     for (const dr of remote.deletedRecords) {
@@ -640,6 +611,47 @@ function mergeRemoteData(remote) {
     }
     if (deletedRecords.length > 5000) deletedRecords = deletedRecords.slice(-5000);
   }
+
+  // ===== 第二步：反向同步——用合并后的墓碑清理本地"幽灵记录"=====
+  const tombstoneSet = new Set(deletedRecords);
+  const before = scanRecords.length;
+  scanRecords = scanRecords.filter(r => !tombstoneSet.has(recordKey(r.c, r.t)));
+  if (scanRecords.length !== before) {
+    changed = true;
+    console.log(`反向同步：清理了 ${before - scanRecords.length} 条被墓碑标记的本地记录`);
+  }
+
+  // ===== 第三步：合并远程 scanRecords（跳过已删除和旧代码污染的记录）=====
+  if (remote.scanRecords && Array.isArray(remote.scanRecords)) {
+    // 构建墓碑匹配集合（兼容旧格式）
+    const deletedTsSet = new Set();
+    deletedRecords.forEach(dk => {
+      const idx = dk.lastIndexOf('||');
+      if (idx >= 0) deletedTsSet.add(dk.substring(idx + 2));
+      deletedTsSet.add(String(dk).replace(/[\r\n|｜]/g, ''));
+    });
+    const existCodes = new Set(scanRecords.map(r => recordKey(r.c, r.t)));
+    let remoteChanged = false;
+    for (const rr of remote.scanRecords) {
+      const rid = recordKey(rr.c, rr.t);
+      const tsId = recordTimestamp(rr.t);
+      // 跳过已被删除的记录
+      if (tombstoneSet.has(rid) || deletedTsSet.has(rid) || deletedTsSet.has(tsId)) continue;
+      // 如果远程数据是旧代码污染的，跳过合并
+      if (remoteIsStale) continue;
+      if (!existCodes.has(rid)) {
+        scanRecords.push(rr);
+        existCodes.add(rid);
+        remoteChanged = true;
+      }
+    }
+    if (remoteChanged) {
+      scanRecords.sort((a, b) => (b.t || '').localeCompare(a.t || ''));
+      changed = true;
+    }
+  }
+
+  // 合并 importedWorkOrders
   if (remote.importedWorkOrders && Array.isArray(remote.importedWorkOrders)) {
     const existNums = new Set(importedWorkOrders.map(w => w.number));
     for (const rwo of remote.importedWorkOrders) {
@@ -661,19 +673,7 @@ function mergeRemoteData(remote) {
       }
     }
   }
-  // 【自动修复】如果远程数据是旧代码污染的，清理本地并添加墓碑
-  if (remoteIsStale && scanRecords.length > 0) {
-    console.log('检测到远程数据被旧代码污染，自动清理...');
-    for (const r of scanRecords) {
-      const rk = recordKey(r.c, r.t);
-      if (!deletedRecords.includes(rk)) {
-        deletedRecords.push(rk);
-      }
-    }
-    if (deletedRecords.length > 5000) deletedRecords = deletedRecords.slice(-5000);
-    scanRecords = [];
-    changed = true;
-  }
+
   // 合并 scanRecords 后重新计算 inventory
   if (changed) recomputeInventory();
   return changed;
