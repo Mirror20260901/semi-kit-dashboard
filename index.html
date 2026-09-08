@@ -2072,10 +2072,63 @@ async function clearAllData() {
   showToast('所有数据已清除', 'success');
 }
 
-// ====== URL参数检测：?reset=1 强制重置 ======
+// ====== URL参数检测：?reset=1 强制重置本地；?forceclean=1 强制清空GitHub ======
 if (new URLSearchParams(window.location.search).has('reset')) {
   localStorage.removeItem(STORAGE_KEY);
   console.log('URL参数 ?reset=1 检测到，已清除本地数据');
+}
+
+// 【紧急补丁】?forceclean=1 强制清空 GitHub 上的 shared-data.json
+// 用途：v3 → v5 升级时，v3 还在自动推数据干扰，导致清不干净。
+// 用户只需访问一次 ?forceclean=1，v5 会立即覆盖一次 GitHub 数据为 v5 格式空数据
+// 并把 URL 参数移除（避免每次刷新都触发）
+if (new URLSearchParams(window.location.search).get('forceclean') === '1') {
+  console.log('[forceclean] 检测到 URL 参数，准备强制清空 GitHub...');
+  // 立即清空本地
+  scanRecords = [];
+  deletedRecords = [];
+  if (typeof currentWorkOrder !== 'undefined') {
+    currentWorkOrder = { number: '', product: '', qty: 0, targetQty: 0, componentCounts: {} };
+  }
+  if (typeof importedWorkOrders !== 'undefined') {
+    importedWorkOrders = [];
+  }
+  try { localStorage.removeItem(STORAGE_KEY); } catch(e) {}
+  // 立即推一次空数据到 GitHub
+  (async () => {
+    try {
+      // 先尝试拿 SHA
+      const cur = await fetchSharedData();
+      if (cur && typeof pushSharedData === 'function') {
+        // 用上一次成功时记录的 SHA（如果有）
+        const cleanPayload = {
+          _version: DATA_VERSION,
+          scanRecords: [],
+          importedWorkOrders: [],
+          currentWorkOrder: { number:'', product:'', qty:0, targetQty:0, componentCounts:{} },
+          deletedRecords: [],
+          updatedAt: new Date().toISOString()
+        };
+        // 忽略 pushSharedData 的 SHA 冲突（因为 syncCycle 也会推），我们做连续推送
+        for (let i = 0; i < 3; i++) {
+          try {
+            await pushSharedData(cleanPayload);
+            console.log('[forceclean] ✓ 第 ' + (i+1) + ' 次推送成功');
+            break;
+          } catch(e) {
+            console.warn('[forceclean] 第 ' + (i+1) + ' 次推送失败:', e.message);
+            // 等待 syncCycle 完成（5s）再试
+            await new Promise(r => setTimeout(r, 5500));
+          }
+        }
+      }
+    } catch(e) { console.warn('[forceclean] 出错:', e); }
+    // 移除 URL 参数，避免刷新重复触发
+    const url = new URL(window.location.href);
+    url.searchParams.delete('forceclean');
+    history.replaceState(null, '', url.toString());
+    console.log('[forceclean] URL 参数已移除，请告知用户刷新页面');
+  })();
 }
 
 // ====== INIT ======
