@@ -461,6 +461,14 @@ function saveDataDebounced() {
 }
 
 function loadData() {
+  // 清除模式：URL带#clear时自动清空所有数据
+  if (location.hash === '#clear') {
+    localStorage.removeItem(STORAGE_KEY);
+    try { sessionStorage.removeItem(STORAGE_KEY); } catch(e) {}
+    location.hash = '';
+    location.replace(location.href.split('#')[0]);
+    return false;
+  }
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) return false;
