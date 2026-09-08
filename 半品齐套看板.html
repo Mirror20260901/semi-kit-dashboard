@@ -605,7 +605,7 @@ function mergeRemoteData(remote) {
       const rid = recordKey(rr.c, rr.t);
       const tsId = recordTimestamp(rr.t);
       // 精准匹配 key，或时间戳匹配旧 deletedRecords 格式
-      if (deletedSet.has(rid) || deletedTsSet.has(rid) || deletedTsSet.has(tsId)) continue;
+      if (deletedSet.has(rid)) continue; // 只按完整key精确匹配，不按时间戳过滤
       if (!existCodes.has(rid)) {
         scanRecords.push(rr);
         existCodes.add(rid);
