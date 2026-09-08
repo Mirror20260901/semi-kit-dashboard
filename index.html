@@ -446,8 +446,8 @@ function saveData() {
       savedAt: new Date().toISOString()
     };
     localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
-    // 触发云端同步
-    if (typeof triggerSync === 'function') triggerSync();
+    // 删完立刻同步，不要拖 2 秒
+    if (typeof syncCycle === 'function') syncCycle();
   } catch(e) {
     console.warn('保存数据到本地存储失败:', e);
   }
@@ -480,7 +480,12 @@ function loadData() {
       return false;
     }
     if (data.scanRecords && Array.isArray(data.scanRecords)) {
-      scanRecords = data.scanRecords;
+      // 【补丁2】先从 localStorage 加载墓碑，再过滤幽灵记录
+      if (data.deletedRecords && Array.isArray(data.deletedRecords)) {
+        deletedRecords = data.deletedRecords;
+      }
+      const tomb = new Set(deletedRecords);
+      scanRecords = data.scanRecords.filter(r => !tomb.has(recordKey(r.c, r.t)));
     }
     // 不从 localStorage 恢复 inventory，改为从初始库存+扫码记录重新计算
     recomputeInventory();
@@ -492,9 +497,6 @@ function loadData() {
     }
     if (data.currentAction) {
       currentAction = data.currentAction;
-    }
-    if (data.deletedRecords && Array.isArray(data.deletedRecords)) {
-      deletedRecords = data.deletedRecords;
     }
     if (data.palletPrefix) {
       document.getElementById('palletPrefix').value = data.palletPrefix;
@@ -1996,61 +1998,39 @@ function exportToExcel() {
 
 // ====== CLEAR ALL DATA ======
 async function clearAllData() {
-  if (!confirm('确定要清除所有数据吗？\n\n包括：扫码记录、库存、工单、齐套数据\n\n此操作不可恢复！建议先导出CSV备份。')) return;
-  if (!confirm('再次确认：清除所有数据？')) return;
+  if (!confirm('确认清除所有数据？此操作会同步删除云端所有扫码记录！')) return;
+  if (!confirm('再次确认：所有扫码记录、库存、工单都会被清除，且不可恢复！')) return;
   
-  // Clear localStorage
-  localStorage.removeItem(STORAGE_KEY);
-  
-  // 【关键】清除前，把当前所有 scanRecords 的 key 加入 deletedRecords 作为墓碑，
-  // 防止远程旧数据在下次同步时"复活"
+  // 关键：把当前所有记录都加进墓碑（这样同步时 GitHub 也会跟着清）
   scanRecords.forEach(r => {
-    deletedRecords.push(recordKey(r.c, r.t));
+    const key = recordKey(r.c, r.t);
+    if (!deletedRecords.includes(key)) deletedRecords.push(key);
   });
   if (deletedRecords.length > 5000) deletedRecords = deletedRecords.slice(-5000);
-  const preservedDeleted = [...deletedRecords];
   
-  // Reset state
+  // 清空状态
   scanRecords = [];
-  inventory = {};
+  inventory = JSON.parse(JSON.stringify(INITIAL_INVENTORY));
   currentWorkOrder = { number: '', product: '', qty: 0, targetQty: 0, componentCounts: {} };
   importedWorkOrders = [];
-  // deletedRecords 保留！不清空，作为墓碑防止远程旧数据复活
   currentAction = '入库';
   filteredScanRecords = [];
   
-  // Clear UI inputs
+  // 清空 UI 输入
   document.getElementById('woNumber').value = '';
   document.getElementById('woTargetQty').value = '';
   document.getElementById('palletPrefix').value = '';
   document.getElementById('palletSeq').value = '';
   
-  // Reset init inventory - 直接从 INITIAL_INVENTORY 重算（scanRecords已清空，结果必为全0）
+  // 重新计算库存
   recomputeInventory();
   
-  // Push empty state to remote（保留 deletedRecords 墓碑）
-  try {
-    await pushSharedData({
-      scanRecords: [],
-      inventory: inventory,
-      importedWorkOrders: [],
-      deletedRecords: preservedDeleted,
-      currentWorkOrder: { number:'', product:'', qty:0, targetQty:0, componentCounts:{} },
-      updatedAt: new Date().toISOString()
-    });
-  } catch(e) { console.warn('Remote clear failed:', e); }
-  
-  // Refresh UI
-  updateWorkOrderDisplay();
-  renderWorkOrderList();
-  updatePalletDisplay();
-  renderRecentList();
-  renderTable();
-  refreshDashboard();
-  recalculate();
+  // 写 localStorage 并立刻同步 GitHub
   saveData();
   
-  showToast('所有数据已清除', 'success');
+  // 刷新 UI
+  refreshAllUI();
+  showToast('已清除所有数据并同步云端', 'success');
 }
 
 // ====== URL参数检测：?reset=1 强制重置 ======
