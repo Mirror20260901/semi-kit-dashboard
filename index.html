@@ -1898,12 +1898,13 @@ function exportToExcel() {
   Object.keys(bomData).forEach(cp => {
     bomData[cp].forEach(item => {
       const qty = inventory[item.p] || 0;
-      // 计算累计入库和出库（基于扫码记录）
+      // 计算累计入库和出库（基于扫码记录，按条码上的包规数量累加）
       let inCount = 0, outCount = 0;
       scanRecords.forEach(r => {
         if (r.c.includes(item.p)) {
-          if (r.a === '入库') inCount++;
-          else if (r.a === '出库') outCount++;
+          const q = (r.q && r.q > 0) ? r.q : 1; // 兼容旧记录（默认1）
+          if (r.a === '入库') inCount += q;
+          else if (r.a === '出库') outCount += q;
         }
       });
       const status = qty === 0 ? '缺料' : (qty < 10 ? '低库存' : '正常');
