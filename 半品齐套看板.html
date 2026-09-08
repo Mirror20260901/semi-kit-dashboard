@@ -390,6 +390,17 @@ const INIT_DATA = {"bom":{"8180922863":[{"cp":"8180922863","p":"8180922863-P1A2-
 let currentAction = '入库';
 let scanRecords = [...INIT_DATA.scans];
 let deletedRecords = []; // 追踪已删除的记录ID（格式：code + '||' + time）
+
+// 生成稳定的记录匹配key：把c和t里的换行/管道符全部抹平，避免二维码含\r\n导致同步对不上
+function recordKey(c, t) {
+  const cleanC = String(c || '').replace(/[\r\n|｜]/g, '');
+  const cleanT = String(t || '').replace(/[\r\n|｜]/g, '');
+  return cleanC + '||' + cleanT;
+}
+// 兼容旧deletedRecords（里面可能还是未清洗的key）：尝试从中提取"时间戳"部分做兜底匹配
+function recordTimestamp(t) {
+  return String(t || '').replace(/[\r\n|｜]/g, '');
+}
 let inventory = {"8180922863-P1A2-P4":0,"8180922863-P1A3-P3":0,"8180922863-P1A4-P5":0,"8180922862-P1A1-P3B4":0,"8180922862-P1A4-P3B1":0,"8180922862-P1A3-P4C1":0,"8180922862-P2-P4C2":0,"8180922860-P5A1-P1":0,"8180922860-P5A2-P2":0,"8180922860-P5A3-P3":0,"8180922860-P5A4-P4":0,"8180922213-P1-P4B1":0,"8180922213-P2-P4B2":0,"8180922213-P3A2-P4B3":0,"8180922213-P3A1-P7":0,"8180922213-P3A3-P6":0,"8180922213-P3A4-P5":0,"8180922114-P1-P4B1":0,"8180922114-P2-P4B2":0,"8180922114-P3A4-P4B3":0,"8180922114-P3A1-P7":0,"8180922114-P3A2-P5":0,"8180922114-P3A3-P6":0,"8180922111-P5A1-P1":0,"8180922111-P5A2-P2":0,"8180922111-P5A3-P3":0,"8180922111-P5A4-P4":0,"8180922109-P5A1-P1":0,"8180922109-P5A2-P2":0,"8180922109-P5A3-P3":0,"8180922109-P5A4-P4":0,"8180921377P4-P5":0,"8180921377P3-P5":0,"8180921377P1-P5":0,"8180921377P2-P5":0,"8180921329-P1A4-P9A1":0,"8180921329-P1A3-P14A4":0,"8180921329-P2A2-P14A3":0,"8180921329-P2A1-P11":0,"8180921329-P2A3-P7":0,"8180921329-P3-P9A3":0,"8180921329-P4A4-P9A2":0,"8180921329-P4A1-P12":0,"8180921329-P4A2-P13":0,"8180921329-P4A3-P14A1":0,"8180921329-P5A1-P14A2":0,"8180921329-P5A2-P15A1":0,"8180921029-P1A1-P3":0,"8180921029-P1A2-P4":0,"818092102-P1A3-P6":0,"8180921029-P1A4-P5C1":0,"8180921029-P2B4-P5C2":0,"8180921029-P2B1-P8":0,"8180921029-P2B3-P9":0,"8180921029-P2B2-P7":0,"8180921028-P1A1-P3":0,"8180921028-P1A2-P4":0,"8180921028-P1A3-P6":0,"8180921028-P1A4-P5C1":0,"8180921028-P2B4-P5C2":0,"8180921028-P2B1-P8":0,"8180921028-P2B3-P9":0,"8180921028-P2B2-P7":0,"8180920653-P1A4-P9A1":0,"8180920653-P1A3-P14A4":0,"8180920653-P2A2-P14A3":0,"8180920653-P2A1-P11":0,"8180920653-P2A3-P7":0,"8180920653-P3-P9A3":0,"8180920653-P4A4-P9A2":0,"8180920653-P4A1-P12":0,"8180920653-P4A2-P13":0,"8180920653-P4A3-P14A1":0,"8180920653-P5A1-P14A2":0,"8180920653-P5A2-P15A1":0,"8180920653-P6-P15A2":0,"8180920021-P1-P4B1":0,"8180920021-P2-P4B2":0,"8180920021-P3A2-P4B3":0,"8180920021-P3A1-P7":0,"8180920021-P3A3-P6":0,"8180920021-P3A4-P5":0,"8180919855-P5A1-P1":0,"8180919855-P5A2-P2":0,"8180919855-P5A3-P3":0,"8180919854-P1A4-P7":0,"8180919854-P1A3-P6":0,"8180919854-P1A1-P3B1":0,"8180919854-P1A2-P3B3":0,"8180919854-P2A3-P3B3":0,"8180919854-P2A1-P4":0,"8180919854-P2A2-P5":0,"8180919853-P1A4-P7":0,"8180919853-P1A3-P6":0,"8180919853-P1A1-P3B1":0,"8180919853-P1A2-P3B2":0,"8180919853-P2A3-P3B3":0,"8180919853-P2A1-P4":0,"8180919853-P2A2-P5":0,"8180919852-P1A4-P9A1":0,"8180919852-P1A3-P10A3":0,"8180919852-P2A2-P10A1":0,"8180919852-P2A1-P11":0,"8180919852-P2A3-P7":0,"8180919852-P3-P9A3":0,"8180919852-P4A4-P9A2":0,"8180919852-P4A1-P12":0,"8180919852-P4A2-P13":0,"8180919852-P4A3-P14A1":0,"8180919852-P5A1-P14A2":0,"8180919852-P5A2-P15A1":0,"8180919852-P6-P15A2":0,"8180919281-P1-P3B3":0,"8180919281-P2A1-P3B1":0,"8180919281-P2A4-P3B2":0,"8180918988-PAA3-P2":0,"8180918988-PAA1-P3D2":0,"8180918988-PAA2-P5F2":0,"8180918988-PAA4-P4E2":0,"8180918988-P1-P4E":0,"8180918988-PBB4-P4E1":0,"8180918988-PBB1-P3D1":0,"8180918988-PBB2-P6":0,"8180918988-PBB3-P5F1":0,"8180918988-PCC3-P5F3":0,"8180918988-PCC1-P7":0,"8180918988-PCC2-P8":0,"8180918988-PCC4-P9":0,"8180918984-P4A1-P2B2":0,"8180918984-P4A2-P2B1":0,"8180918055-P1A1-P3B1":0,"8180918055-P1A2-P3B2":0,"8180918055-P1A3-P3B3":0,"8180918055-P1A4-P4C1":0,"8180918055-P2D1-P4C1":0,"8180918055-P2D2-P4C2":0,"8180918055-P2D3-P4C3":0,"8180918051-P1-P4B4":0,"8180918051-P2-P4B2":0,"8180918051-P3-P4B3":0,"8180918050-P5A1-P1":0,"8180918050-P5A2-P2":0,"8180918050-P5A3-P3":0,"8180917174-P1-P2":0,"8180917001-P5A1-P1":0,"8180917001-P5A2-P2":0,"8180917001-P5A3-P3":0,"8180917001-P5A4-P4":0,"8180916998-P5A1-P1":0,"8180916998-P5A2-P2":0,"8180916998-P5A3-P3":0,"8180916998-P5A4-P4":0,"8180916555-P5A1-P1":0,"8180916555-P5A2-P2":0,"8180916555-P5A3-P3":0,"8180916555-P5A4-P4":0,"8180916079-P5A1-P1":0,"8180916079-P5A2-P2":0,"8180916079-P5A3-P3":0,"8180916079-P5A4-P4":0,"8180916078-P1A1-P5C1":0,"81809160788-P1A2-P5C2":0,"8180916078-P1A3-P6D1":0,"8180916078-P3-P6D3":0,"8180916078-P4B4-P6D2":0,"8180916078-P4B1-P8":0,"8180916078-P4B2-P2":0,"8180916078-P4B3-P7":0,"8180916032-P1A1-P3B1":0,"8180916032-P1A2-P3B2":0,"8180916032-P2A3-P3B3":0,"8180916032-P2A1-P4":0,"8180916032-P2A2-P5":0,"8180916031-P1A1-P3B1":0,"8180916031-P1A2-P3B2":0,"8180916031-P2A3-P3B3":0,"8180916031-P2A1-P4":0,"8180916031-P2A2-P5":0,"8180915171-P1-P2":0,"8180915153-P5A1-P1":0,"8180915153-P5A2-P2":0,"8180915153-P5A4-P4":0,"8180915139-P1-P2":0,"8180914762-PCC1-P3F1":0,"8180914762-PCC2-P2E1":0,"8180914762-PCC3-P4G4":0,"8180914762-PCC4-P1D1":0,"8180914762-PBB1-P5H2":0,"8180914762-PBB2-P3F2":0,"8180914762-PBB3-P4G1":0,"8180914762-PBB4-P1D2":0,"8180914762-PAA1-P5H4":0,"8180914762-PAA2-P4G3":0,"8180914762-PAA3-P2E2":0,"8180914446-P1A3-P2":0,"8180913007-P5A1-P1":0,"8180913007-P5A2-P2":0,"8180913007-P5A3-P3":0,"8180913007-P5A4-P4":0,"8180912528-P5A1-P1":0,"8180912528-P5A2-P2":0,"8180912528-P5A3-P3":0,"8180912528-P5A4-P4":0,"8180912527-P5A1-P1":0,"8180912527-P5A2-P2":0,"8180912527-P5A3-P3":0,"8180912527-P5A4-P4":0,"8180912265-PAA3-P2":0,"8180912265-PAA1-P8F1":0,"8180912265-PAA2-P3D1":0,"8180912265-PBB3-P3D2":0,"8180912265-PBB2-P1":0,"8180912265-PBB1-P8F2":0,"8180912265-PBB4-P6E3":0,"8180912265-PCC4-P6E1":0,"8180912265-PCC3-P3D3":0,"8180912265-PCC1-P4":0,"8180912265-PCC2-P5":0,"8180911679-P5A1-P1":0,"8180911679-P5A2-P2":0,"8180911679-P5A3-P3":0,"8180911679-P5A4-P4":0,"8180911677-P4A1-P1":0,"8180911677-P4A2-P2":0,"8180911677-P4A3-P3B1":0,"8180911676-P4A3-P3":0,"8180911676-P4A4-P3B3":0,"8180911676-P4A1-P1":0,"8180911676-P4A2-P2":0,"8180911675-P5A1-P1":0,"8180911675-P5A2-P2":0,"8180911675-P5A3-P3":0,"8180911675-P5A4-P4":0,"8180909367-P5A1-P1":0,"8180909367-P5A2-P2":0,"8180909367-P5A3-P3":0,"8180909367-P5A4-P4":0,"8180908061-P5A1-P1":0,"8180908061-P5A2-P2":0,"8180908061-P5A3-P3":0,"8180908061-P5A4-P4":0,"8180908060-P5A1-P1":0,"8180908060-P5A2-P2":0,"8180908060-P5A3-P3B1":0,"8180908060-P5A4-P4":0,"8180908000-P1A2-P2B1":0,"8180908000-P1A1-P2B2":0,"8180907261-P5A1-P1":0,"8180907261-P5A2-P2":0,"8180907261-P5A3-P3B3":0,"8180907261-P5A4-P4":0,"8180907259-P4A3-P3B1":0,"8180907259-P4A4-P3B2":0,"8180907259-P4A1-P1":0,"8180907259-P4A2-P2":0,"8180907136-P5A1-P1":0,"8180907136-P5A2-P2":0,"8180907136-P5A3-P3":0,"8180907136-P5A4-P4":0,"8180907133-P1A3-P2":0,"8180907131-P5A1-P1":0,"8180907131-P5A2-P2":0,"8180907131-P5A3-P3B1":0,"8180907131-P5A4-P4":0,"8180907130-P4A1-P1":0,"8180907130-P4A2-P2":0,"8180907130-P4A3-P3B1":0,"8180907129-P4A3-P3B1":0,"8180907129-P4A4-P3B2":0,"8180907129-P4A1-P1":0,"8180907129-P4A2-P2":0,"8180900969-P1A1-P2B2":0,"8180900969-P1A2-P2B1":0,"818044045-P5A1-P1":0,"818044045-P5A2-P2":0,"818044045-P5A3-P3":0,"818044045-P5A4-P4":0}; // 从Excel嵌入的实际库存
 
 // 初始库存快照（不可变），用于从扫码记录重新计算当前库存，防止同步污染
@@ -400,10 +411,11 @@ function recomputeInventory() {
   for (const rec of scanRecords) {
     const hp = rec.x || '';
     if (!hp) continue;
+    const q = (rec.q && rec.q > 0) ? rec.q : 1; // 兼容旧记录（默认1）
     if (rec.a === '入库') {
-      result[hp] = (result[hp] || 0) + 1;
+      result[hp] = (result[hp] || 0) + q;
     } else if (rec.a === '出库') {
-      result[hp] = Math.max(0, (result[hp] || 0) - 1);
+      result[hp] = Math.max(0, (result[hp] || 0) - q);
     }
   }
   inventory = result;
@@ -579,11 +591,21 @@ function mergeRemoteData(remote) {
     // 先合并 scanRecords，再统一重新计算 inventory（在函数末尾调用）
   }
   if (remote.scanRecords && Array.isArray(remote.scanRecords)) {
+    // 用稳定的 key（抹平换行/管道符）匹配删除记录，同时兼容旧格式 deletedRecords（未清洗的）
     const deletedSet = new Set(deletedRecords);
-    const existCodes = new Set(scanRecords.map(r => r.c + '||' + r.t));
+    const deletedTsSet = new Set();
+    deletedRecords.forEach(dk => {
+      // 旧格式："code||time" — 取最后一段"||"后的时间戳做兜底
+      const idx = dk.lastIndexOf('||');
+      if (idx >= 0) deletedTsSet.add(dk.substring(idx + 2));
+      deletedTsSet.add(String(dk).replace(/[\r\n|｜]/g, ''));
+    });
+    const existCodes = new Set(scanRecords.map(r => recordKey(r.c, r.t)));
     for (const rr of remote.scanRecords) {
-      const rid = rr.c + '||' + rr.t;
-      if (deletedSet.has(rid)) continue; // Skip deleted records
+      const rid = recordKey(rr.c, rr.t);
+      const tsId = recordTimestamp(rr.t);
+      // 精准匹配 key，或时间戳匹配旧 deletedRecords 格式
+      if (deletedSet.has(rid) || deletedTsSet.has(rid) || deletedTsSet.has(tsId)) continue;
       if (!existCodes.has(rid)) {
         scanRecords.push(rr);
         existCodes.add(rid);
@@ -947,15 +969,15 @@ function processScan(code) {
       return;
     }
     
-    // 超限检查：限制 = 工单数量（按扫码次数计数）
+    // 超限检查：限制 = 工单数量（按条码上的数量累计计数）
     const compLimit = currentWorkOrder.qty;
     const currentCompCount = currentWorkOrder.componentCounts[halfPart] || 0;
     
-    if (currentCompCount + 1 > compLimit) {
+    if (currentCompCount + scanQty > compLimit) {
       scanInput.className = 'error';
       scanInput.style.animation = 'shake 0.5s ease-in-out';
       setTimeout(() => { scanInput.style.animation = ''; }, 500);
-      scanStatus.innerHTML = '<span style="font-size:1.2rem;font-weight:bold;color:var(--danger)">🚨 超工单报警！</span><br>' + halfPart + ' 已扫 <b>' + currentCompCount + '</b>/' + compLimit + '，已达上限，<b>不允许再扫入！</b>';
+      scanStatus.innerHTML = '<span style="font-size:1.2rem;font-weight:bold;color:var(--danger)">🚨 超工单报警！</span><br>' + halfPart + ' 已扫 <b>' + currentCompCount + '</b>/' + compLimit + '，本条码 ' + scanQty + '，<b>不允许再扫入！</b>';
       scanStatus.className = 'scan-status err';
       playSound('overlimit');
       showToast('🚨 ' + halfPart + ' 已超工单数量！禁止扫入！', 'error');
@@ -983,7 +1005,7 @@ function processScan(code) {
     d: '',
     w: workOrder || '',
     a: currentAction,
-    q: 1,
+    q: scanQty, // 按条码上的数量（包规）记录
     z: getCurrentPallet(),
     wo_no: currentWorkOrder.number || '',
     wo_qty: currentWorkOrder.qty || 0,
@@ -1004,20 +1026,20 @@ function processScan(code) {
     scanRecords.unshift(record);
     saveDataDebounced(); // 持久化保存
     
-    // Update inventory（每根线扫一次记一根，不按标签数量）
+    // Update inventory（按条码上的数量累加）
     if (halfPart && halfPart in inventory) {
-      if (currentAction === '入库') inventory[halfPart] += 1;
-      else if (currentAction === '出库') inventory[halfPart] = Math.max(0, inventory[halfPart] - 1);
+      if (currentAction === '入库') inventory[halfPart] += scanQty;
+      else if (currentAction === '出库') inventory[halfPart] = Math.max(0, inventory[halfPart] - scanQty);
     }
     
-    // Update per-component work order progress（按扫码次数+1，不按标签数量）
+    // Update per-component work order progress（按条码上的数量累计）
     if (currentWorkOrder.number && halfPart && currentAction === "入库") {
-      currentWorkOrder.componentCounts[halfPart] = (currentWorkOrder.componentCounts[halfPart] || 0) + 1;
+      currentWorkOrder.componentCounts[halfPart] = (currentWorkOrder.componentCounts[halfPart] || 0) + scanQty;
       updateWorkOrderDisplay();
     }
     
     scanInput.className = 'success';
-    scanStatus.textContent = '✅ ' + currentAction + '成功！半品：' + halfPart + ' +1 当前库存：' + (inventory[halfPart] || 0);
+    scanStatus.textContent = '✅ ' + currentAction + '成功！半品：' + halfPart + ' +' + scanQty + ' 当前库存：' + (inventory[halfPart] || 0);
     scanStatus.className = 'scan-status ok';
     playSound('success');
     showToast(currentAction + '成功', 'success');
@@ -1139,7 +1161,7 @@ function renderRecentList() {
   
   el.innerHTML = records.map((r, idx) => {
     const realIdx = scanRecords.indexOf(r);
-    const qtyStr = (r.q && r.q > 1) ? `<span style="color:var(--primary);font-weight:600">×${r.q}</span>` : '';
+    const qtyStr = r.q ? `<span style="color:var(--primary);font-weight:600">×${r.q}</span>` : '';
     const displayCode = r.c.length > 40 ? r.c.substring(0, 40) + '...' : r.c;
     const palletStr = r.z ? `<span style="background:#e8f4fd;color:#1a73e8;padding:1px 6px;border-radius:4px;font-size:.72rem;font-weight:500">${r.z}</span>` : '';
     const pdStr = r.pd ? `<span style="background:#fff8e1;color:#e65100;padding:1px 6px;border-radius:4px;font-size:.72rem;font-weight:500">📦${r.pd}</span>` : '';
@@ -1196,8 +1218,8 @@ function deleteSingleRecord(index) {
   const record = scanRecords[index];
   if (!confirm(`确定要删除这条记录吗？\n\n唯一码：${record.c}\n时间：${record.t}\n动作：${record.a}\n\n删除后将同步更新库存和齐套数据。`)) return;
   
-  // Record deletion for sync
-  deletedRecords.push(record.c + '||' + record.t);
+  // Record deletion for sync（key 抹平换行/管道符，避免同步对不上）
+  deletedRecords.push(recordKey(record.c, record.t));
   if (deletedRecords.length > 5000) deletedRecords = deletedRecords.slice(-5000);
   
   // Remove record
@@ -1205,13 +1227,14 @@ function deleteSingleRecord(index) {
   
   // 从剩余扫码记录重新计算库存（避免手动回退的精度问题）
   recomputeInventory();
-  // 同步重算工单组件计数
+  // 同步重算工单组件计数（按 scanQty 累计，与 commitScan 保持一致）
   if (currentWorkOrder.number) {
     currentWorkOrder.componentCounts = {};
     scanRecords.forEach(r => {
       if (r.a === '入库' && r.w === currentWorkOrder.number) {
         const hp = r.x || '';
-        if (hp) currentWorkOrder.componentCounts[hp] = (currentWorkOrder.componentCounts[hp] || 0) + 1;
+        const q = (r.q && r.q > 0) ? r.q : 1;
+        if (hp) currentWorkOrder.componentCounts[hp] = (currentWorkOrder.componentCounts[hp] || 0) + q;
       }
     });
   }
@@ -1240,9 +1263,9 @@ function deleteByDate() {
   
   if (!confirm(`确定要删除 ${dateFilter} 的所有扫码记录吗？\n\n共 ${recordsToDelete.length} 条记录\n\n删除后将同步更新库存和齐套数据。`)) return;
   
-  // Record deletions for sync
+  // Record deletions for sync（key 抹平换行/管道符，避免同步对不上）
   recordsToDelete.forEach(r => {
-    deletedRecords.push(r.c + '||' + r.t);
+    deletedRecords.push(recordKey(r.c, r.t));
   });
   if (deletedRecords.length > 5000) deletedRecords = deletedRecords.slice(-5000);
   
@@ -1251,13 +1274,14 @@ function deleteByDate() {
   
   // 从剩余扫码记录重新计算库存（避免手动回退的精度问题）
   recomputeInventory();
-  // 同步重算工单组件计数
+  // 同步重算工单组件计数（按 scanQty 累计，与 commitScan 保持一致）
   if (currentWorkOrder.number) {
     currentWorkOrder.componentCounts = {};
     scanRecords.forEach(r => {
       if (r.a === '入库' && r.w === currentWorkOrder.number) {
         const hp = r.x || '';
-        if (hp) currentWorkOrder.componentCounts[hp] = (currentWorkOrder.componentCounts[hp] || 0) + 1;
+        const q = (r.q && r.q > 0) ? r.q : 1;
+        if (hp) currentWorkOrder.componentCounts[hp] = (currentWorkOrder.componentCounts[hp] || 0) + q;
       }
     });
   }
@@ -1874,12 +1898,13 @@ function exportToExcel() {
   Object.keys(bomData).forEach(cp => {
     bomData[cp].forEach(item => {
       const qty = inventory[item.p] || 0;
-      // 计算累计入库和出库（基于扫码记录）
+      // 计算累计入库和出库（基于扫码记录，按条码上的包规数量累加）
       let inCount = 0, outCount = 0;
       scanRecords.forEach(r => {
         if (r.c.includes(item.p)) {
-          if (r.a === '入库') inCount++;
-          else if (r.a === '出库') outCount++;
+          const q = (r.q && r.q > 0) ? r.q : 1; // 兼容旧记录（默认1）
+          if (r.a === '入库') inCount += q;
+          else if (r.a === '出库') outCount += q;
         }
       });
       const status = qty === 0 ? '缺料' : (qty < 10 ? '低库存' : '正常');
