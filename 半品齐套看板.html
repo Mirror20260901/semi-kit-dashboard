@@ -429,7 +429,7 @@ const SEMI_TOTAL_COUNT = 277;
 
 // ====== LOCAL STORAGE 持久化 ======
 const STORAGE_KEY = 'semiKitDashboard';
-const DATA_VERSION = 'v3'; // 数据版本号，用于检测旧数据自动清理
+const DATA_VERSION = 'v4'; // 数据版本号，用于检测旧数据自动清理（v4: 修复清除数据后复活bug）
 
 function saveData() {
   try {
@@ -461,6 +461,14 @@ function saveDataDebounced() {
 }
 
 function loadData() {
+  // 清除模式：URL带#clear时自动清空所有数据
+  if (location.hash === '#clear') {
+    localStorage.removeItem(STORAGE_KEY);
+    try { sessionStorage.removeItem(STORAGE_KEY); } catch(e) {}
+    location.hash = '';
+    location.replace(location.href.split('#')[0]);
+    return false;
+  }
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) return false;
@@ -587,9 +595,11 @@ function mergeRemoteData(remote) {
   if (!remote) return false;
   let changed = false;
   // inventory 不再通过远程合并，改为各设备从 scanRecords 重新计算（防止污染数据覆盖正确值）
-  if (remote.scanRecords) {
-    // 先合并 scanRecords，再统一重新计算 inventory（在函数末尾调用）
-  }
+
+  // 【自动修复】检测远程数据是否被旧代码污染（无 _version 或版本不匹配）
+  // 如果远程数据是旧的，说明有人用旧代码推送了未过滤的数据，需要自动清理
+  const remoteIsStale = !remote._version || remote._version !== DATA_VERSION;
+
   if (remote.scanRecords && Array.isArray(remote.scanRecords)) {
     // 用稳定的 key（抹平换行/管道符）匹配删除记录，同时兼容旧格式 deletedRecords（未清洗的）
     const deletedSet = new Set(deletedRecords);
@@ -605,7 +615,9 @@ function mergeRemoteData(remote) {
       const rid = recordKey(rr.c, rr.t);
       const tsId = recordTimestamp(rr.t);
       // 精准匹配 key，或时间戳匹配旧 deletedRecords 格式
-      if (deletedSet.has(rid)) continue; // 只按完整key精确匹配，不按时间戳过滤
+      if (deletedSet.has(rid) || deletedTsSet.has(rid) || deletedTsSet.has(tsId)) continue;
+      // 如果远程数据是旧代码污染的，跳过合并（这些记录不应存在）
+      if (remoteIsStale) continue;
       if (!existCodes.has(rid)) {
         scanRecords.push(rr);
         existCodes.add(rid);
@@ -616,7 +628,7 @@ function mergeRemoteData(remote) {
       scanRecords.sort((a, b) => (b.t || '').localeCompare(a.t || ''));
     }
   }
-  // Merge deleted records tracking
+  // Merge deleted records tracking（墓碑永远只增不减）
   if (remote.deletedRecords && Array.isArray(remote.deletedRecords)) {
     const existDel = new Set(deletedRecords);
     for (const dr of remote.deletedRecords) {
@@ -649,6 +661,19 @@ function mergeRemoteData(remote) {
       }
     }
   }
+  // 【自动修复】如果远程数据是旧代码污染的，清理本地并添加墓碑
+  if (remoteIsStale && scanRecords.length > 0) {
+    console.log('检测到远程数据被旧代码污染，自动清理...');
+    for (const r of scanRecords) {
+      const rk = recordKey(r.c, r.t);
+      if (!deletedRecords.includes(rk)) {
+        deletedRecords.push(rk);
+      }
+    }
+    if (deletedRecords.length > 5000) deletedRecords = deletedRecords.slice(-5000);
+    scanRecords = [];
+    changed = true;
+  }
   // 合并 scanRecords 后重新计算 inventory
   if (changed) recomputeInventory();
   return changed;
@@ -660,9 +685,32 @@ async function syncCycle() {
   updateSyncStatus('syncing', '同步中...');
   try {
     const remote = await fetchSharedData();
+    // 【关键修复】在合并前，先记录远程的墓碑集合
+    // 推送时过滤掉已被删除的记录，防止旧标签页把已删除数据推回远程
+    const remoteDeletedSet = new Set();
+    if (remote && remote.deletedRecords && Array.isArray(remote.deletedRecords)) {
+      remote.deletedRecords.forEach(d => remoteDeletedSet.add(d));
+    }
     const hadChanges = mergeRemoteData(remote);
+    // 推送前过滤：移除已在远程墓碑列表中的记录（防止旧标签页复活已删除数据）
+    let pushRecords = scanRecords.slice(0, 5000);
+    if (remoteDeletedSet.size > 0) {
+      pushRecords = pushRecords.filter(r => {
+        const rid = recordKey(r.c, r.t);
+        return !remoteDeletedSet.has(rid);
+      });
+    }
+    // 推送前合并本地和远程的墓碑（确保墓碑只增不减）
+    const mergedDeleted = [...deletedRecords];
+    if (remote && remote.deletedRecords && Array.isArray(remote.deletedRecords)) {
+      const localDelSet = new Set(mergedDeleted);
+      for (const dr of remote.deletedRecords) {
+        if (!localDelSet.has(dr)) mergedDeleted.push(dr);
+      }
+    }
     const dataToPush = {
-      scanRecords: scanRecords.slice(0, 5000),
+      _version: DATA_VERSION,
+      scanRecords: pushRecords,
       // inventory 不在远程同步，各设备从 INITIAL_INVENTORY + scanRecords 重新计算
       importedWorkOrders: importedWorkOrders,
       currentWorkOrder: {
@@ -672,7 +720,7 @@ async function syncCycle() {
         targetQty: currentWorkOrder.targetQty,
         componentCounts: currentWorkOrder.componentCounts
       },
-      deletedRecords: deletedRecords,
+      deletedRecords: mergedDeleted,
       updatedAt: new Date().toISOString()
     };
     await pushSharedData(dataToPush);
@@ -1954,12 +2002,20 @@ async function clearAllData() {
   // Clear localStorage
   localStorage.removeItem(STORAGE_KEY);
   
+  // 【关键】清除前，把当前所有 scanRecords 的 key 加入 deletedRecords 作为墓碑，
+  // 防止远程旧数据在下次同步时"复活"
+  scanRecords.forEach(r => {
+    deletedRecords.push(recordKey(r.c, r.t));
+  });
+  if (deletedRecords.length > 5000) deletedRecords = deletedRecords.slice(-5000);
+  const preservedDeleted = [...deletedRecords];
+  
   // Reset state
   scanRecords = [];
   inventory = {};
   currentWorkOrder = { number: '', product: '', qty: 0, targetQty: 0, componentCounts: {} };
   importedWorkOrders = [];
-  deletedRecords = [];
+  // deletedRecords 保留！不清空，作为墓碑防止远程旧数据复活
   currentAction = '入库';
   filteredScanRecords = [];
   
@@ -1972,13 +2028,13 @@ async function clearAllData() {
   // Reset init inventory - 直接从 INITIAL_INVENTORY 重算（scanRecords已清空，结果必为全0）
   recomputeInventory();
   
-  // Push empty state to remote
+  // Push empty state to remote（保留 deletedRecords 墓碑）
   try {
     await pushSharedData({
       scanRecords: [],
       inventory: inventory,
       importedWorkOrders: [],
-      deletedRecords: [],
+      deletedRecords: preservedDeleted,
       currentWorkOrder: { number:'', product:'', qty:0, targetQty:0, componentCounts:{} },
       updatedAt: new Date().toISOString()
     });
