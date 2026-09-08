@@ -244,9 +244,8 @@ button:focus-visible,input:focus-visible,a:focus-visible{outline:2px solid var(-
       <div class="card-body" style="padding:14px 20px" data-page-node-id="9MzgRaBmB5qPPOwF8c0I6A">
         <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap" data-page-node-id="XqKeRXSGJOkDINnvBqLwAS">
           <span style="font-weight:600;font-size:.9rem" data-page-node-id="fuGUFAVgTEnjppRLNDH5oj">📋 工单设置</span>
-          <input type="text" id="woNumber" placeholder="工单号" style="width:140px;padding:8px 10px;border:1px solid var(--border);border-radius:6px;font-size:.85rem" data-page-node-id="UsTK2U6DUJLJUgBgu0btzD">
-          <input type="number" id="woTargetQty" placeholder="工单数量" style="width:110px;padding:8px 10px;border:1px solid var(--border);border-radius:6px;font-size:.85rem" data-page-node-id="AswnytCyTQm50tDdVMcH78">
-          <button class="btn btn-primary btn-sm" onclick="saveWorkOrder()" data-page-node-id="OlFDc9ZT3CWKAxU6XcaghG">✅ 确认</button>
+          <input type="text" id="woNumber" placeholder="工单号" style="width:140px;padding:8px 10px;border:1px solid var(--border);border-radius:6px;font-size:.85rem" oninput="updateWoPalletHint()" data-page-node-id="UsTK2U6DUJLJUgBgu0btzD">
+          <input type="number" id="woTargetQty" placeholder="工单数量" style="width:110px;padding:8px 10px;border:1px solid var(--border);border-radius:6px;font-size:.85rem" oninput="updateWoPalletHint()" data-page-node-id="AswnytCyTQm50tDdVMcH78">
           <button class="btn btn-sm" onclick="toggleBatchImport()" style="background:var(--warning);color:#fff;border:none;padding:5px 12px;border-radius:6px;font-size:.8rem;cursor:pointer" data-page-node-id="NA7o3SW2RBuX88WTOKh1hE">📋 批量录入</button>
           <button class="btn btn-sm" onclick="clearWorkOrder()" style="background:var(--danger);color:#fff;border:none;padding:5px 12px;border-radius:6px;font-size:.8rem;cursor:pointer" data-page-node-id="GsD1iiLNSFavdnfgvXYJbX">🗑️ 清除</button>
           <span id="woStatus" style="font-size:.82rem;color:var(--text-secondary)" data-page-node-id="uyzBW1LFlA2sFGnszJDKlb">未设置工单</span>
@@ -287,6 +286,11 @@ button:focus-visible,input:focus-visible,a:focus-visible{outline:2px solid var(-
             <button onclick="openPalletCamera()" title="手机摄像头扫栈板号" style="position:absolute;right:4px;top:50%;transform:translateY(-50%);width:30px;height:30px;border:none;background:var(--primary);color:#fff;border-radius:8px;cursor:pointer;font-size:1rem;display:flex;align-items:center;justify-content:center;box-shadow:0 1px 4px rgba(26,115,232,.3)" data-page-node-id="xZ2FLDpavAHReg9BmRr8tR">📷</button>
           </div>
           <span id="palletDisplay" style="font-size:.85rem;color:var(--text-secondary);font-weight:500" data-page-node-id="K84KhhdSyicFik9NgBbMq3">未设置栈板号</span>
+        </div>
+        <!-- 确认按钮行（工单+栈板号都填好后才能点） -->
+        <div style="display:flex;align-items:center;justify-content:flex-start;gap:12px;margin-top:12px;padding-top:12px;border-top:1px dashed var(--border)" data-page-node-id="WO_PALLET_CONFIRM_ROW">
+          <span style="font-size:.8rem;color:var(--text-secondary)" id="woPalletHint">请先填写工单号+工单数量，选择栈板前缀+输入序号后再点确认</span>
+          <button class="btn btn-primary btn-sm" id="woPalletConfirmBtn" onclick="saveWorkOrder()" style="font-weight:600;padding:8px 24px;font-size:.95rem" data-page-node-id="WO_PALLET_CONFIRM_BTN">✅ 确认工单与栈板</button>
         </div>
       </div>
     </div>
@@ -1365,22 +1369,44 @@ function deleteByDate() {
 
 // ====== CSV EXPORT ======
 function exportScanCSV() {
-  if (scanRecords.length === 0) { showToast('暂无数据可导出', 'info'); return; }
+  // 优先导出当前筛选结果；如果没筛选则导出全部
+  const records = (filteredScanRecords && filteredScanRecords.length > 0)
+    ? filteredScanRecords
+    : scanRecords.filter(r => r.c);
+
+  if (records.length === 0) {
+    showToast('暂无数据可导出', 'info');
+    return;
+  }
+
+  const isFiltered = (filteredScanRecords && filteredScanRecords.length > 0);
+
   let csv = '\uFEFF时间,唯一码,线序料号,操作人,工单号,工单数量,库位,批次,动作,栈板号\n';
-  scanRecords.forEach(r => {
+  records.forEach(r => {
     csv += `"${r.t}","${r.c}","${r.x}","${r.r}","${r.wo_no || ''}","${r.wo_qty || ''}","${r.w}","${r.pd || ''}","${r.a}","${r.z || ''}"\n`.replace(/"undefined"/g, '""');
   });
   // Clean up undefined
   csv = csv.replace(/undefined/g, '');
-  
+
+  // 文件名带上筛选标记，方便区分
+  const today = new Date().toISOString().slice(0, 10);
+  const fileName = isFiltered
+    ? '扫码记录_筛选_' + records.length + '条_' + today + '.csv'
+    : '扫码记录_全部_' + records.length + '条_' + today + '.csv';
+
   const blob = new Blob([csv], {type: 'text/csv;charset=utf-8'});
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
-  a.download = '扫码记录_' + new Date().toISOString().slice(0,10) + '.csv';
+  a.download = fileName;
   a.click();
   URL.revokeObjectURL(url);
-  showToast('CSV 已导出', 'success');
+
+  if (isFiltered) {
+    showToast('已导出筛选后的 ' + records.length + ' 条记录', 'success');
+  } else {
+    showToast('已导出全部 ' + records.length + ' 条记录', 'success');
+  }
 }
 
 // ====== BOM IMPORT (Excel + CSV) ======
@@ -1534,6 +1560,33 @@ function updatePalletDisplay() {
     display.style.color = 'var(--text-secondary)';
     display.style.fontWeight = '500';
   }
+  // 同步刷新底部确认按钮的提示文字
+  updateWoPalletHint();
+}
+
+// 实时刷新底部"确认"按钮的提示：告诉用户还差什么才能点确认
+function updateWoPalletHint() {
+  const hintEl = document.getElementById('woPalletHint');
+  const btnEl = document.getElementById('woPalletConfirmBtn');
+  if (!hintEl || !btnEl) return;
+  const num = document.getElementById('woNumber').value.trim();
+  const qty = parseInt(document.getElementById('woTargetQty').value) || 0;
+  const prefix = document.getElementById('palletPrefix').value;
+  const seq = document.getElementById('palletSeq').value;
+  const missing = [];
+  if (!num) missing.push('工单号');
+  if (!qty) missing.push('工单数量');
+  if (!prefix) missing.push('栈板前缀');
+  if (!seq) missing.push('栈板序号');
+  if (missing.length === 0) {
+    hintEl.innerHTML = '<span style="color:var(--success);font-weight:600">✓ 工单与栈板号均已就绪，可以开始扫码</span>';
+    btnEl.style.background = 'var(--success)';
+    btnEl.style.boxShadow = '0 2px 8px rgba(34,197,94,.3)';
+  } else {
+    hintEl.innerHTML = '<span style="color:var(--warning)">还差：' + missing.join(' / ') + '</span>';
+    btnEl.style.background = 'var(--primary)';
+    btnEl.style.boxShadow = '';
+  }
 }
 
 function getCurrentPallet() {
@@ -1548,16 +1601,30 @@ function getCurrentPallet() {
 function saveWorkOrder() {
   const num = document.getElementById('woNumber').value.trim();
   const qty = parseInt(document.getElementById('woTargetQty').value) || 0;
+  const palletPrefixVal = document.getElementById('palletPrefix').value;
+  const palletSeqVal = document.getElementById('palletSeq').value;
 
+  // 工单必填
   if (!num || qty <= 0) {
-    alert('请输入工单号和工单数量');
+    showToast('⚠️ 请先填写工单号和工单数量', 'error');
+    if (!num) document.getElementById('woNumber').focus();
+    else document.getElementById('woTargetQty').focus();
+    return;
+  }
+
+  // 栈板号必填（强制要求：工单+栈板号同时确认）
+  if (!palletPrefixVal || !palletSeqVal) {
+    showToast('⚠️ 请先选择栈板前缀+输入序号', 'error');
+    if (!palletPrefixVal) document.getElementById('palletPrefix').focus();
+    else document.getElementById('palletSeq').focus();
     return;
   }
 
   // 成品料号将在首次扫码时从条码自动识别
   currentWorkOrder = { number: num, product: '', qty: qty, targetQty: 0, componentCounts: {} };
   updateWorkOrderDisplay();
-  showToast('工单已设置：' + num + '，数量：' + qty + '，请开始扫码', 'success');
+  const palletStr = palletPrefixVal + '-' + String(parseInt(palletSeqVal)).padStart(4, '0');
+  showToast('工单 ' + num + ' + 栈板 ' + palletStr + ' 已确认，请开始扫码', 'success');
 }
 
 function clearWorkOrder() {
@@ -2080,10 +2147,9 @@ if (new URLSearchParams(window.location.search).has('reset')) {
 
 // 【紧急补丁】?forceclean=1 强制清空 GitHub 上的 shared-data.json
 // 用途：v3 → v5 升级时，v3 还在自动推数据干扰，导致清不干净。
-// 用户只需访问一次 ?forceclean=1，v5 会立即覆盖一次 GitHub 数据为 v5 格式空数据
-// 并把 URL 参数移除（避免每次刷新都触发）
+// 升级版：持续推送 60 秒（覆盖 12 个 v3 同步周期），确保 v3 永远推不过 v5
 if (new URLSearchParams(window.location.search).get('forceclean') === '1') {
-  console.log('[forceclean] 检测到 URL 参数，准备强制清空 GitHub...');
+  console.log('[forceclean] 检测到 URL 参数，准备强制清空 GitHub（持续60秒）...');
   // 立即清空本地
   scanRecords = [];
   deletedRecords = [];
@@ -2094,40 +2160,44 @@ if (new URLSearchParams(window.location.search).get('forceclean') === '1') {
     importedWorkOrders = [];
   }
   try { localStorage.removeItem(STORAGE_KEY); } catch(e) {}
-  // 立即推一次空数据到 GitHub
+  // 持续推送：每 2 秒推一次，共推 60 秒（30 次）
   (async () => {
-    try {
-      // 先尝试拿 SHA
-      const cur = await fetchSharedData();
-      if (cur && typeof pushSharedData === 'function') {
-        // 用上一次成功时记录的 SHA（如果有）
-        const cleanPayload = {
-          _version: DATA_VERSION,
-          scanRecords: [],
-          importedWorkOrders: [],
-          currentWorkOrder: { number:'', product:'', qty:0, targetQty:0, componentCounts:{} },
-          deletedRecords: [],
-          updatedAt: new Date().toISOString()
-        };
-        // 忽略 pushSharedData 的 SHA 冲突（因为 syncCycle 也会推），我们做连续推送
-        for (let i = 0; i < 3; i++) {
-          try {
-            await pushSharedData(cleanPayload);
-            console.log('[forceclean] ✓ 第 ' + (i+1) + ' 次推送成功');
-            break;
-          } catch(e) {
-            console.warn('[forceclean] 第 ' + (i+1) + ' 次推送失败:', e.message);
-            // 等待 syncCycle 完成（5s）再试
-            await new Promise(r => setTimeout(r, 5500));
-          }
+    const cleanPayload = {
+      _version: DATA_VERSION,
+      scanRecords: [],
+      importedWorkOrders: [],
+      currentWorkOrder: { number:'', product:'', qty:0, targetQty:0, componentCounts:{} },
+      deletedRecords: [],
+      updatedAt: new Date().toISOString()
+    };
+    let pushCount = 0;
+    const startTime = Date.now();
+    const DURATION = 60000; // 60 秒
+    const INTERVAL = 2000; // 2 秒
+    
+    while (Date.now() - startTime < DURATION) {
+      try {
+        // 拿最新 SHA
+        const cur = await fetchSharedData();
+        // fetchSharedData 失败时（如 404），cur 为 null
+        if (typeof pushSharedData === 'function') {
+          // pushSharedData 内部会处理 SHA
+          await pushSharedData(cleanPayload);
+          pushCount++;
+          console.log('[forceclean] ✓ ' + pushCount + '/~30 推送成功 (已运行 ' + Math.round((Date.now()-startTime)/1000) + 's)');
         }
+      } catch(e) {
+        console.warn('[forceclean] 第 ' + (pushCount+1) + ' 次推送失败:', e.message);
       }
-    } catch(e) { console.warn('[forceclean] 出错:', e); }
-    // 移除 URL 参数，避免刷新重复触发
+      await new Promise(r => setTimeout(r, INTERVAL));
+    }
+    
+    console.log('[forceclean] 完成：持续 ' + Math.round((Date.now()-startTime)/1000) + ' 秒，共推 ' + pushCount + ' 次');
+    console.log('[forceclean] URL 参数移除中...');
     const url = new URL(window.location.href);
     url.searchParams.delete('forceclean');
     history.replaceState(null, '', url.toString());
-    console.log('[forceclean] URL 参数已移除，请告知用户刷新页面');
+    console.log('[forceclean] ✓ 全部完成，请告知用户关闭所有老 v3 标签页');
   })();
 }
 
