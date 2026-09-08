@@ -1,11 +1,11 @@
-<!DOCTYPE html>
-<html lang="zh-CN" data-page-node-id="87KsejsQyHJ7Nfb1ABDCJx">
-<head data-page-node-id="hk5MpxJrbh2rrt11LtlUhT">
-<meta charset="UTF-8" data-page-node-id="HVMNrXz9arKSdkmlEGL15b">
-<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" data-page-node-id="rHJjAs5VxCw6wWLa6LoJjK">
-<meta http-equiv="Pragma" content="no-cache" data-page-node-id="dcgqgAADEuq5YCyQ0fFYi4">
-<meta http-equiv="Expires" content="0" data-page-node-id="NeqvMpMhBdhO0lBlp6BZKl">
-<meta name="viewport" content="width=device-width, initial-scale=1.0" data-page-node-id="VxGgqCD44hIVGxZTVOJcql">
+﻿<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>半品齐套管理看板</title>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
@@ -187,204 +187,200 @@ button:focus-visible,input:focus-visible,a:focus-visible{outline:2px solid var(-
 @keyframes syncPulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.5;transform:scale(1.3)}}
 </style>
 </head>
-<body data-page-node-id="in7KnnPRK0d4KS7uTks9GW">
+<body>
 
-<header class="header" data-page-node-id="sjr7WmQV6gGxsu2meik7yF">
-  <div class="header-inner" data-page-node-id="bLq7nU9D1zyUs4uFB20cX0">
-    <h1 data-page-node-id="RuxHGFLG7HmUcr9zKFrXUv">📦 半品齐套管理看板</h1>
-      <div class="header-actions" data-page-node-id="slA5VZQoY6kfKMaXNCo1jo">
-      <div id="syncIndicator" class="sync-indicator" title="多人同步状态" data-page-node-id="kQvRwHn9IaJXt25i2FP0Iz">
-        <span class="sync-dot" data-page-node-id="oCo2t3Gc5G9S6t7nLJYyYX"></span>
-        <span class="sync-text" data-page-node-id="fDqPWEJvTxNxjwytfJ7ETW">同步中...</span>
+<header class="header">
+  <div class="header-inner">
+    <h1>📦 半品齐套管理看板</h1>
+      <div class="header-actions">
+      <div id="syncIndicator" class="sync-indicator" title="多人同步状态">
+        <span class="sync-dot"></span>
+        <span class="sync-text">同步中...</span>
       </div>
-      <div class="tabs" data-page-node-id="jX9XYH4Qr3tZO4355aBMtZ">
-        <button class="tab-btn active" onclick="switchTab('scan')" data-page-node-id="nztEN7igqjc2pniASRoBgN">扫码录入</button>
-        <button class="tab-btn" onclick="switchTab('dashboard')" data-page-node-id="OoV4tMxRtn2HCsNhpILGze">齐套看板</button>
+      <div class="tabs">
+        <button class="tab-btn active" onclick="switchTab('scan')">扫码录入</button>
+        <button class="tab-btn" onclick="switchTab('dashboard')">齐套看板</button>
       </div>
 
     </div>
   </div>
 </header>
 
-<main data-page-node-id="tr1aeGV5mfzOsm0AviiFGD">
+<main>
   <!-- Tab 1: Scan -->
-  <div id="tab-scan" class="tab-panel active" data-page-node-id="qt8ksHGb2sb3utOy0ZZbhD">
+  <div id="tab-scan" class="tab-panel active">
     <!-- BOM Load Section -->
-    <div class="card" style="margin-bottom:20px" data-page-node-id="qE3jEjWrQyULDrFO1ExYr6">
-      <div class="card-header" style="cursor:pointer" onclick="document.getElementById('bomDetail').style.display=document.getElementById('bomDetail').style.display==='none'?'block':'none'" data-page-node-id="gKmWedp53JKs9cvfgGz4Dt">
-        <h2 data-page-node-id="QFl06B9HzwET1JoSdZhAVW">📂 BOM 数据管理</h2>
-        <span style="font-size:.8rem;color:var(--text-secondary)" id="bomLoadStatus" data-page-node-id="lWFoYeKVbuRiDTIQxaWca9">点击展开 ▼</span>
+    <div class="card" style="margin-bottom:20px">
+      <div class="card-header" style="cursor:pointer" onclick="document.getElementById('bomDetail').style.display=document.getElementById('bomDetail').style.display==='none'?'block':'none'">
+        <h2>📂 BOM 数据管理</h2>
+        <span style="font-size:.8rem;color:var(--text-secondary)" id="bomLoadStatus">点击展开 ▼</span>
       </div>
-      <div class="card-body" id="bomDetail" style="display:none" data-page-node-id="ZqRgGQkZUAxoHFUz5v2Q9L">
+      <div class="card-body" id="bomDetail" style="display:none">
         <!-- Excel/CSV Upload -->
-        <div style="margin-bottom:16px" data-page-node-id="GHNuXw2hw70Z2T9G62RxBG">
-          <div style="font-weight:600;margin-bottom:8px" data-page-node-id="EIgKNQmr2zoENE1NA4BXBD">📊 从 Excel/CSV 导入（覆盖现有数据）</div>
-          <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap" data-page-node-id="wDMtxIAHXGZGuInzyf0nAX">
-            <input type="file" id="bomFileInput" accept=".xlsx,.xls,.csv" onchange="loadBOMFile(event)" style="font-size:.85rem" data-page-node-id="pdFhPVCbERZWnzVAIftbhb">
-            <span style="font-size:.78rem;color:var(--text-secondary)" data-page-node-id="1SyUZ3AA7VGC6Wd8lPZrw0">列顺序：成品料号 | 半品料号 | 接头规格 | 线长 | 用量</span>
+        <div style="margin-bottom:16px">
+          <div style="font-weight:600;margin-bottom:8px">📊 从 Excel/CSV 导入（覆盖现有数据）</div>
+          <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+            <input type="file" id="bomFileInput" accept=".xlsx,.xls,.csv" onchange="loadBOMFile(event)" style="font-size:.85rem">
+            <span style="font-size:.78rem;color:var(--text-secondary)">列顺序：成品料号 | 半品料号 | 接头规格 | 线长 | 用量</span>
           </div>
         </div>
         <!-- Manual Entry -->
-        <div style="border-top:1px solid var(--border);padding-top:16px" data-page-node-id="UxlpJ1t8QCVtN2ZEhpwz2e">
-          <div style="font-weight:600;margin-bottom:8px" data-page-node-id="iE6LhNDvrKDYryuE2IYOSv">✍️ 手动新增 BOM 条目</div>
-          <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center" data-page-node-id="1OZ2c7oRHDwlCRg3a7sR0P">
-            <input type="text" id="manualCP" placeholder="成品料号" style="width:140px;padding:8px 10px;border:1px solid var(--border);border-radius:6px;font-size:.85rem" data-page-node-id="4l1red7h5nMSlkq6drAhkY">
-            <input type="text" id="manualBP" placeholder="半品料号" style="width:160px;padding:8px 10px;border:1px solid var(--border);border-radius:6px;font-size:.85rem" data-page-node-id="wKr7MKEB7LCkpDQfcXPqqG">
-            <input type="text" id="manualJ" placeholder="接头规格" style="width:100px;padding:8px 10px;border:1px solid var(--border);border-radius:6px;font-size:.85rem" data-page-node-id="El59fOmEqGHDHL0Z1eJQLl">
-            <input type="number" id="manualL" placeholder="线长" value="0" style="width:80px;padding:8px 10px;border:1px solid var(--border);border-radius:6px;font-size:.85rem" data-page-node-id="deq2AkNNXBFvTjyDZH9dlK">
-            <input type="number" id="manualY" placeholder="用量" value="1" style="width:70px;padding:8px 10px;border:1px solid var(--border);border-radius:6px;font-size:.85rem" data-page-node-id="IR8vBk7iFf4kkhF4riPo01">
-            <button class="btn btn-primary btn-sm" onclick="addBOMManual()" data-page-node-id="TkpOx7HW7YaGm1DVn0Mqya">➕ 添加</button>
+        <div style="border-top:1px solid var(--border);padding-top:16px">
+          <div style="font-weight:600;margin-bottom:8px">✍️ 手动新增 BOM 条目</div>
+          <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center">
+            <input type="text" id="manualCP" placeholder="成品料号" style="width:140px;padding:8px 10px;border:1px solid var(--border);border-radius:6px;font-size:.85rem">
+            <input type="text" id="manualBP" placeholder="半品料号" style="width:160px;padding:8px 10px;border:1px solid var(--border);border-radius:6px;font-size:.85rem">
+            <input type="text" id="manualJ" placeholder="接头规格" style="width:100px;padding:8px 10px;border:1px solid var(--border);border-radius:6px;font-size:.85rem">
+            <input type="number" id="manualL" placeholder="线长" value="0" style="width:80px;padding:8px 10px;border:1px solid var(--border);border-radius:6px;font-size:.85rem">
+            <input type="number" id="manualY" placeholder="用量" value="1" style="width:70px;padding:8px 10px;border:1px solid var(--border);border-radius:6px;font-size:.85rem">
+            <button class="btn btn-primary btn-sm" onclick="addBOMManual()">➕ 添加</button>
           </div>
         </div>
       </div>
     </div>
 
     <!-- Work Order Settings -->
-    <div class="card" style="margin-bottom:20px" data-page-node-id="swEHBAkgDDmiGb4qVNoQR5">
-      <div class="card-body" style="padding:14px 20px" data-page-node-id="9MzgRaBmB5qPPOwF8c0I6A">
-        <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap" data-page-node-id="XqKeRXSGJOkDINnvBqLwAS">
-          <span style="font-weight:600;font-size:.9rem" data-page-node-id="fuGUFAVgTEnjppRLNDH5oj">📋 工单设置</span>
-          <input type="text" id="woNumber" placeholder="工单号" style="width:140px;padding:8px 10px;border:1px solid var(--border);border-radius:6px;font-size:.85rem" oninput="updateWoPalletHint()" data-page-node-id="UsTK2U6DUJLJUgBgu0btzD">
-          <input type="number" id="woTargetQty" placeholder="工单数量" style="width:110px;padding:8px 10px;border:1px solid var(--border);border-radius:6px;font-size:.85rem" oninput="updateWoPalletHint()" data-page-node-id="AswnytCyTQm50tDdVMcH78">
-          <button class="btn btn-sm" onclick="toggleBatchImport()" style="background:var(--warning);color:#fff;border:none;padding:5px 12px;border-radius:6px;font-size:.8rem;cursor:pointer" data-page-node-id="NA7o3SW2RBuX88WTOKh1hE">📋 批量录入</button>
-          <button class="btn btn-sm" onclick="clearWorkOrder()" style="background:var(--danger);color:#fff;border:none;padding:5px 12px;border-radius:6px;font-size:.8rem;cursor:pointer" data-page-node-id="GsD1iiLNSFavdnfgvXYJbX">🗑️ 清除</button>
-          <span id="woStatus" style="font-size:.82rem;color:var(--text-secondary)" data-page-node-id="uyzBW1LFlA2sFGnszJDKlb">未设置工单</span>
+    <div class="card" style="margin-bottom:20px">
+      <div class="card-body" style="padding:14px 20px">
+        <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+          <span style="font-weight:600;font-size:.9rem">📋 工单设置</span>
+          <input type="text" id="woNumber" placeholder="工单号" style="width:140px;padding:8px 10px;border:1px solid var(--border);border-radius:6px;font-size:.85rem">
+          <input type="number" id="woTargetQty" placeholder="工单数量" style="width:110px;padding:8px 10px;border:1px solid var(--border);border-radius:6px;font-size:.85rem">
+          <button class="btn btn-primary btn-sm" onclick="saveWorkOrder()">✅ 确认</button>
+          <button class="btn btn-sm" onclick="toggleBatchImport()" style="background:var(--warning);color:#fff;border:none;padding:5px 12px;border-radius:6px;font-size:.8rem;cursor:pointer">📋 批量录入</button>
+          <button class="btn btn-sm" onclick="clearWorkOrder()" style="background:var(--danger);color:#fff;border:none;padding:5px 12px;border-radius:6px;font-size:.8rem;cursor:pointer">🗑️ 清除</button>
+          <span id="woStatus" style="font-size:.82rem;color:var(--text-secondary)">未设置工单</span>
         </div>
         <!-- Batch Import Panel -->
-        <div id="batchImportPanel" style="display:none;margin-top:12px;padding:12px;background:#f8f9fa;border-radius:8px;border:1px solid var(--border)" data-page-node-id="GcHAYqI3fvCq33qrsR7LiA">
-          <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px" data-page-node-id="5zMSnHagOpfz0EHLTIMKW3">
-            <span style="font-weight:600;font-size:.85rem" data-page-node-id="gBj6Wabit7xhjdhnBt3P1C">📋 批量录入工单</span>
-            <span style="font-size:.75rem;color:var(--text-secondary)" data-page-node-id="Cicd3Ib3FKRInbutbv0AWI">从Excel粘贴：工单号 | 数量（每行一个工单）</span>
+        <div id="batchImportPanel" style="display:none;margin-top:12px;padding:12px;background:#f8f9fa;border-radius:8px;border:1px solid var(--border)">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+            <span style="font-weight:600;font-size:.85rem">📋 批量录入工单</span>
+            <span style="font-size:.75rem;color:var(--text-secondary)">从Excel粘贴：工单号 | 数量（每行一个工单）</span>
           </div>
           <textarea id="batchImportText" placeholder="101396001&#9;100&#10;101396002&#9;50&#10;..." style="width:100%;min-height:120px;padding:10px;border:1px solid var(--border);border-radius:6px;font-size:.82rem;font-family:monospace;resize:vertical" oninput="previewBatchImport()"></textarea>
-          <div style="display:flex;align-items:center;gap:12px;margin-top:8px" data-page-node-id="WktaAhuTzPz8ywSVkuvEtM">
-            <button class="btn btn-primary btn-sm" onclick="confirmBatchImport()" data-page-node-id="EBCpQLPIHlH4NjGmPL9HqG">✅ 确认导入</button>
-            <button class="btn btn-sm" onclick="toggleBatchImport()" style="background:#999;color:#fff;border:none;padding:5px 12px;border-radius:6px;font-size:.8rem;cursor:pointer" data-page-node-id="o500SHFA8tEuEWJKG6Xweg">取消</button>
-            <span id="batchPreview" style="font-size:.8rem;color:var(--text-secondary)" data-page-node-id="wH0n3oFkH5xzXM9P5mwY3G"></span>
+          <div style="display:flex;align-items:center;gap:12px;margin-top:8px">
+            <button class="btn btn-primary btn-sm" onclick="confirmBatchImport()">✅ 确认导入</button>
+            <button class="btn btn-sm" onclick="toggleBatchImport()" style="background:#999;color:#fff;border:none;padding:5px 12px;border-radius:6px;font-size:.8rem;cursor:pointer">取消</button>
+            <span id="batchPreview" style="font-size:.8rem;color:var(--text-secondary)"></span>
           </div>
         </div>
         <!-- Imported Work Orders List -->
-        <div id="workOrderList" style="display:none;margin-top:12px;padding:10px;background:#e8f4fd;border-radius:8px;border:1px solid #b3d7ff" data-page-node-id="vg261u95BWSNrspbchQPQ9">
-          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px" data-page-node-id="UatHikANj0Eu2Re0cPr4JM">
-            <span style="font-weight:600;font-size:.85rem;color:#1a73e8" data-page-node-id="SCFHZlHYeyUQqJrFXlJDup">📦 已导入工单列表</span>
-            <span id="workOrderCount" style="font-size:.78rem;color:var(--text-secondary)" data-page-node-id="V2lMSXxaeVcbbv8BQD3C28"></span>
+        <div id="workOrderList" style="display:none;margin-top:12px;padding:10px;background:#e8f4fd;border-radius:8px;border:1px solid #b3d7ff">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+            <span style="font-weight:600;font-size:.85rem;color:#1a73e8">📦 已导入工单列表</span>
+            <span id="workOrderCount" style="font-size:.78rem;color:var(--text-secondary)"></span>
           </div>
-          <div id="workOrderListContent" style="max-height:200px;overflow-y:auto" data-page-node-id="1AVRDIDMu8G9qpsYj6ym4Y"></div>
+          <div id="workOrderListContent" style="max-height:200px;overflow-y:auto"></div>
         </div>
-        <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-top:10px;padding-top:10px;border-top:1px dashed var(--border)" data-page-node-id="pCqKOCB2cUjTJ4cBH74KzH">
-          <span style="font-weight:600;font-size:.9rem" data-page-node-id="yDGkEMvFpxpKziVQzpigfI">🏷️ 栈板号</span>
-          <select id="palletPrefix" onchange="updatePalletDisplay()" style="padding:8px 10px;border:1px solid var(--border);border-radius:6px;font-size:.85rem;background:#fff;cursor:pointer" data-page-node-id="6qbFBbHBngwpsHL8FUA2Mo">
-            <option value="" data-page-node-id="SJGTRnHtpFcJGG8zec8tgC">选择前缀</option>
-            <option value="5B3F" data-page-node-id="SnQb9LDOJdwdAEXq5zKM33">5B3F</option>
-            <option value="2B3F" data-page-node-id="2WhnibOb3zD5ltLuWVdLhT">2B3F</option>
-            <option value="2B4F" data-page-node-id="QDuGHHMqEQ1KfpX4vowzRY">2B4F</option>
+        <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-top:10px;padding-top:10px;border-top:1px dashed var(--border)">
+          <span style="font-weight:600;font-size:.9rem">🏷️ 栈板号</span>
+          <select id="palletPrefix" onchange="updatePalletDisplay()" style="padding:8px 10px;border:1px solid var(--border);border-radius:6px;font-size:.85rem;background:#fff;cursor:pointer">
+            <option value="">选择前缀</option>
+            <option value="5B3F">5B3F</option>
+            <option value="2B3F">2B3F</option>
+            <option value="2B4F">2B4F</option>
           </select>
-          <span style="color:var(--text-secondary);font-size:.9rem" data-page-node-id="1fbll7xQf5yhpm6K9Q3T5i">-</span>
-          <input type="number" id="palletSeq" min="1" max="1000" placeholder="0001" oninput="updatePalletDisplay()" style="width:100px;padding:8px 10px;border:1px solid var(--border);border-radius:6px;font-size:.85rem" data-page-node-id="OEAyQdVEc101c06ERobBTz">
-          <div style="position:relative;display:inline-block" data-page-node-id="xPIGnPfghjUdXGr8KtgX2P">
-            <input type="text" id="palletScanInput" placeholder="扫码枪或📷扫码" style="width:180px;padding:8px 40px 8px 10px;border:2px solid var(--primary);border-radius:6px;font-size:.85rem;background:#f0f8ff" onkeydown="handlePalletScan(event)" data-page-node-id="TIpyE5Ud0qz661xuwmzSYz">
-            <button onclick="openPalletCamera()" title="手机摄像头扫栈板号" style="position:absolute;right:4px;top:50%;transform:translateY(-50%);width:30px;height:30px;border:none;background:var(--primary);color:#fff;border-radius:8px;cursor:pointer;font-size:1rem;display:flex;align-items:center;justify-content:center;box-shadow:0 1px 4px rgba(26,115,232,.3)" data-page-node-id="xZ2FLDpavAHReg9BmRr8tR">📷</button>
+          <span style="color:var(--text-secondary);font-size:.9rem">-</span>
+          <input type="number" id="palletSeq" min="1" max="1000" placeholder="0001" oninput="updatePalletDisplay()" style="width:100px;padding:8px 10px;border:1px solid var(--border);border-radius:6px;font-size:.85rem">
+          <div style="position:relative;display:inline-block">
+            <input type="text" id="palletScanInput" placeholder="扫码枪或📷扫码" style="width:180px;padding:8px 40px 8px 10px;border:2px solid var(--primary);border-radius:6px;font-size:.85rem;background:#f0f8ff" onkeydown="handlePalletScan(event)">
+            <button onclick="openPalletCamera()" title="手机摄像头扫栈板号" style="position:absolute;right:4px;top:50%;transform:translateY(-50%);width:30px;height:30px;border:none;background:var(--primary);color:#fff;border-radius:8px;cursor:pointer;font-size:1rem;display:flex;align-items:center;justify-content:center;box-shadow:0 1px 4px rgba(26,115,232,.3)">📷</button>
           </div>
-          <span id="palletDisplay" style="font-size:.85rem;color:var(--text-secondary);font-weight:500" data-page-node-id="K84KhhdSyicFik9NgBbMq3">未设置栈板号</span>
-        </div>
-        <!-- 确认按钮行（工单+栈板号都填好后才能点） -->
-        <div style="display:flex;align-items:center;justify-content:flex-start;gap:12px;margin-top:12px;padding-top:12px;border-top:1px dashed var(--border)" data-page-node-id="WO_PALLET_CONFIRM_ROW">
-          <span style="font-size:.8rem;color:var(--text-secondary)" id="woPalletHint">请先填写工单号+工单数量，选择栈板前缀+输入序号后再点确认</span>
-          <button class="btn btn-primary btn-sm" id="woPalletConfirmBtn" onclick="saveWorkOrder()" style="font-weight:600;padding:8px 24px;font-size:.95rem" data-page-node-id="WO_PALLET_CONFIRM_BTN">✅ 确认工单与栈板</button>
+          <span id="palletDisplay" style="font-size:.85rem;color:var(--text-secondary);font-weight:500">未设置栈板号</span>
         </div>
       </div>
     </div>
 
     <!-- Scan Area -->
-    <div class="card" style="margin-bottom:20px" data-page-node-id="jj8JCc0ihC9FgvBaMDfIU8">
-      <div class="card-body scan-input-area" data-page-node-id="m3X6mZr8UYd0GFJJwhpF4D">
-        <div class="action-select" data-page-node-id="iOkWyuKlwkeMlcCOOaNYzB">
-          <button class="action-btn active-in" id="btnIn" onclick="setAction('入库')" data-page-node-id="i0H0DtWO2orYHsdntsM2zN">📥 入库</button>
-          <button class="action-btn" id="btnOut" onclick="setAction('出库')" data-page-node-id="5uTDYxqLPgiE7vYkNuydHv">📤 出库</button>
+    <div class="card" style="margin-bottom:20px">
+      <div class="card-body scan-input-area">
+        <div class="action-select">
+          <button class="action-btn active-in" id="btnIn" onclick="setAction('入库')">📥 入库</button>
+          <button class="action-btn" id="btnOut" onclick="setAction('出库')">📤 出库</button>
         </div>
-        <div class="scan-input-wrap" data-page-node-id="XLKl2A0pfuFHSDvEdIrZgx">
-          <input type="text" id="scanInput" placeholder="请扫描唯一码（扫码枪或点📷相机扫码）" autofocus autocomplete="off" data-page-node-id="Co4cUalqfjEh2uqP4pf6Tj">
-          <button id="cameraBtn" onclick="openCamera()" title="手机摄像头扫码" data-page-node-id="Z2OzHX6FBlzjtlQBb0JpWW">📷</button>
+        <div class="scan-input-wrap">
+          <input type="text" id="scanInput" placeholder="请扫描唯一码（扫码枪或点📷相机扫码）" autofocus autocomplete="off">
+          <button id="cameraBtn" onclick="openCamera()" title="手机摄像头扫码">📷</button>
         </div>
-        <div class="scan-status" id="scanStatus" data-page-node-id="gEFncqiT6saKiVfF69rnq8"></div>
+        <div class="scan-status" id="scanStatus"></div>
       </div>
     </div>
 
     <!-- Scan Records -->
-    <div class="card" data-page-node-id="GaYDPKoD5wm32qEseegHIi">
-      <div class="card-header" data-page-node-id="lbpupCAmi3HN11HRQjGMtR">
-        <h2 data-page-node-id="jJPPMd9MhxtxsiYByJKVAh">📋 扫码记录</h2>
-        <button class="btn btn-outline btn-sm" onclick="exportScanCSV()" data-page-node-id="CZVU61OROajnG2NXB0euOZ">💾 导出 CSV</button>
-        <button class="btn btn-outline btn-sm" style="color:var(--danger);border-color:var(--danger);margin-left:6px" onclick="clearAllData()" data-page-node-id="B7Do6hK388vXvVqD94JJvf">🗑️ 清除所有数据</button>
+    <div class="card">
+      <div class="card-header">
+        <h2>📋 扫码记录</h2>
+        <button class="btn btn-outline btn-sm" onclick="exportScanCSV()">💾 导出 CSV</button>
+        <button class="btn btn-outline btn-sm" style="color:var(--danger);border-color:var(--danger);margin-left:6px" onclick="clearAllData()">🗑️ 清除所有数据</button>
       </div>
-      <div class="card-body" data-page-node-id="63ZGxJAjQNzsDI7wNxLFyg">
+      <div class="card-body">
         <!-- Search and filter controls -->
-        <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;align-items:center" data-page-node-id="48JyJgwaiUeKzNtl8oi2u1">
-          <input type="text" id="scanSearchInput" placeholder="搜索唯一码、料号、工单号、栈板号或批次..." style="flex:1;min-width:150px;padding:8px 12px;border:1px solid var(--border);border-radius:6px;font-size:.9rem" data-page-node-id="7sDDOD00Z6KL2hO3gWHBvu">
-          <input type="date" id="scanDateFilter" style="padding:8px 12px;border:1px solid var(--border);border-radius:6px;font-size:.9rem" data-page-node-id="Fn66WtXVFyig5e4g8ClKDL">
-          <button class="btn btn-primary btn-sm" onclick="filterScanRecords()" data-page-node-id="KdAvfPpswQWOD5J3yvxgIQ">🔍 查询</button>
-          <button class="btn btn-outline btn-sm" onclick="clearScanFilter()" data-page-node-id="PLpoth6oCud4AR4tX84DGo">🔄 显示全部</button>
-          <button class="btn btn-sm" style="background:var(--danger);color:#fff" onclick="deleteByDate()" data-page-node-id="HNW8NCuLxLBxOrV5A9NZQ8">🗑️ 删除该日期</button>
+        <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;align-items:center">
+          <input type="text" id="scanSearchInput" placeholder="搜索唯一码、料号、工单号、栈板号或批次..." style="flex:1;min-width:150px;padding:8px 12px;border:1px solid var(--border);border-radius:6px;font-size:.9rem">
+          <input type="date" id="scanDateFilter" style="padding:8px 12px;border:1px solid var(--border);border-radius:6px;font-size:.9rem">
+          <button class="btn btn-primary btn-sm" onclick="filterScanRecords()">🔍 查询</button>
+          <button class="btn btn-outline btn-sm" onclick="clearScanFilter()">🔄 显示全部</button>
+          <button class="btn btn-sm" style="background:var(--danger);color:#fff" onclick="deleteByDate()">🗑️ 删除该日期</button>
         </div>
-        <div id="scanRecordCount" style="font-size:.8rem;color:var(--text-secondary);margin-bottom:8px" data-page-node-id="smNtJQEH4nAHkcsaoFPXX2">共 0 条记录</div>
-        <div class="recent-list" id="recentList" style="max-height:400px;overflow-y:auto" data-page-node-id="Gh0Rg4iuHAVU4UPgpL1AxS">
-          <div style="padding:20px;text-align:center;color:var(--text-secondary)" data-page-node-id="jgrfCwAeGKLNCDIRX7rZWY">暂无扫码记录</div>
+        <div id="scanRecordCount" style="font-size:.8rem;color:var(--text-secondary);margin-bottom:8px">共 0 条记录</div>
+        <div class="recent-list" id="recentList" style="max-height:400px;overflow-y:auto">
+          <div style="padding:20px;text-align:center;color:var(--text-secondary)">暂无扫码记录</div>
         </div>
       </div>
     </div>
   </div>
 
   <!-- Tab 2: Dashboard -->
-  <div id="tab-dashboard" class="tab-panel" data-page-node-id="yz0KMBtp3XAqrjeDvfbCKz">
+  <div id="tab-dashboard" class="tab-panel">
     <!-- KPI Cards -->
-    <div class="kpi-grid" id="kpiGrid" data-page-node-id="AhBHJgZyxjrc8IStfz1CH1">
-      <div class="kpi-card" data-page-node-id="9aNK9Fh8ec9YNDmvGef7kD"><div class="kpi-label" data-page-node-id="2Tfn5x6ACRwtHPBJSNSWeu">总成品数</div><div class="kpi-value" id="kpiTotal" data-page-node-id="9XFB2TGajI6VCMP3IBkaIN">57</div></div>
-      <div class="kpi-card success" data-page-node-id="3Vg9kMClCygme6AE50s9xS"><div class="kpi-label" data-page-node-id="0dfI6V7xHth5Ie6GGzp6D1">可齐套成品数</div><div class="kpi-value" id="kpiKit" data-page-node-id="DyAizPHYwnDyyB7X518hkH">0</div></div>
-      <div class="kpi-card" data-page-node-id="KCpctDvDpD1kESLtEGmApb"><div class="kpi-label" data-page-node-id="kHEzwZ2E6H96S2ya0ggCGp">当前库存</div><div class="kpi-value" id="kpiSemiTotal" data-page-node-id="5yEXZDcBWjn9aSYngcaihV">0</div></div>
+    <div class="kpi-grid" id="kpiGrid">
+      <div class="kpi-card"><div class="kpi-label">总成品数</div><div class="kpi-value" id="kpiTotal">57</div></div>
+      <div class="kpi-card success"><div class="kpi-label">可齐套成品数</div><div class="kpi-value" id="kpiKit">0</div></div>
+      <div class="kpi-card"><div class="kpi-label">当前库存</div><div class="kpi-value" id="kpiSemiTotal">0</div></div>
     </div>
 
     <!-- Detail Table -->
-    <div class="card" data-page-node-id="xSoC5QtaI62C1xUcAoGIEh">
-      <div class="card-header" data-page-node-id="qXAtC5idJtnNrS58hrXDjh">
-        <h2 data-page-node-id="bMgAROFbubVonN3iRGEoxR">📊 成品齐套明细</h2>
+    <div class="card">
+      <div class="card-header">
+        <h2>📊 成品齐套明细</h2>
       </div>
-      <div class="card-body" data-page-node-id="x0hQj1ZijEYBFAOJgWx0a2">
-        <div class="search-bar" data-page-node-id="rlWC1z7gurZWzIXNb1jMAD">
-          <input type="text" id="searchInput" placeholder="搜索成品料号..." oninput="filterTable()" data-page-node-id="07hiAcE8ckN20HjXCZD0p5">
-          <button class="btn btn-outline btn-sm" onclick="sortTable()" data-page-node-id="vTGojDh34ySxQyxIoEz5YF">🔄 按可配套数排序</button>
-          <button class="btn btn-outline btn-sm" onclick="expandAll()" data-page-node-id="3geRURq5ZCtObxXWigD9Ye">📂 全部展开</button>
-          <button class="btn btn-outline btn-sm" onclick="collapseAll()" data-page-node-id="mGK0jsonFhrYdI76Cj6GfD">📁 全部收起</button>
-          <button class="btn btn-primary btn-sm" onclick="exportToExcel()" data-page-node-id="OHy8zQ6FtJ4DV2pf1adiDF">📥 导出Excel</button>
+      <div class="card-body">
+        <div class="search-bar">
+          <input type="text" id="searchInput" placeholder="搜索成品料号..." oninput="filterTable()">
+          <button class="btn btn-outline btn-sm" onclick="sortTable()">🔄 按可配套数排序</button>
+          <button class="btn btn-outline btn-sm" onclick="expandAll()">📂 全部展开</button>
+          <button class="btn btn-outline btn-sm" onclick="collapseAll()">📁 全部收起</button>
+          <button class="btn btn-primary btn-sm" onclick="exportToExcel()">📥 导出Excel</button>
         </div>
-        <div class="table-wrap" data-page-node-id="soe2acAlvkg71SsAPTrOEL">
-          <table id="dashTable" data-page-node-id="l0kPFpD3C94vDTdrXhafgp">
-            <thead data-page-node-id="85MKUJtL7uyT7d44FogfLP">
-              <tr data-page-node-id="ablQmDO0v3gBGSsowLP4BK">
-                <th data-page-node-id="kIgAd4e6UUcqblQOyFuM9q">成品料号</th>
-                <th data-page-node-id="0Ca7fdtfEgqXbChA0krbDt">半品数</th>
-                <th data-page-node-id="a0DwdI0QJfdhKiV128weDX">可配套数</th>
-                <th data-page-node-id="kEbd2YcJ6fXMiHk6pyoITm">齐套状态</th>
-                <th data-page-node-id="sT2bxvc1OkGFBGGKRwdlY9">缺料半品</th>
-                <th data-page-node-id="AAg925g5YfufhNsdfo8qzc">最大缺口</th>
+        <div class="table-wrap">
+          <table id="dashTable">
+            <thead>
+              <tr>
+                <th>成品料号</th>
+                <th>半品数</th>
+                <th>可配套数</th>
+                <th>齐套状态</th>
+                <th>缺料半品</th>
+                <th>最大缺口</th>
               </tr>
             </thead>
-            <tbody id="dashBody" data-page-node-id="yxxDSenTuoJtSCk9T3K3CJ"></tbody>
+            <tbody id="dashBody"></tbody>
           </table>
         </div>
       </div>
     </div>
 
     <!-- Charts -->
-    <div class="chart-grid" data-page-node-id="XvLi38EWFAf80JzJg4AstN">
-      <div class="chart-card" data-page-node-id="czsYWPfxvwtHIRYFx4ZaNP">
-        <h2 data-page-node-id="iMYaUCYMgEzBuf4lYBAyfx">📊 可配套数分布</h2>
-        <div class="bar-chart" id="chartKit" data-page-node-id="a7fvBIlJNGBl5FXTHE9HJp"></div>
+    <div class="chart-grid">
+      <div class="chart-card">
+        <h2>📊 可配套数分布</h2>
+        <div class="bar-chart" id="chartKit"></div>
       </div>
     </div>
   </div>
 </main>
 
-<div class="toast" id="toast" data-page-node-id="PkbkIl0yDv0N8Nm7GQ5BvX"></div>
+<div class="toast" id="toast"></div>
 
 <script>
 // ====== EMBEDDED DATA ======
@@ -433,7 +429,7 @@ const SEMI_TOTAL_COUNT = 277;
 
 // ====== LOCAL STORAGE 持久化 ======
 const STORAGE_KEY = 'semiKitDashboard';
-const DATA_VERSION = 'v5'; // 数据版本号，用于检测旧数据自动清理（v5: 修复 mergeRemoteData 不删除本地幽灵记录导致的"删了又回来"bug）
+const DATA_VERSION = 'v5'; // v5: 切换数据文件+版本升级，彻底隔离旧标签页数据
 
 function saveData() {
   try {
@@ -450,8 +446,8 @@ function saveData() {
       savedAt: new Date().toISOString()
     };
     localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
-    // 触发云端同步
-    if (typeof triggerSync === 'function') triggerSync();
+    // 删完立刻同步，不要拖 2 秒
+    if (typeof syncCycle === 'function') syncCycle();
   } catch(e) {
     console.warn('保存数据到本地存储失败:', e);
   }
@@ -484,10 +480,12 @@ function loadData() {
       return false;
     }
     if (data.scanRecords && Array.isArray(data.scanRecords)) {
-      // 【关键修复】加载时过滤墓碑，防止 localStorage 缓存中的"幽灵记录"复活
-      // 即使本地墓碑和扫码记录不一致，加载时也以墓碑为准把已删除记录剔除
-      const tombAtLoad = new Set(data.deletedRecords || []);
-      scanRecords = data.scanRecords.filter(r => !tombAtLoad.has(recordKey(r.c, r.t)));
+      // 【补丁2】先从 localStorage 加载墓碑，再过滤幽灵记录
+      if (data.deletedRecords && Array.isArray(data.deletedRecords)) {
+        deletedRecords = data.deletedRecords;
+      }
+      const tomb = new Set(deletedRecords);
+      scanRecords = data.scanRecords.filter(r => !tomb.has(recordKey(r.c, r.t)));
     }
     // 不从 localStorage 恢复 inventory，改为从初始库存+扫码记录重新计算
     recomputeInventory();
@@ -499,9 +497,6 @@ function loadData() {
     }
     if (data.currentAction) {
       currentAction = data.currentAction;
-    }
-    if (data.deletedRecords && Array.isArray(data.deletedRecords)) {
-      deletedRecords = data.deletedRecords;
     }
     if (data.palletPrefix) {
       document.getElementById('palletPrefix').value = data.palletPrefix;
@@ -523,7 +518,7 @@ const SYNC_CONFIG = {
   token: 'ghp_' + 'J5CPrdGL6M' + 'l93AP3G2Yd' + 'OSWXUeEZfu' + '1Q6GGu',
   owner: 'Mirror20260901',
   repo: 'semi-kit-dashboard',
-  path: 'shared-data.json',
+  path: 'shared-v2.json',
   pollInterval: 5000,
   apiBase: 'https://api.github.com'
 };
@@ -604,38 +599,9 @@ function mergeRemoteData(remote) {
   // inventory 不再通过远程合并，改为各设备从 scanRecords 重新计算（防止污染数据覆盖正确值）
 
   // 【自动修复】检测远程数据是否被旧代码污染（无 _version 或版本不匹配）
-  // 如果远程数据是旧的，说明有人用旧代码推送了未过滤的数据，需要自动清理
   const remoteIsStale = !remote._version || remote._version !== DATA_VERSION;
 
-  if (remote.scanRecords && Array.isArray(remote.scanRecords)) {
-    // 用稳定的 key（抹平换行/管道符）匹配删除记录，同时兼容旧格式 deletedRecords（未清洗的）
-    const deletedSet = new Set(deletedRecords);
-    const deletedTsSet = new Set();
-    deletedRecords.forEach(dk => {
-      // 旧格式："code||time" — 取最后一段"||"后的时间戳做兜底
-      const idx = dk.lastIndexOf('||');
-      if (idx >= 0) deletedTsSet.add(dk.substring(idx + 2));
-      deletedTsSet.add(String(dk).replace(/[\r\n|｜]/g, ''));
-    });
-    const existCodes = new Set(scanRecords.map(r => recordKey(r.c, r.t)));
-    for (const rr of remote.scanRecords) {
-      const rid = recordKey(rr.c, rr.t);
-      const tsId = recordTimestamp(rr.t);
-      // 精准匹配 key，或时间戳匹配旧 deletedRecords 格式
-      if (deletedSet.has(rid) || deletedTsSet.has(rid) || deletedTsSet.has(tsId)) continue;
-      // 如果远程数据是旧代码污染的，跳过合并（这些记录不应存在）
-      if (remoteIsStale) continue;
-      if (!existCodes.has(rid)) {
-        scanRecords.push(rr);
-        existCodes.add(rid);
-        changed = true;
-      }
-    }
-    if (changed) {
-      scanRecords.sort((a, b) => (b.t || '').localeCompare(a.t || ''));
-    }
-  }
-  // Merge deleted records tracking（墓碑永远只增不减）
+  // ===== 第一步：先合并远程墓碑（deletedRecords）=====
   if (remote.deletedRecords && Array.isArray(remote.deletedRecords)) {
     const existDel = new Set(deletedRecords);
     for (const dr of remote.deletedRecords) {
@@ -647,17 +613,47 @@ function mergeRemoteData(remote) {
     }
     if (deletedRecords.length > 5000) deletedRecords = deletedRecords.slice(-5000);
   }
-  // 【关键修复】合并完墓碑后，必须从本地 scanRecords 里真正移除被墓碑标记的记录
-  // 之前的 bug：mergeRemoteData 只 push 新记录、不删除本地"幽灵记录"，
-  // 导致已被本地/远程标记删除的记录仍然留在 scanRecords 中，
-  // renderRecentList 会显示、recomputeInventory 会基于它重算库存 → 数据复活
-  const allTombstones = new Set(deletedRecords);
-  const beforeTomb = scanRecords.length;
-  scanRecords = scanRecords.filter(r => !allTombstones.has(recordKey(r.c, r.t)));
-  if (scanRecords.length !== beforeTomb) {
+
+  // ===== 第二步：反向同步——用合并后的墓碑清理本地"幽灵记录"=====
+  const tombstoneSet = new Set(deletedRecords);
+  const before = scanRecords.length;
+  scanRecords = scanRecords.filter(r => !tombstoneSet.has(recordKey(r.c, r.t)));
+  if (scanRecords.length !== before) {
     changed = true;
-    console.log('[mergeRemoteData] 已从本地 scanRecords 中清理 ' + (beforeTomb - scanRecords.length) + ' 条幽灵记录');
+    console.log(`反向同步：清理了 ${before - scanRecords.length} 条被墓碑标记的本地记录`);
   }
+
+  // ===== 第三步：合并远程 scanRecords（跳过已删除和旧代码污染的记录）=====
+  if (remote.scanRecords && Array.isArray(remote.scanRecords)) {
+    // 构建墓碑匹配集合（兼容旧格式）
+    const deletedTsSet = new Set();
+    deletedRecords.forEach(dk => {
+      const idx = dk.lastIndexOf('||');
+      if (idx >= 0) deletedTsSet.add(dk.substring(idx + 2));
+      deletedTsSet.add(String(dk).replace(/[\r\n|｜]/g, ''));
+    });
+    const existCodes = new Set(scanRecords.map(r => recordKey(r.c, r.t)));
+    let remoteChanged = false;
+    for (const rr of remote.scanRecords) {
+      const rid = recordKey(rr.c, rr.t);
+      const tsId = recordTimestamp(rr.t);
+      // 跳过已被删除的记录
+      if (tombstoneSet.has(rid) || deletedTsSet.has(rid) || deletedTsSet.has(tsId)) continue;
+      // 如果远程数据是旧代码污染的，跳过合并
+      if (remoteIsStale) continue;
+      if (!existCodes.has(rid)) {
+        scanRecords.push(rr);
+        existCodes.add(rid);
+        remoteChanged = true;
+      }
+    }
+    if (remoteChanged) {
+      scanRecords.sort((a, b) => (b.t || '').localeCompare(a.t || ''));
+      changed = true;
+    }
+  }
+
+  // 合并 importedWorkOrders
   if (remote.importedWorkOrders && Array.isArray(remote.importedWorkOrders)) {
     const existNums = new Set(importedWorkOrders.map(w => w.number));
     for (const rwo of remote.importedWorkOrders) {
@@ -679,19 +675,7 @@ function mergeRemoteData(remote) {
       }
     }
   }
-  // 【自动修复】如果远程数据是旧代码污染的，清理本地并添加墓碑
-  if (remoteIsStale && scanRecords.length > 0) {
-    console.log('检测到远程数据被旧代码污染，自动清理...');
-    for (const r of scanRecords) {
-      const rk = recordKey(r.c, r.t);
-      if (!deletedRecords.includes(rk)) {
-        deletedRecords.push(rk);
-      }
-    }
-    if (deletedRecords.length > 5000) deletedRecords = deletedRecords.slice(-5000);
-    scanRecords = [];
-    changed = true;
-  }
+
   // 合并 scanRecords 后重新计算 inventory
   if (changed) recomputeInventory();
   return changed;
@@ -1311,10 +1295,7 @@ function deleteSingleRecord(index) {
   renderRecentList();
   updateWorkOrderDisplay();
   refreshDashboard();
-  // 【关键修复】删除后立即同步到云端（不要等 triggerSync 的 2 秒延迟）
-  // 防止用户在 2 秒内刷新或关闭页面导致删除丢失，被旧远程数据覆盖回来
-  if (typeof syncCycle === 'function') syncCycle();
-  showToast('记录已删除并同步', 'success');
+  showToast('记录已删除', 'success');
 }
 
 function deleteByDate() {
@@ -1362,51 +1343,27 @@ function deleteByDate() {
   renderRecentList();
   updateWorkOrderDisplay();
   refreshDashboard();
-  // 【关键修复】删除后立即同步到云端（不要等 triggerSync 的 2 秒延迟）
-  if (typeof syncCycle === 'function') syncCycle();
-  showToast(`已删除 ${recordsToDelete.length} 条记录并同步`, 'success');
+  showToast(`已删除 ${recordsToDelete.length} 条记录`, 'success');
 }
 
 // ====== CSV EXPORT ======
 function exportScanCSV() {
-  // 优先导出当前筛选结果；如果没筛选则导出全部
-  const records = (filteredScanRecords && filteredScanRecords.length > 0)
-    ? filteredScanRecords
-    : scanRecords.filter(r => r.c);
-
-  if (records.length === 0) {
-    showToast('暂无数据可导出', 'info');
-    return;
-  }
-
-  const isFiltered = (filteredScanRecords && filteredScanRecords.length > 0);
-
+  if (scanRecords.length === 0) { showToast('暂无数据可导出', 'info'); return; }
   let csv = '\uFEFF时间,唯一码,线序料号,操作人,工单号,工单数量,库位,批次,动作,栈板号\n';
-  records.forEach(r => {
+  scanRecords.forEach(r => {
     csv += `"${r.t}","${r.c}","${r.x}","${r.r}","${r.wo_no || ''}","${r.wo_qty || ''}","${r.w}","${r.pd || ''}","${r.a}","${r.z || ''}"\n`.replace(/"undefined"/g, '""');
   });
   // Clean up undefined
   csv = csv.replace(/undefined/g, '');
-
-  // 文件名带上筛选标记，方便区分
-  const today = new Date().toISOString().slice(0, 10);
-  const fileName = isFiltered
-    ? '扫码记录_筛选_' + records.length + '条_' + today + '.csv'
-    : '扫码记录_全部_' + records.length + '条_' + today + '.csv';
-
+  
   const blob = new Blob([csv], {type: 'text/csv;charset=utf-8'});
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
-  a.download = fileName;
+  a.download = '扫码记录_' + new Date().toISOString().slice(0,10) + '.csv';
   a.click();
   URL.revokeObjectURL(url);
-
-  if (isFiltered) {
-    showToast('已导出筛选后的 ' + records.length + ' 条记录', 'success');
-  } else {
-    showToast('已导出全部 ' + records.length + ' 条记录', 'success');
-  }
+  showToast('CSV 已导出', 'success');
 }
 
 // ====== BOM IMPORT (Excel + CSV) ======
@@ -1560,33 +1517,6 @@ function updatePalletDisplay() {
     display.style.color = 'var(--text-secondary)';
     display.style.fontWeight = '500';
   }
-  // 同步刷新底部确认按钮的提示文字
-  updateWoPalletHint();
-}
-
-// 实时刷新底部"确认"按钮的提示：告诉用户还差什么才能点确认
-function updateWoPalletHint() {
-  const hintEl = document.getElementById('woPalletHint');
-  const btnEl = document.getElementById('woPalletConfirmBtn');
-  if (!hintEl || !btnEl) return;
-  const num = document.getElementById('woNumber').value.trim();
-  const qty = parseInt(document.getElementById('woTargetQty').value) || 0;
-  const prefix = document.getElementById('palletPrefix').value;
-  const seq = document.getElementById('palletSeq').value;
-  const missing = [];
-  if (!num) missing.push('工单号');
-  if (!qty) missing.push('工单数量');
-  if (!prefix) missing.push('栈板前缀');
-  if (!seq) missing.push('栈板序号');
-  if (missing.length === 0) {
-    hintEl.innerHTML = '<span style="color:var(--success);font-weight:600">✓ 工单与栈板号均已就绪，可以开始扫码</span>';
-    btnEl.style.background = 'var(--success)';
-    btnEl.style.boxShadow = '0 2px 8px rgba(34,197,94,.3)';
-  } else {
-    hintEl.innerHTML = '<span style="color:var(--warning)">还差：' + missing.join(' / ') + '</span>';
-    btnEl.style.background = 'var(--primary)';
-    btnEl.style.boxShadow = '';
-  }
 }
 
 function getCurrentPallet() {
@@ -1601,30 +1531,16 @@ function getCurrentPallet() {
 function saveWorkOrder() {
   const num = document.getElementById('woNumber').value.trim();
   const qty = parseInt(document.getElementById('woTargetQty').value) || 0;
-  const palletPrefixVal = document.getElementById('palletPrefix').value;
-  const palletSeqVal = document.getElementById('palletSeq').value;
 
-  // 工单必填
   if (!num || qty <= 0) {
-    showToast('⚠️ 请先填写工单号和工单数量', 'error');
-    if (!num) document.getElementById('woNumber').focus();
-    else document.getElementById('woTargetQty').focus();
-    return;
-  }
-
-  // 栈板号必填（强制要求：工单+栈板号同时确认）
-  if (!palletPrefixVal || !palletSeqVal) {
-    showToast('⚠️ 请先选择栈板前缀+输入序号', 'error');
-    if (!palletPrefixVal) document.getElementById('palletPrefix').focus();
-    else document.getElementById('palletSeq').focus();
+    alert('请输入工单号和工单数量');
     return;
   }
 
   // 成品料号将在首次扫码时从条码自动识别
   currentWorkOrder = { number: num, product: '', qty: qty, targetQty: 0, componentCounts: {} };
   updateWorkOrderDisplay();
-  const palletStr = palletPrefixVal + '-' + String(parseInt(palletSeqVal)).padStart(4, '0');
-  showToast('工单 ' + num + ' + 栈板 ' + palletStr + ' 已确认，请开始扫码', 'success');
+  showToast('工单已设置：' + num + '，数量：' + qty + '，请开始扫码', 'success');
 }
 
 function clearWorkOrder() {
@@ -2082,123 +1998,45 @@ function exportToExcel() {
 
 // ====== CLEAR ALL DATA ======
 async function clearAllData() {
-  if (!confirm('确定要清除所有数据吗？\n\n包括：扫码记录、库存、工单、齐套数据\n\n此操作不可恢复！建议先导出CSV备份。')) return;
-  if (!confirm('再次确认：清除所有数据？')) return;
+  if (!confirm('确认清除所有数据？此操作会同步删除云端所有扫码记录！')) return;
+  if (!confirm('再次确认：所有扫码记录、库存、工单都会被清除，且不可恢复！')) return;
   
-  // Clear localStorage
-  localStorage.removeItem(STORAGE_KEY);
-  
-  // 【关键】清除前，把当前所有 scanRecords 的 key 加入 deletedRecords 作为墓碑，
-  // 防止远程旧数据在下次同步时"复活"
+  // 关键：把当前所有记录都加进墓碑（这样同步时 GitHub 也会跟着清）
   scanRecords.forEach(r => {
-    deletedRecords.push(recordKey(r.c, r.t));
+    const key = recordKey(r.c, r.t);
+    if (!deletedRecords.includes(key)) deletedRecords.push(key);
   });
   if (deletedRecords.length > 5000) deletedRecords = deletedRecords.slice(-5000);
-  const preservedDeleted = [...deletedRecords];
   
-  // Reset state
+  // 清空状态
   scanRecords = [];
-  inventory = {};
+  inventory = JSON.parse(JSON.stringify(INITIAL_INVENTORY));
   currentWorkOrder = { number: '', product: '', qty: 0, targetQty: 0, componentCounts: {} };
   importedWorkOrders = [];
-  // deletedRecords 保留！不清空，作为墓碑防止远程旧数据复活
   currentAction = '入库';
   filteredScanRecords = [];
   
-  // Clear UI inputs
+  // 清空 UI 输入
   document.getElementById('woNumber').value = '';
   document.getElementById('woTargetQty').value = '';
   document.getElementById('palletPrefix').value = '';
   document.getElementById('palletSeq').value = '';
   
-  // Reset init inventory - 直接从 INITIAL_INVENTORY 重算（scanRecords已清空，结果必为全0）
+  // 重新计算库存
   recomputeInventory();
   
-  // Push empty state to remote（保留 deletedRecords 墓碑）
-  try {
-    await pushSharedData({
-      scanRecords: [],
-      inventory: inventory,
-      importedWorkOrders: [],
-      deletedRecords: preservedDeleted,
-      currentWorkOrder: { number:'', product:'', qty:0, targetQty:0, componentCounts:{} },
-      updatedAt: new Date().toISOString()
-    });
-  } catch(e) { console.warn('Remote clear failed:', e); }
-  
-  // Refresh UI
-  updateWorkOrderDisplay();
-  renderWorkOrderList();
-  updatePalletDisplay();
-  renderRecentList();
-  renderTable();
-  refreshDashboard();
-  recalculate();
+  // 写 localStorage 并立刻同步 GitHub
   saveData();
   
-  showToast('所有数据已清除', 'success');
+  // 刷新 UI
+  refreshAllUI();
+  showToast('已清除所有数据并同步云端', 'success');
 }
 
-// ====== URL参数检测：?reset=1 强制重置本地；?forceclean=1 强制清空GitHub ======
+// ====== URL参数检测：?reset=1 强制重置 ======
 if (new URLSearchParams(window.location.search).has('reset')) {
   localStorage.removeItem(STORAGE_KEY);
   console.log('URL参数 ?reset=1 检测到，已清除本地数据');
-}
-
-// 【紧急补丁】?forceclean=1 强制清空 GitHub 上的 shared-data.json
-// 用途：v3 → v5 升级时，v3 还在自动推数据干扰，导致清不干净。
-// 升级版：持续推送 60 秒（覆盖 12 个 v3 同步周期），确保 v3 永远推不过 v5
-if (new URLSearchParams(window.location.search).get('forceclean') === '1') {
-  console.log('[forceclean] 检测到 URL 参数，准备强制清空 GitHub（持续60秒）...');
-  // 立即清空本地
-  scanRecords = [];
-  deletedRecords = [];
-  if (typeof currentWorkOrder !== 'undefined') {
-    currentWorkOrder = { number: '', product: '', qty: 0, targetQty: 0, componentCounts: {} };
-  }
-  if (typeof importedWorkOrders !== 'undefined') {
-    importedWorkOrders = [];
-  }
-  try { localStorage.removeItem(STORAGE_KEY); } catch(e) {}
-  // 持续推送：每 2 秒推一次，共推 60 秒（30 次）
-  (async () => {
-    const cleanPayload = {
-      _version: DATA_VERSION,
-      scanRecords: [],
-      importedWorkOrders: [],
-      currentWorkOrder: { number:'', product:'', qty:0, targetQty:0, componentCounts:{} },
-      deletedRecords: [],
-      updatedAt: new Date().toISOString()
-    };
-    let pushCount = 0;
-    const startTime = Date.now();
-    const DURATION = 60000; // 60 秒
-    const INTERVAL = 2000; // 2 秒
-    
-    while (Date.now() - startTime < DURATION) {
-      try {
-        // 拿最新 SHA
-        const cur = await fetchSharedData();
-        // fetchSharedData 失败时（如 404），cur 为 null
-        if (typeof pushSharedData === 'function') {
-          // pushSharedData 内部会处理 SHA
-          await pushSharedData(cleanPayload);
-          pushCount++;
-          console.log('[forceclean] ✓ ' + pushCount + '/~30 推送成功 (已运行 ' + Math.round((Date.now()-startTime)/1000) + 's)');
-        }
-      } catch(e) {
-        console.warn('[forceclean] 第 ' + (pushCount+1) + ' 次推送失败:', e.message);
-      }
-      await new Promise(r => setTimeout(r, INTERVAL));
-    }
-    
-    console.log('[forceclean] 完成：持续 ' + Math.round((Date.now()-startTime)/1000) + ' 秒，共推 ' + pushCount + ' 次');
-    console.log('[forceclean] URL 参数移除中...');
-    const url = new URL(window.location.href);
-    url.searchParams.delete('forceclean');
-    history.replaceState(null, '', url.toString());
-    console.log('[forceclean] ✓ 全部完成，请告知用户关闭所有老 v3 标签页');
-  })();
 }
 
 // ====== INIT ======
@@ -2403,13 +2241,13 @@ function onScanFailure(error) {
 </script>
 
 <!-- Camera Modal -->
-<div id="cameraModal" onclick="if(event.target===this)closeCamera()" data-page-node-id="oEHJNqAWEaJbjFamGlrzU2">
-  <div class="camera-top-bar" data-page-node-id="SGIAzqssgLmYhNtUdbu52L">
-    <button class="camera-close-btn" onclick="closeCamera()" data-page-node-id="svVlAqxIiT0TzWbiUupefr">✕</button>
-    <span class="camera-status" id="cameraStatus" data-page-node-id="FlLRHUAtjydANcft3wpi0d">正在启动摄像头...</span>
+<div id="cameraModal" onclick="if(event.target===this)closeCamera()">
+  <div class="camera-top-bar">
+    <button class="camera-close-btn" onclick="closeCamera()">✕</button>
+    <span class="camera-status" id="cameraStatus">正在启动摄像头...</span>
   </div>
-  <div class="camera-container" data-page-node-id="Ux2sTRXfXK3Kvz4dgTDroS">
-    <div id="reader" data-page-node-id="gHWKS1kLPJ6VVRu6nyIvCX"></div>
+  <div class="camera-container">
+    <div id="reader"></div>
   </div>
 </div>
 
