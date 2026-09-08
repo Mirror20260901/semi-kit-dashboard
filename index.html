@@ -595,9 +595,11 @@ function mergeRemoteData(remote) {
   if (!remote) return false;
   let changed = false;
   // inventory 不再通过远程合并，改为各设备从 scanRecords 重新计算（防止污染数据覆盖正确值）
-  if (remote.scanRecords) {
-    // 先合并 scanRecords，再统一重新计算 inventory（在函数末尾调用）
-  }
+
+  // 【自动修复】检测远程数据是否被旧代码污染（无 _version 或版本不匹配）
+  // 如果远程数据是旧的，说明有人用旧代码推送了未过滤的数据，需要自动清理
+  const remoteIsStale = !remote._version || remote._version !== DATA_VERSION;
+
   if (remote.scanRecords && Array.isArray(remote.scanRecords)) {
     // 用稳定的 key（抹平换行/管道符）匹配删除记录，同时兼容旧格式 deletedRecords（未清洗的）
     const deletedSet = new Set(deletedRecords);
@@ -614,6 +616,8 @@ function mergeRemoteData(remote) {
       const tsId = recordTimestamp(rr.t);
       // 精准匹配 key，或时间戳匹配旧 deletedRecords 格式
       if (deletedSet.has(rid) || deletedTsSet.has(rid) || deletedTsSet.has(tsId)) continue;
+      // 如果远程数据是旧代码污染的，跳过合并（这些记录不应存在）
+      if (remoteIsStale) continue;
       if (!existCodes.has(rid)) {
         scanRecords.push(rr);
         existCodes.add(rid);
@@ -624,7 +628,7 @@ function mergeRemoteData(remote) {
       scanRecords.sort((a, b) => (b.t || '').localeCompare(a.t || ''));
     }
   }
-  // Merge deleted records tracking
+  // Merge deleted records tracking（墓碑永远只增不减）
   if (remote.deletedRecords && Array.isArray(remote.deletedRecords)) {
     const existDel = new Set(deletedRecords);
     for (const dr of remote.deletedRecords) {
@@ -656,6 +660,19 @@ function mergeRemoteData(remote) {
         changed = true;
       }
     }
+  }
+  // 【自动修复】如果远程数据是旧代码污染的，清理本地并添加墓碑
+  if (remoteIsStale && scanRecords.length > 0) {
+    console.log('检测到远程数据被旧代码污染，自动清理...');
+    for (const r of scanRecords) {
+      const rk = recordKey(r.c, r.t);
+      if (!deletedRecords.includes(rk)) {
+        deletedRecords.push(rk);
+      }
+    }
+    if (deletedRecords.length > 5000) deletedRecords = deletedRecords.slice(-5000);
+    scanRecords = [];
+    changed = true;
   }
   // 合并 scanRecords 后重新计算 inventory
   if (changed) recomputeInventory();
@@ -692,6 +709,7 @@ async function syncCycle() {
       }
     }
     const dataToPush = {
+      _version: DATA_VERSION,
       scanRecords: pushRecords,
       // inventory 不在远程同步，各设备从 INITIAL_INVENTORY + scanRecords 重新计算
       importedWorkOrders: importedWorkOrders,
