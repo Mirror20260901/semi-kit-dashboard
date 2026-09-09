@@ -310,19 +310,27 @@ button:focus-visible,input:focus-visible,a:focus-visible{outline:2px solid var(-
         <span style="font-size:.8rem;color:var(--text-secondary)" id="bomLoadStatus" data-page-node-id="lWFoYeKVbuRiDTIQxaWca9">点击展开 ▼</span>
       </div>
       <div class="card-body" id="bomDetail" style="display:none" data-page-node-id="ZqRgGQkZUAxoHFUz5v2Q9L">
-        <!-- Excel/CSV Upload -->
+        <!-- Excel/CSV Upload (覆盖) -->
         <div style="margin-bottom:16px" data-page-node-id="GHNuXw2hw70Z2T9G62RxBG">
-          <div style="font-weight:600;margin-bottom:8px" data-page-node-id="EIgKNQmr2zoENE1NA4BXBD">📊 从 Excel/CSV 导入（追加合并，保留原数据）</div>
+          <div style="font-weight:600;margin-bottom:8px" data-page-node-id="EIgKNQmr2zoENE1NA4BXBD">📊 从 Excel/CSV 导入（覆盖所有料号）</div>
           <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap" data-page-node-id="wDMtxIAHXGZGuInzyf0nAX">
             <input type="file" id="bomFileInput" accept=".xlsx,.xls,.csv" onchange="loadBOMFile(event)" style="font-size:.85rem" data-page-node-id="pdFhPVCbERZWnzVAIftbhb">
             <span style="font-size:.78rem;color:var(--text-secondary)" data-page-node-id="1SyUZ3AA7VGC6Wd8lPZrw0">列顺序：成品料号 | 半品料号 | 接头规格 | 线长 | 用量</span>
             <label style="font-size:.82rem;color:var(--text-secondary);display:flex;align-items:center;gap:4px;cursor:pointer">
               <input type="checkbox" id="bomOnlyValid" checked style="width:15px;height:15px"> 仅导入有效款（11 款，过滤历史旧款）
             </label>
-            <label style="font-size:.82rem;color:var(--danger);display:flex;align-items:center;gap:4px;cursor:pointer">
-              <input type="checkbox" id="bomOverride" style="width:15px;height:15px"> 覆盖导入（清空现有 BOM）
-            </label>
             <button class="btn btn-outline btn-sm" onclick="exportBOM()" title="下载当前 BOM 清单，可在表内批量增删改后再导入">📥 导出 BOM 清单</button>
+          </div>
+        </div>
+        <!-- Batch Paste (追加) -->
+        <div style="margin-bottom:16px;border-top:1px solid var(--border);padding-top:14px" data-page-node-id="BOM_PASTE_BOX">
+          <div style="font-weight:600;margin-bottom:6px" data-page-node-id="BOM_PASTE_TITLE">📋 批量粘贴（追加，保留原数据）</div>
+          <div style="font-size:.75rem;color:var(--text-secondary);margin-bottom:6px">每行一个条目：成品料号 | 半品料号 | 接头规格 | 线长 | 用量（从 Excel 复制，Tab 分隔即可）</div>
+          <textarea id="bomPasteText" placeholder="8180914762&#9;8180914762-P1D1-PCC4&#9;PCC4&#9;100&#9;1&#10;8180914762&#9;8180914762-P1D2-PCC4&#9;PCC4&#9;120&#9;1" style="width:100%;min-height:110px;padding:10px;border:1px solid var(--border);border-radius:6px;font-size:.82rem;font-family:monospace;resize:vertical" data-page-node-id="BOM_PASTE_TEXT"></textarea>
+          <div style="display:flex;align-items:center;gap:10px;margin-top:8px" data-page-node-id="BOM_PASTE_ACTIONS">
+            <button class="btn btn-primary btn-sm" onclick="confirmBomPaste()" data-page-node-id="BOM_PASTE_CONFIRM">✅ 追加粘贴</button>
+            <button class="btn btn-outline btn-sm" onclick="document.getElementById('bomPasteText').value='';document.getElementById('bomPastePreview').textContent=''" data-page-node-id="BOM_PASTE_CLEAR">清空</button>
+            <span id="bomPastePreview" style="font-size:.8rem;color:var(--text-secondary)" data-page-node-id="BOM_PASTE_PREVIEW"></span>
           </div>
         </div>
         <!-- Manual Entry -->
@@ -2008,7 +2016,7 @@ function loadBOMFile(event) {
           // 兜底：没找到含料号表头的表，退回首个 sheet
           rows = XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]], { header: 1 });
         }
-        loadBOMFromRows(rows);
+        loadBOMFromRows(rows, false); // 文件导入 = 覆盖所有料号
       } catch (err) {
         alert('Excel 解析失败：' + err.message);
       }
@@ -2024,7 +2032,35 @@ function parseCSVText(text) {
     if (!line.trim()) return;
     rows.push(parseCSVLine(line));
   });
-  loadBOMFromRows(rows);
+  loadBOMFromRows(rows, false); // CSV 文件导入 = 覆盖所有料号
+}
+
+// ====== BOM 批量粘贴（追加模式，保留原数据）======
+function confirmBomPaste() {
+  const ta = document.getElementById('bomPasteText');
+  const text = ta ? ta.value : '';
+  if (!text || !text.trim()) {
+    showToast('⚠️ 请先粘贴 BOM 条目', 'error');
+    return;
+  }
+  // 解析：每行一个条目，支持 Tab 或逗号或竖线分隔
+  const lines = text.split(/\r?\n/);
+  const rows = [];
+  lines.forEach(line => {
+    if (!line.trim()) return;
+    // 优先按 Tab 分隔，其次逗号、全角逗号、竖线、全角竖线、多个空格
+    const cols = line.split(/\t|,|，|\||｜| {2,}/).map(s => String(s).trim());
+    if (cols.length >= 2 && cols[0] && cols[1]) {
+      rows.push(cols);
+    }
+  });
+  if (rows.length === 0) {
+    showToast('⚠️ 未识别到有效条目，请检查格式：成品料号\t半品料号\t接头规格\t线长\t用量', 'error');
+    return;
+  }
+  loadBOMFromRows(rows, true); // 批量粘贴 = 追加，保留原数据
+  ta.value = '';
+  document.getElementById('bomPastePreview').textContent = '';
 }
 
 function exportBOM() {
@@ -2049,11 +2085,9 @@ function exportBOM() {
   showToast('📥 BOM 清单已导出，共 ' + total + ' 条', 'success');
 }
 
-function loadBOMFromRows(rows) {
-  // 【覆盖 vs 追加】默认追加合并（保留原数据）；仅勾选「覆盖导入」时才清空现有 BOM
-  const overrideEl = document.getElementById('bomOverride');
-  const override = overrideEl ? overrideEl.checked : false;
-  if (override) {
+function loadBOMFromRows(rows, mergeMode) {
+  // mergeMode: true=追加合并(保留原数据，用于批量粘贴)；false=覆盖(清空重来，用于文件导入)
+  if (!mergeMode) {
     bomData = {};
     productList = [];
   }
@@ -2108,11 +2142,11 @@ function loadBOMFromRows(rows) {
   });
   
   const skipMsg = skippedLegacy > 0 ? '（已过滤 ' + skippedLegacy + ' 条历史旧款）' : '';
-  const modeMsg = override
-    ? '（覆盖模式，共 ' + productList.length + ' 个成品）'
-    : '（追加模式：新增 ' + addedNew + ' 条' + (updated > 0 ? '，更新 ' + updated + ' 条' : '') + '，现有 ' + productList.length + ' 个成品）';
+  const modeMsg = mergeMode
+    ? '（追加：新增 ' + addedNew + ' 条' + (updated > 0 ? '，更新 ' + updated + ' 条' : '') + '，现有 ' + productList.length + ' 个成品）'
+    : '（覆盖：共 ' + productList.length + ' 个成品）';
   document.getElementById('bomLoadStatus').textContent = '✅ 本次导入 ' + count + ' 条' + modeMsg + skipMsg;
-  showToast('BOM 已导入 ' + count + ' 条' + (override ? '（覆盖）' : '（追加：新增 ' + addedNew + '，更新 ' + updated + '）') + (skippedLegacy > 0 ? '，过滤 ' + skippedLegacy + ' 条旧款' : ''), 'success');
+  showToast('BOM 已导入 ' + count + ' 条' + (mergeMode ? '（追加：新增 ' + addedNew + '，更新 ' + updated + '）' : '（覆盖）') + (skippedLegacy > 0 ? '，过滤 ' + skippedLegacy + ' 条旧款' : ''), 'success');
   refreshDashboard();
 }
 
