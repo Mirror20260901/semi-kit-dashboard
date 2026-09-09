@@ -316,6 +316,9 @@ button:focus-visible,input:focus-visible,a:focus-visible{outline:2px solid var(-
           <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap" data-page-node-id="wDMtxIAHXGZGuInzyf0nAX">
             <input type="file" id="bomFileInput" accept=".xlsx,.xls,.csv" onchange="loadBOMFile(event)" style="font-size:.85rem" data-page-node-id="pdFhPVCbERZWnzVAIftbhb">
             <span style="font-size:.78rem;color:var(--text-secondary)" data-page-node-id="1SyUZ3AA7VGC6Wd8lPZrw0">列顺序：成品料号 | 半品料号 | 接头规格 | 线长 | 用量</span>
+            <label style="font-size:.82rem;color:var(--text-secondary);display:flex;align-items:center;gap:4px;cursor:pointer">
+              <input type="checkbox" id="bomOnlyValid" checked style="width:15px;height:15px"> 仅导入有效款（11 款，过滤历史旧款）
+            </label>
           </div>
         </div>
         <!-- Manual Entry -->
@@ -565,6 +568,13 @@ let productList = Object.keys(INIT_DATA.bom);
 
 // 半品总数（用于KPI显示）
 const SEMI_TOTAL_COUNT = 277;
+
+// 有效款白名单（当前在产的 11 款成品料号，来自「半品管理信息表.xlsx」的 Sheet2）
+// 导入 BOM 时勾选「仅导入有效款」会据此过滤掉历史遗留/已停产的旧料号
+const VALID_PRODUCT_WHITELIST = [
+  '8180908061','8180910691','8180914762','8180916998','8180917001',
+  '8180918984','8180918988','8180920021','8180921028','8180921029','8180921329'
+];
 
 // ====== LOCAL STORAGE 持久化 ======
 const STORAGE_KEY = 'semiKitDashboard';
@@ -1982,8 +1992,18 @@ function loadBOMFile(event) {
       try {
         const data = new Uint8Array(e.target.result);
         const workbook = XLSX.read(data, { type: 'array' });
-        const sheet = workbook.Sheets[workbook.SheetNames[0]];
-        const rows = XLSX.utils.sheet_to_json(sheet, { header: 1 });
+        // 智能定位 BOM 数据表：优先找表头含「线序料号」的 sheet（避免误读 Sheet2 款定义表等）
+        let rows = null;
+        for (const name of workbook.SheetNames) {
+          const s = workbook.Sheets[name];
+          const r = XLSX.utils.sheet_to_json(s, { header: 1 });
+          const headText = r.slice(0, 4).flat().map(x => String(x || '').trim()).join(',');
+          if (/线序料号/.test(headText)) { rows = r; break; }
+        }
+        if (!rows) {
+          // 兜底：没找到含「线序料号」的表，退回首个 sheet
+          rows = XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]], { header: 1 });
+        }
         loadBOMFromRows(rows);
       } catch (err) {
         alert('Excel 解析失败：' + err.message);
@@ -2008,6 +2028,12 @@ function loadBOMFromRows(rows) {
   productList = [];
   let headerSkipped = false;
   let count = 0;
+  let skippedLegacy = 0;
+  
+  // 是否仅导入有效款（默认勾选）
+  const onlyValidEl = document.getElementById('bomOnlyValid');
+  const onlyValid = onlyValidEl ? onlyValidEl.checked : true;
+  const whitelist = new Set(VALID_PRODUCT_WHITELIST);
   
   rows.forEach(row => {
     if (!row || row.length === 0) return;
@@ -2022,6 +2048,12 @@ function loadBOMFromRows(rows) {
     const bp = String(row[1] || '').trim();
     if (!cp || !bp) return;
     
+    // 【有效款过滤】仅导入白名单内的成品料号，跳过历史遗留旧款
+    if (onlyValid && !whitelist.has(cp)) {
+      skippedLegacy++;
+      return;
+    }
+    
     if (!bomData[cp]) bomData[cp] = [];
     bomData[cp].push({
       p: bp,
@@ -2034,8 +2066,9 @@ function loadBOMFromRows(rows) {
     count++;
   });
   
-  document.getElementById('bomLoadStatus').textContent = '✅ 已加载 ' + productList.length + ' 个成品，' + count + ' 条BOM';
-  showToast('BOM 数据已加载：' + productList.length + ' 个成品', 'success');
+  const skipMsg = skippedLegacy > 0 ? '（已过滤 ' + skippedLegacy + ' 条历史旧款）' : '';
+  document.getElementById('bomLoadStatus').textContent = '✅ 已加载 ' + productList.length + ' 个成品，' + count + ' 条BOM' + skipMsg;
+  showToast('BOM 数据已加载：' + productList.length + ' 个成品' + (skippedLegacy > 0 ? '，过滤 ' + skippedLegacy + ' 条旧款' : ''), 'success');
   refreshDashboard();
 }
 
