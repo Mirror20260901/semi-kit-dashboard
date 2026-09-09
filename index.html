@@ -1477,21 +1477,39 @@ function loadBOMFromPaste() {
   const text = document.getElementById('bomPasteArea').value.trim();
   if (!text) { showToast('请先粘贴数据', 'info'); return; }
   const lines = text.split(/\r?\n/).filter(l => l.trim());
-  const rows = [];
+  let added = 0, skipped = 0;
   lines.forEach(line => {
     // 支持 Tab、全角丨、半角| 分隔
     const parts = line.split(/[\t丨|]/).map(s => s.trim());
     if (parts.length >= 2 && parts[0] && parts[1]) {
-      rows.push(parts);
+      const cp = String(parts[0] || '').trim();
+      const bp = String(parts[1] || '').trim();
+      const j = String(parts[2] || '').trim();
+      const l = parseInt(parts[3]) || 0;
+      const y = parseInt(parts[4]) || 1;
+      // 跳过表头
+      if (/料号|成品|编号|product/i.test(cp)) { skipped++; return; }
+      if (!bomData[cp]) bomData[cp] = [];
+      // 检查是否已存在（成品+半品+接头+线长 完全相同则视为重复）
+      const exists = bomData[cp].some(e => e.p === bp && e.j === j && e.l === l);
+      if (!exists) {
+        bomData[cp].push({ p: bp, j: j, l: l, y: y });
+        if (!productList.includes(cp)) productList.push(cp);
+        added++;
+      } else {
+        skipped++;
+      }
+      if (!(bp in inventory)) inventory[bp] = 0;
     }
   });
-  if (rows.length === 0) {
-    showToast('未识别到有效数据，请检查格式', 'error');
-    return;
+  if (added === 0) {
+    showToast('没有新增数据，所有条目已存在', 'info');
+  } else {
+    showToast(`已追加 ${added} 条BOM，跳过 ${skipped} 条重复`, 'success');
   }
-  loadBOMFromRows(rows);
-  document.getElementById('bomPasteStatus').textContent = '✅ 已解析 ' + rows.length + ' 条';
+  document.getElementById('bomLoadStatus').textContent = '✅ 已加载 ' + productList.length + ' 个成品';
   document.getElementById('bomPasteArea').value = '';
+  refreshDashboard();
 }
 
 function parseCSVLine(line) {
