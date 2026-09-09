@@ -316,9 +316,6 @@ button:focus-visible,input:focus-visible,a:focus-visible{outline:2px solid var(-
           <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap" data-page-node-id="wDMtxIAHXGZGuInzyf0nAX">
             <input type="file" id="bomFileInput" accept=".xlsx,.xls,.csv" onchange="loadBOMFile(event)" style="font-size:.85rem" data-page-node-id="pdFhPVCbERZWnzVAIftbhb">
             <span style="font-size:.78rem;color:var(--text-secondary)" data-page-node-id="1SyUZ3AA7VGC6Wd8lPZrw0">列顺序：成品料号 | 半品料号 | 接头规格 | 线长 | 用量</span>
-            <label style="font-size:.82rem;color:var(--text-secondary);display:flex;align-items:center;gap:4px;cursor:pointer">
-              <input type="checkbox" id="bomOnlyValid" checked style="width:15px;height:15px"> 仅导入有效款（11 款，过滤历史旧款）
-            </label>
             <button class="btn btn-outline btn-sm" onclick="exportBOM()" title="下载当前 BOM 清单，可在表内批量增删改后再导入">📥 导出 BOM 清单</button>
             <button class="btn btn-outline btn-sm" style="color:var(--danger);border-color:var(--danger)" onclick="clearBOM()" title="彻底清空所有 BOM 料号（需要全量替换时先清空再导入）">🗑️ 清空 BOM</button>
           </div>
@@ -581,13 +578,6 @@ let productList = Object.keys(INIT_DATA.bom);
 
 // 半品总数（用于KPI显示）
 const SEMI_TOTAL_COUNT = 277;
-
-// 有效款白名单（当前在产的 11 款成品料号，来自「半品管理信息表.xlsx」的 Sheet2）
-// 导入 BOM 时勾选「仅导入有效款」会据此过滤掉历史遗留/已停产的旧料号
-const VALID_PRODUCT_WHITELIST = [
-  '8180908061','8180910691','8180914762','8180916998','8180917001',
-  '8180918984','8180918988','8180920021','8180921028','8180921029','8180921329'
-];
 
 // ====== LOCAL STORAGE 持久化 ======
 const STORAGE_KEY = 'semiKitDashboard';
@@ -2125,12 +2115,6 @@ function loadBOMFromRows(rows) {
   let count = 0;          // 本次导入的有效行数
   let addedNew = 0;       // 新增条目（成品+半品均新）
   let updated = 0;        // 更新已有条目（同成品+同半品 → 用新值覆盖旧值）
-  let skippedLegacy = 0;
-  
-  // 是否仅导入有效款（默认勾选）
-  const onlyValidEl = document.getElementById('bomOnlyValid');
-  const onlyValid = onlyValidEl ? onlyValidEl.checked : true;
-  const whitelist = new Set(VALID_PRODUCT_WHITELIST);
   
   rows.forEach(row => {
     if (!row || row.length === 0) return;
@@ -2141,12 +2125,6 @@ function loadBOMFromRows(rows) {
     
     // 【表头不计数】料号列必须含数字；纯文字（表头列名、说明行等非料号内容）一律跳过，不计入料号数据
     if (!/\d/.test(cp) || !/\d/.test(bp)) return;
-    
-    // 【有效款过滤】仅导入白名单内的成品料号，跳过历史遗留旧款
-    if (onlyValid && !whitelist.has(cp)) {
-      skippedLegacy++;
-      return;
-    }
     
     const entry = {
       p: bp,
@@ -2172,10 +2150,9 @@ function loadBOMFromRows(rows) {
     count++;
   });
   
-  const skipMsg = skippedLegacy > 0 ? '（已过滤 ' + skippedLegacy + ' 条历史旧款）' : '';
   const updMsg = updated > 0 ? '，更新 ' + updated + ' 条' : '';
-  document.getElementById('bomLoadStatus').textContent = '✅ 本次新增 ' + addedNew + ' 条' + updMsg + '，现有 ' + productList.length + ' 个成品' + skipMsg;
-  showToast('BOM 已处理 ' + count + ' 条：新增 ' + addedNew + (updated > 0 ? '，更新 ' + updated : '') + (skippedLegacy > 0 ? '，过滤旧款 ' + skippedLegacy : ''), 'success');
+  document.getElementById('bomLoadStatus').textContent = '✅ 本次新增 ' + addedNew + ' 条' + updMsg + '，现有 ' + productList.length + ' 个成品';
+  showToast('BOM 已处理 ' + count + ' 条：新增 ' + addedNew + (updated > 0 ? '，更新 ' + updated : ''), 'success');
   saveDataDebounced(); // 持久化 BOM 到本地 + 触发云端同步
   refreshDashboard();
 }
