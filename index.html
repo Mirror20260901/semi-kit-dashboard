@@ -1013,10 +1013,16 @@ async function ensureDefaultAdmin() {
     };
     saveData();
   } else {
-    // 修复历史问题：检测到 admin 账号存在但 hash 是旧 hashPasswordSync 算法生成的
-    // ——用 admin123 能登进来才说明是新算法，否则用 admin123 试一次登录失败也提示用户重置密码
-    // 这里只是兜底，实际不会自动重写（避免误改已设置过的密码）
-    console.log('admin 账号已存在，跳过初始化。passwordHash 前 8 位：' + (users[DEFAULT_ADMIN_ID].passwordHash || '').substring(0, 8));
+    // 修复历史问题：检测到 admin 账号存在但可能是旧 hashPasswordSync 算法生成的 hash
+    // 特征：isDefault=true 且 hash 以 16 个 '0' 结尾（旧 hashPasswordSync 特征）
+    const u = users[DEFAULT_ADMIN_ID];
+    if (u && u.isDefault && u.passwordHash && u.passwordHash.endsWith('0000000000000000')) {
+      console.log('检测到 admin 账号使用旧 hash 算法（hashPasswordSync），自动重置为 SHA-256...');
+      u.passwordHash = await hashPassword(DEFAULT_ADMIN_PWD);
+      saveData();
+    } else {
+      console.log('admin 账号已存在，跳过初始化。passwordHash 前 8 位：' + (u.passwordHash || '').substring(0, 8));
+    }
   }
 }
 
