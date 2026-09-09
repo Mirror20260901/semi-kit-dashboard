@@ -312,7 +312,7 @@ button:focus-visible,input:focus-visible,a:focus-visible{outline:2px solid var(-
       <div class="card-body" id="bomDetail" style="display:none" data-page-node-id="ZqRgGQkZUAxoHFUz5v2Q9L">
         <!-- Excel/CSV Upload -->
         <div style="margin-bottom:16px" data-page-node-id="GHNuXw2hw70Z2T9G62RxBG">
-          <div style="font-weight:600;margin-bottom:8px" data-page-node-id="EIgKNQmr2zoENE1NA4BXBD">📊 从 Excel/CSV 导入（只新增，重复保留原数据）</div>
+          <div style="font-weight:600;margin-bottom:8px" data-page-node-id="EIgKNQmr2zoENE1NA4BXBD">📊 从 Excel/CSV 导入（新增追加，重复覆盖更新）</div>
           <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap" data-page-node-id="wDMtxIAHXGZGuInzyf0nAX">
             <input type="file" id="bomFileInput" accept=".xlsx,.xls,.csv" onchange="loadBOMFile(event)" style="font-size:.85rem" data-page-node-id="pdFhPVCbERZWnzVAIftbhb">
             <span style="font-size:.78rem;color:var(--text-secondary)" data-page-node-id="1SyUZ3AA7VGC6Wd8lPZrw0">列顺序：成品料号 | 半品料号 | 接头规格 | 线长 | 用量</span>
@@ -325,7 +325,7 @@ button:focus-visible,input:focus-visible,a:focus-visible{outline:2px solid var(-
         </div>
         <!-- Batch Paste -->
         <div style="margin-bottom:16px;border-top:1px solid var(--border);padding-top:14px" data-page-node-id="BOM_PASTE_BOX">
-          <div style="font-weight:600;margin-bottom:6px" data-page-node-id="BOM_PASTE_TITLE">📋 批量粘贴（只新增，重复保留原数据）</div>
+          <div style="font-weight:600;margin-bottom:6px" data-page-node-id="BOM_PASTE_TITLE">📋 批量粘贴（新增追加，重复覆盖更新）</div>
           <div style="font-size:.75rem;color:var(--text-secondary);margin-bottom:6px">每行一个条目：成品料号 | 半品料号 | 接头规格 | 线长 | 用量（从 Excel 复制，Tab 分隔即可）</div>
           <textarea id="bomPasteText" placeholder="8180914762&#9;8180914762-P1D1-PCC4&#9;PCC4&#9;100&#9;1&#10;8180914762&#9;8180914762-P1D2-PCC4&#9;PCC4&#9;120&#9;1" style="width:100%;min-height:110px;padding:10px;border:1px solid var(--border);border-radius:6px;font-size:.82rem;font-family:monospace;resize:vertical" data-page-node-id="BOM_PASTE_TEXT"></textarea>
           <div style="display:flex;align-items:center;gap:10px;margin-top:8px" data-page-node-id="BOM_PASTE_ACTIONS">
@@ -877,7 +877,7 @@ function mergeRemoteData(remote) {
       }
     }
   }
-  // 【关键修复】合并 BOM 物料清单（去重并集：本地没有的条目采用远程；已存在保留本地，符合「只新增、重复不更新」语义）
+  // 【关键修复】合并 BOM 物料清单（并集去重：本地没有的条目采用远程；已存在保留本地，避免 sync 竞态覆盖本地刚导入的新值；手动导入入口已支持最新值覆盖）
   if (remote.bom && typeof remote.bom === 'object') {
     for (const cp of Object.keys(remote.bom)) {
       const remoteItems = remote.bom[cp];
@@ -895,7 +895,7 @@ function mergeRemoteData(remote) {
           if (!(item.p in inventory)) inventory[item.p] = 0;
           changed = true;
         }
-        // 已存在 → 保留本地，不更新
+        // 已存在 → 保留本地（手动导入时已按"最新覆盖"语义处理；sync 时不再覆盖，避免远端旧值覆盖本地新值）
       }
     }
   }
@@ -2070,7 +2070,7 @@ function parseCSVText(text) {
   loadBOMFromRows(rows); // CSV 文件导入 = 去重追加
 }
 
-// ====== BOM 批量粘贴（追加模式，保留原数据）======
+// ====== BOM 批量粘贴（新增追加，重复覆盖更新）======
 function confirmBomPaste() {
   const ta = document.getElementById('bomPasteText');
   const text = ta ? ta.value : '';
@@ -2093,7 +2093,7 @@ function confirmBomPaste() {
     showToast('⚠️ 未识别到有效条目，请检查格式：成品料号\t半品料号\t接头规格\t线长\t用量', 'error');
     return;
   }
-  loadBOMFromRows(rows); // 批量粘贴 = 去重追加，保留原数据
+  loadBOMFromRows(rows); // 批量粘贴 = 新增追加，重复覆盖更新
   ta.value = '';
   document.getElementById('bomPastePreview').textContent = '';
 }
@@ -2121,10 +2121,10 @@ function exportBOM() {
 }
 
 function loadBOMFromRows(rows) {
-  // 统一「去重追加」：新增料号只做新增；料号重复（成品+半品已存在）保留原数据、本次不更新
+  // 统一「新增追加，重复覆盖更新」：全新料号只做新增；料号重复（成品+半品已存在）用最新导入的数据覆盖旧值
   let count = 0;          // 本次导入的有效行数
   let addedNew = 0;       // 新增条目（成品+半品均新）
-  let skippedDup = 0;     // 重复料号（保留原值，不做更新）
+  let updated = 0;        // 更新已有条目（同成品+同半品 → 用新值覆盖旧值）
   let skippedLegacy = 0;
   
   // 是否仅导入有效款（默认勾选）
@@ -2148,21 +2148,24 @@ function loadBOMFromRows(rows) {
       return;
     }
     
+    const entry = {
+      p: bp,
+      j: String(row[2] || '').trim(),
+      l: parseInt(row[3]) || 0,
+      y: parseInt(row[4]) || 1
+    };
+    
     if (!bomData[cp]) {
       bomData[cp] = [];
       if (!productList.includes(cp)) productList.push(cp);
     }
-    // 去重：同成品+同半品已存在 → 保留原值跳过；全新 → 追加
+    // 合并：同成品+同半品已存在 → 用新值覆盖旧值（保证最新导入的数据生效）；全新 → 追加
     const existIdx = bomData[cp].findIndex(it => it.p === bp);
     if (existIdx >= 0) {
-      skippedDup++;
+      bomData[cp][existIdx] = entry;
+      updated++;
     } else {
-      bomData[cp].push({
-        p: bp,
-        j: String(row[2] || '').trim(),
-        l: parseInt(row[3]) || 0,
-        y: parseInt(row[4]) || 1
-      });
+      bomData[cp].push(entry);
       addedNew++;
       if (!(bp in inventory)) inventory[bp] = 0;
     }
@@ -2170,9 +2173,9 @@ function loadBOMFromRows(rows) {
   });
   
   const skipMsg = skippedLegacy > 0 ? '（已过滤 ' + skippedLegacy + ' 条历史旧款）' : '';
-  const dupMsg = skippedDup > 0 ? '，重复跳过 ' + skippedDup + ' 条（保留原数据）' : '';
-  document.getElementById('bomLoadStatus').textContent = '✅ 本次新增 ' + addedNew + ' 条' + dupMsg + '，现有 ' + productList.length + ' 个成品' + skipMsg;
-  showToast('BOM 已处理 ' + count + ' 条：新增 ' + addedNew + '，重复跳过 ' + skippedDup + (skippedLegacy > 0 ? '，过滤旧款 ' + skippedLegacy : ''), 'success');
+  const updMsg = updated > 0 ? '，更新 ' + updated + ' 条' : '';
+  document.getElementById('bomLoadStatus').textContent = '✅ 本次新增 ' + addedNew + ' 条' + updMsg + '，现有 ' + productList.length + ' 个成品' + skipMsg;
+  showToast('BOM 已处理 ' + count + ' 条：新增 ' + addedNew + (updated > 0 ? '，更新 ' + updated : '') + (skippedLegacy > 0 ? '，过滤旧款 ' + skippedLegacy : ''), 'success');
   saveDataDebounced(); // 持久化 BOM 到本地 + 触发云端同步
   refreshDashboard();
 }
