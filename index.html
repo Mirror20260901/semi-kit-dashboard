@@ -841,10 +841,14 @@ scanInput.addEventListener('keydown', function(e) {
 });
 
 // ====== SCAN PRE-CHECK ======
-// 统一扫码前置校验：工单号/工单数量/栈板号是否齐全
-// 出库动作额外要求：当前工单必须有入库数据
+// 入库动作需要工单+栈板号；出库动作直接通过（出库只校验全局库存）
 // 返回 null 表示通过；返回字符串则表示阻塞原因（processScan 会 toast 报错）
 function canScan() {
+  // 【出库免校验】出库不需要工单/栈板号；具体超库存校验在 processScan 里基于全局 inventory 判断
+  if (currentAction === '出库') {
+    return null;
+  }
+  // 入库需工单+栈板号齐全
   if (!currentWorkOrder.number) {
     return '⚠️ 请先在工单设置区填写工单号与数量，并点击「确认工单与栈板」';
   }
@@ -856,18 +860,10 @@ function canScan() {
   if (!palletPrefixVal || !palletSeqVal) {
     return '⚠️ 栈板号未填写，请先选择栈板前缀+输入序号';
   }
-  // 【联动校验】扫码框对应的当前栈板号必须与已确认栈板号一致
+  // 【联动】扫码前同步一次栈板号
   const palletStr = palletPrefixVal + '-' + String(parseInt(palletSeqVal)).padStart(4, '0');
   if (currentWorkOrder.pallet && palletStr !== currentWorkOrder.pallet) {
-    // 首次确认后会记录 pallet，允许之后修改栈板号
     currentWorkOrder.pallet = palletStr;
-  }
-  // 【出库前置校验】当前工单必须已经有入库数据，才能进行出库扫码
-  if (currentAction === '出库') {
-    const inTotal = Object.values(currentWorkOrder.componentCounts || {}).reduce((a, b) => a + b, 0);
-    if (inTotal <= 0) {
-      return '🚫 工单 ' + currentWorkOrder.number + ' 暂无入库数据，禁止出库扫码！请先完成入库。';
-    }
   }
   return null;
 }
@@ -1057,49 +1053,48 @@ function processScan(code) {
     }
     
     if (!bomMatched && halfPart) {
-      scanInput.className = 'error';
-      scanStatus.textContent = '❌ 半品料号 ' + halfPart + ' 不在当前工单BOM中！';
-      scanStatus.className = 'scan-status err';
-      playSound('error');
-      setTimeout(() => { scanInput.className = ''; scanInput.value = ''; scanInput.focus(); }, 2500);
-      return;
+      // 【出库允许任意半品】出库时不需要半品必须属于某工单BOM，只要 inventory 里有这个半品且有库存即可
+      if (currentAction === '出库' && (inventory[halfPart] || 0) > 0) {
+        bomMatched = true; // 出库走库存检查逻辑
+        // matchedProduct 留空，不影响入库统计
+      } else {
+        scanInput.className = 'error';
+        scanStatus.textContent = '❌ 半品料号 ' + halfPart + ' 不在当前工单BOM中！';
+        scanStatus.className = 'scan-status err';
+        playSound('error');
+        setTimeout(() => { scanInput.className = ''; scanInput.value = ''; scanInput.focus(); }, 2500);
+        return;
+      }
     }
     
-    // 超限检查：限制 = 工单数量（按条码上的数量累计计数）
-    const compLimit = currentWorkOrder.qty;
-    const currentCompCount = currentWorkOrder.componentCounts[halfPart] || 0;
-
-    if (currentCompCount + scanQty > compLimit) {
-      scanInput.className = 'error';
-      scanInput.style.animation = 'shake 0.5s ease-in-out';
-      setTimeout(() => { scanInput.style.animation = ''; }, 500);
-      scanStatus.innerHTML = '<span style="font-size:1.2rem;font-weight:bold;color:var(--danger)">🚨 超工单报警！</span><br>' + halfPart + ' 已扫 <b>' + currentCompCount + '</b>/' + compLimit + '，本条码 ' + scanQty + '，<b>不允许再扫入！</b>';
-      scanStatus.className = 'scan-status err';
-      playSound('overlimit');
-      showToast('🚨 ' + halfPart + ' 已超工单数量！禁止扫入！', 'error');
-      setTimeout(() => { scanInput.className = ''; scanInput.value = ''; scanInput.focus(); }, 4000);
-      return;
-    }
-
-    // 【出库超限校验】出库数量不能超出该工单当前累计入库数量（按半品计）
-    if (currentAction === '出库' && halfPart) {
-      const inQty = currentWorkOrder.componentCounts[halfPart] || 0;
-      // 计算该半品本工单的累计已出库数量
-      let outQty = 0;
-      scanRecords.forEach(r => {
-        if (r.a === '出库' && r.w === currentWorkOrder.number && r.x === halfPart) {
-          outQty += (r.q && r.q > 0) ? r.q : 1;
-        }
-      });
-      const remain = inQty - outQty;
-      if (scanQty > remain) {
+    // 【入库超工单检查】按当前工单的 componentCounts 限制（仅入库动作生效）
+    if (currentAction === '入库') {
+      const compLimit = currentWorkOrder.qty;
+      const currentCompCount = currentWorkOrder.componentCounts[halfPart] || 0;
+      if (currentCompCount + scanQty > compLimit) {
         scanInput.className = 'error';
         scanInput.style.animation = 'shake 0.5s ease-in-out';
         setTimeout(() => { scanInput.style.animation = ''; }, 500);
-        scanStatus.innerHTML = '<span style="font-size:1.2rem;font-weight:bold;color:var(--danger)">🚨 出库超限报警！</span><br>' + halfPart + ' 工单已入库 <b>' + inQty + '</b>，已出库 <b>' + outQty + '</b>，剩余可出 <b>' + remain + '</b>，本条码 ' + scanQty + ' <b>超出不允许出！</b>';
+        scanStatus.innerHTML = '<span style="font-size:1.2rem;font-weight:bold;color:var(--danger)">🚨 超工单报警！</span><br>' + halfPart + ' 已扫 <b>' + currentCompCount + '</b>/' + compLimit + '，本条码 ' + scanQty + '，<b>不允许再扫入！</b>';
         scanStatus.className = 'scan-status err';
         playSound('overlimit');
-        showToast('🚨 ' + halfPart + ' 出库量超限！剩余 ' + remain + '，本条码 ' + scanQty, 'error');
+        showToast('🚨 ' + halfPart + ' 已超工单数量！禁止扫入！', 'error');
+        setTimeout(() => { scanInput.className = ''; scanInput.value = ''; scanInput.focus(); }, 4000);
+        return;
+      }
+    }
+
+    // 【出库超库存检查】基于全局 inventory，半品库存不够时阻断（仅出库动作生效）
+    if (currentAction === '出库' && halfPart) {
+      const curStock = inventory[halfPart] || 0;
+      if (curStock < scanQty) {
+        scanInput.className = 'error';
+        scanInput.style.animation = 'shake 0.5s ease-in-out';
+        setTimeout(() => { scanInput.style.animation = ''; }, 500);
+        scanStatus.innerHTML = '<span style="font-size:1.2rem;font-weight:bold;color:var(--danger)">🚨 出库超库存报警！</span><br>' + halfPart + ' 当前库存 <b>' + curStock + '</b>，本条码 <b>' + scanQty + '</b>，<b>超出不允许出！</b>';
+        scanStatus.className = 'scan-status err';
+        playSound('overlimit');
+        showToast('🚨 ' + halfPart + ' 库存不足！仅剩 ' + curStock + '，本条码 ' + scanQty, 'error');
         setTimeout(() => { scanInput.className = ''; scanInput.value = ''; scanInput.focus(); }, 4000);
         return;
       }
