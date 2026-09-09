@@ -317,7 +317,6 @@ button:focus-visible,input:focus-visible,a:focus-visible{outline:2px solid var(-
             <input type="file" id="bomFileInput" accept=".xlsx,.xls,.csv" onchange="loadBOMFile(event)" style="font-size:.85rem" data-page-node-id="pdFhPVCbERZWnzVAIftbhb">
             <span style="font-size:.78rem;color:var(--text-secondary)" data-page-node-id="1SyUZ3AA7VGC6Wd8lPZrw0">列顺序：成品料号 | 半品料号 | 接头规格 | 线长 | 用量</span>
             <button class="btn btn-outline btn-sm" onclick="exportBOM()" title="下载当前 BOM 清单，可在表内批量增删改后再导入">📥 导出 BOM 清单</button>
-            <button class="btn btn-outline btn-sm" style="color:var(--danger);border-color:var(--danger)" onclick="clearBOM()" title="彻底清空所有 BOM 料号（需要全量替换时先清空再导入）">🗑️ 清空 BOM</button>
           </div>
         </div>
         <!-- Batch Paste -->
@@ -2163,16 +2162,8 @@ function loadBOMFromRows(rows) {
   refreshDashboard();
 }
 
-// ====== 清空 BOM（全量替换时先清空再导入）======
-function clearBOM() {
-  if (!confirm('确定要清空所有 BOM 料号吗？\n\n清空后需要重新导入/粘贴才能恢复。\n\n此操作不会影响扫码记录和库存数据。')) return;
-  bomData = {};
-  productList = [];
-  document.getElementById('bomLoadStatus').textContent = '✅ 已清空 BOM，当前 0 个成品';
-  saveDataDebounced(); // 清空也同步到本地 + 云端
-  showToast('BOM 已清空', 'success');
-  refreshDashboard();
-}
+// ====== 清空 BOM 已移除（v23）======
+// 原 clearBOM() 函数已删除——BOM 数据安全由你找我手动处理，避免他人误操作
 
 function parseCSVLine(line) {
   const result = [];
