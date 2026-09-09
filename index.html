@@ -825,12 +825,23 @@ function mergeRemoteData(remote) {
     }
   }
   // 合并 users 字典（账号列表，共享给所有设备）—— 任何一方新建/修改账号都合并
+  // 采用「时间戳较新优先」：本地没有的账号直接采用远程；本地已有则取 updatedAt 较新的，
+  // 避免管理员改密码/停用账号被其他设备的旧数据覆盖回去。
   if (remote.users && typeof remote.users === 'object') {
     for (const uid of Object.keys(remote.users)) {
       const ru = remote.users[uid];
-      if (!users[uid] || users[uid].passwordHash !== ru.passwordHash || users[uid].enabled !== ru.enabled) {
+      const lu = users[uid];
+      if (!lu) {
+        // 本地没有该账号 → 采用远程（新账号同步过来）
         users[uid] = ru;
         changed = true;
+      } else {
+        const lt = lu.updatedAt || lu.createdAt || '';
+        const rt = ru.updatedAt || ru.createdAt || '';
+        if (rt > lt && (lu.passwordHash !== ru.passwordHash || lu.enabled !== ru.enabled || lu.name !== ru.name || lu.role !== ru.role)) {
+          users[uid] = ru;
+          changed = true;
+        }
       }
     }
   }
@@ -894,6 +905,8 @@ async function syncCycle() {
         componentCounts: currentWorkOrder.componentCounts
       },
       deletedRecords: mergedDeleted,
+      // 【关键修复】账号列表必须同步到云端，否则别人设备拉不到账号、只能用本地 admin 登录
+      users: users,
       updatedAt: new Date().toISOString()
     };
     await pushSharedData(dataToPush);
@@ -1020,6 +1033,7 @@ async function ensureDefaultAdmin() {
       role: 'admin',
       enabled: true,
       createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
       createdBy: 'system',
       isDefault: true
     };
@@ -1033,6 +1047,7 @@ async function ensureDefaultAdmin() {
       role: 'admin',
       enabled: true,
       createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
       createdBy: 'system',
       isDefault: true
     };
@@ -1061,9 +1076,20 @@ async function doLogin() {
     showToast('请输入工号和密码', 'error');
     return;
   }
-  const u = users[uid];
+  let u = users[uid];
+  // 【兜底】本地没有该账号时，先强制从云端拉一次（可能账号刚由管理员创建、本机尚未同步）
   if (!u) {
-    showToast('工号不存在', 'error');
+    showToast('正在同步账号数据...', 'info');
+    try {
+      const remote = await fetchSharedData();
+      mergeRemoteData(remote);
+      u = users[uid];
+    } catch(e) {
+      console.warn('登录前同步失败:', e);
+    }
+  }
+  if (!u) {
+    showToast('工号不存在，请先联系管理员创建账号', 'error');
     return;
   }
   if (u.enabled === false) {
@@ -1142,6 +1168,7 @@ async function showChangePwdDialog() {
   const newHash = await hashPassword(newPwd);
   users[currentUser.id].passwordHash = newHash;
   users[currentUser.id].isDefault = false;
+  users[currentUser.id].updatedAt = new Date().toISOString();
   saveData();
   showToast('密码已修改', 'success');
 }
@@ -1187,6 +1214,7 @@ async function doCreateUser() {
     name, passwordHash: hash, role,
     enabled: true,
     createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
     createdBy: currentUser.id
   };
   saveData();
@@ -1212,6 +1240,7 @@ async function doResetPassword() {
   if (!users[_resetPwdTarget]) { showToast('账号不存在', 'error'); return; }
   users[_resetPwdTarget].passwordHash = hash;
   users[_resetPwdTarget].isDefault = false;
+  users[_resetPwdTarget].updatedAt = new Date().toISOString();
   saveData();
   document.getElementById('resetPwdForm').style.display = 'none';
   renderUserList();
@@ -1226,6 +1255,7 @@ function toggleUserEnabled(uid) {
     if (!confirm('停用默认管理员账号？其他账号可能无法被管理')) return;
   }
   users[uid].enabled = !users[uid].enabled;
+  users[uid].updatedAt = new Date().toISOString();
   saveData();
   renderUserList();
   showToast(uid + ' 已' + (users[uid].enabled ? '启用' : '停用'), 'success');
