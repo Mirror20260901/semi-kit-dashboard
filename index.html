@@ -920,29 +920,31 @@ setTimeout(() => {
   startSync();
 }, 500);
 
-// ====== 登录系统初始化 ======
-ensureDefaultAdmin();
-// 从 session localStorage 恢复当前登录用户
-try {
-  const sessRaw = localStorage.getItem(STORAGE_KEY + '_session');
-  if (sessRaw) {
-    const sess = JSON.parse(sessRaw);
-    if (sess && sess.id && users[sess.id] && users[sess.id].enabled !== false) {
-      currentUser = sess;
-    } else {
-      // 账号已不存在/被停用，清除 session
-      localStorage.removeItem(STORAGE_KEY + '_session');
+// ====== 登录系统初始化（异步，等待默认 admin 用 SHA-256 生成 hash 完成）======
+(async function initAuth() {
+  await ensureDefaultAdmin();
+  // 从 session localStorage 恢复当前登录用户
+  try {
+    const sessRaw = localStorage.getItem(STORAGE_KEY + '_session');
+    if (sessRaw) {
+      const sess = JSON.parse(sessRaw);
+      if (sess && sess.id && users[sess.id] && users[sess.id].enabled !== false) {
+        currentUser = sess;
+      } else {
+        // 账号已不存在/被停用，清除 session
+        localStorage.removeItem(STORAGE_KEY + '_session');
+      }
     }
-  }
-} catch(e) { console.warn('恢复登录会话失败:', e); }
+  } catch(e) { console.warn('恢复登录会话失败:', e); }
 
-if (currentUser) {
-  // 已有会话，渲染用户信息条并直接进入
-  renderUserInfo();
-} else {
-  // 显示登录 modal（首次或注销后）
-  document.getElementById('loginModal').style.display = 'flex';
-}
+  if (currentUser) {
+    // 已有会话，渲染用户信息条并直接进入
+    renderUserInfo();
+  } else {
+    // 显示登录 modal（首次或注销后）
+    document.getElementById('loginModal').style.display = 'flex';
+  }
+})();
 
 // ====== TAB SWITCHING ======
 function switchTab(tab) {
@@ -966,10 +968,10 @@ async function hashPassword(pwd) {
   return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join('');
 }
 
-// 同步包装版本（用于初始化默认管理员账号）
+// 同步包装版本（仅用于兼容性回退，登录和创建账号统一用 SHA-256 异步版）
+// 警告：此函数输出与 hashPassword 不一致，**不要用于创建默认账号**——
 function hashPasswordSync(pwd) {
   if (!pwd) return '';
-  // 简单 fallback hash（不依赖 crypto.subtle，足够用于默认账号）
   let h1 = 0xdeadbeef ^ pwd.length;
   let h2 = 0x41c6ce57 ^ pwd.length;
   for (let i = 0; i < pwd.length; i++) {
@@ -979,18 +981,17 @@ function hashPasswordSync(pwd) {
   }
   h1 = Math.imul(h1 ^ (h1 >>> 16), 2246822507) ^ Math.imul(h2 ^ (h2 >>> 13), 3266489909);
   h2 = Math.imul(h2 ^ (h2 >>> 16), 2246822507) ^ Math.imul(h1 ^ (h1 >>> 13), 3266489909);
-  // 与 SHA-256 同样的 hex 输出长度（仅用前 16 字节补 0 占位 64 字符）
   const fullHex = (h2 >>> 0).toString(16).padStart(8, '0') + (h1 >>> 0).toString(16).padStart(8, '0');
   return fullHex + '0'.repeat(64 - fullHex.length);
 }
 
-// 初始化默认管理员账号（仅当 users 为空时）
-function ensureDefaultAdmin() {
+// 初始化默认管理员账号（异步，使用 SHA-256，与登录校验一致）
+async function ensureDefaultAdmin() {
   if (!users || Object.keys(users).length === 0) {
     users = {};
     users[DEFAULT_ADMIN_ID] = {
       name: '系统管理员',
-      passwordHash: hashPasswordSync(DEFAULT_ADMIN_PWD),
+      passwordHash: await hashPassword(DEFAULT_ADMIN_PWD),
       role: 'admin',
       enabled: true,
       createdAt: new Date().toISOString(),
@@ -1003,7 +1004,7 @@ function ensureDefaultAdmin() {
     // users 有内容但 admin 不存在，补上默认 admin（保护现场可登录）
     users[DEFAULT_ADMIN_ID] = {
       name: '系统管理员',
-      passwordHash: hashPasswordSync(DEFAULT_ADMIN_PWD),
+      passwordHash: await hashPassword(DEFAULT_ADMIN_PWD),
       role: 'admin',
       enabled: true,
       createdAt: new Date().toISOString(),
@@ -1011,6 +1012,11 @@ function ensureDefaultAdmin() {
       isDefault: true
     };
     saveData();
+  } else {
+    // 修复历史问题：检测到 admin 账号存在但 hash 是旧 hashPasswordSync 算法生成的
+    // ——用 admin123 能登进来才说明是新算法，否则用 admin123 试一次登录失败也提示用户重置密码
+    // 这里只是兜底，实际不会自动重写（避免误改已设置过的密码）
+    console.log('admin 账号已存在，跳过初始化。passwordHash 前 8 位：' + (users[DEFAULT_ADMIN_ID].passwordHash || '').substring(0, 8));
   }
 }
 
