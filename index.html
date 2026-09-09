@@ -604,6 +604,8 @@ function saveData() {
       currentAction: currentAction,
       deletedRecords: deletedRecords,
       users: users,
+      bom: bomData,
+      productList: productList,
       palletPrefix: document.getElementById('palletPrefix').value,
       palletSeq: document.getElementById('palletSeq').value,
       savedAt: new Date().toISOString()
@@ -670,6 +672,13 @@ function loadData() {
     }
     if (data.users && typeof data.users === 'object') {
       users = data.users;
+    }
+    // 恢复 BOM（本地持久化，关页面重开不丢）
+    if (data.bom && typeof data.bom === 'object' && Object.keys(data.bom).length > 0) {
+      bomData = data.bom;
+      productList = (data.productList && Array.isArray(data.productList) && data.productList.length > 0)
+        ? data.productList
+        : Object.keys(data.bom);
     }
     if (data.palletPrefix) {
       document.getElementById('palletPrefix').value = data.palletPrefix;
@@ -868,6 +877,28 @@ function mergeRemoteData(remote) {
       }
     }
   }
+  // 【关键修复】合并 BOM 物料清单（去重并集：本地没有的条目采用远程；已存在保留本地，符合「只新增、重复不更新」语义）
+  if (remote.bom && typeof remote.bom === 'object') {
+    for (const cp of Object.keys(remote.bom)) {
+      const remoteItems = remote.bom[cp];
+      if (!Array.isArray(remoteItems) || remoteItems.length === 0) continue;
+      if (!bomData[cp]) {
+        bomData[cp] = [];
+        if (!productList.includes(cp)) productList.push(cp);
+        changed = true;
+      }
+      for (const item of remoteItems) {
+        if (!item || !item.p) continue;
+        const existIdx = bomData[cp].findIndex(it => it.p === item.p);
+        if (existIdx < 0) {
+          bomData[cp].push(item);
+          if (!(item.p in inventory)) inventory[item.p] = 0;
+          changed = true;
+        }
+        // 已存在 → 保留本地，不更新
+      }
+    }
+  }
   // 【自动修复】如果远程数据是旧代码污染的，清理本地并添加墓碑
   if (remoteIsStale && scanRecords.length > 0) {
     console.log('检测到远程数据被旧代码污染，自动清理...');
@@ -930,6 +961,9 @@ async function syncCycle() {
       deletedRecords: mergedDeleted,
       // 【关键修复】账号列表必须同步到云端，否则别人设备拉不到账号、只能用本地 admin 登录
       users: users,
+      // 【关键修复】BOM 物料清单同步到云端，多设备 + 刷新后保持一致
+      bom: bomData,
+      productList: productList,
       updatedAt: new Date().toISOString()
     };
     await pushSharedData(dataToPush);
@@ -2139,6 +2173,7 @@ function loadBOMFromRows(rows) {
   const dupMsg = skippedDup > 0 ? '，重复跳过 ' + skippedDup + ' 条（保留原数据）' : '';
   document.getElementById('bomLoadStatus').textContent = '✅ 本次新增 ' + addedNew + ' 条' + dupMsg + '，现有 ' + productList.length + ' 个成品' + skipMsg;
   showToast('BOM 已处理 ' + count + ' 条：新增 ' + addedNew + '，重复跳过 ' + skippedDup + (skippedLegacy > 0 ? '，过滤旧款 ' + skippedLegacy : ''), 'success');
+  saveDataDebounced(); // 持久化 BOM 到本地 + 触发云端同步
   refreshDashboard();
 }
 
@@ -2148,6 +2183,7 @@ function clearBOM() {
   bomData = {};
   productList = [];
   document.getElementById('bomLoadStatus').textContent = '✅ 已清空 BOM，当前 0 个成品';
+  saveDataDebounced(); // 清空也同步到本地 + 云端
   showToast('BOM 已清空', 'success');
   refreshDashboard();
 }
@@ -2197,6 +2233,7 @@ function addBOMManual() {
   document.getElementById('manualL').value = '0';
   document.getElementById('manualY').value = '1';
   
+  saveDataDebounced(); // 手动新增也持久化 + 同步
   refreshDashboard();
   showToast('已添加：' + cp + ' → ' + bp, 'success');
 }
