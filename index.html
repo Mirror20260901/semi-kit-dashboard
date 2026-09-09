@@ -2282,27 +2282,19 @@ function saveWorkOrder() {
   // 成品料号将在首次扫码时从条码自动识别
   const palletStr = palletPrefixVal + '-' + String(parseInt(palletSeqVal)).padStart(4, '0');
 
-  // 【工单号可重复 + 数量累加】同一工单号再次录入时，数量累加（不覆盖）
-  let finalQty = qty;
-  let wasExisting = false;
+  // 【工单数量固定】同号工单重新确认时「覆盖」数量，不累加（避免重复点确认导致数量翻倍）
+  // 工单号可重复 = 工单列表允许多张工单（不同工单号）；扫码数量才累加（见 componentCounts）
   const existIdx = importedWorkOrders.findIndex(w => w.number === num);
   if (existIdx >= 0) {
-    importedWorkOrders[existIdx].qty += qty;
-    finalQty = importedWorkOrders[existIdx].qty;
-    wasExisting = true;
+    importedWorkOrders[existIdx].qty = qty; // 覆盖，不累加
   } else {
-    // 首次录入也加入工单列表，方便后续切换/查重
     importedWorkOrders.push({ number: num, product: '', qty: qty });
   }
 
-  currentWorkOrder = { number: num, product: '', qty: finalQty, targetQty: 0, componentCounts: rebuildComponentCounts(num), pallet: palletStr };
+  currentWorkOrder = { number: num, product: '', qty: qty, targetQty: 0, componentCounts: rebuildComponentCounts(num), pallet: palletStr };
   updateWorkOrderDisplay();
   renderWorkOrderList();
-  if (wasExisting) {
-    showToast('工单 ' + num + ' 已存在，数量累加为 ' + finalQty + '（原 ' + (finalQty - qty) + ' + 本次 ' + qty + '），请开始扫码', 'success');
-  } else {
-    showToast('工单 ' + num + ' + 栈板 ' + palletStr + ' 已确认，请开始扫码', 'success');
-  }
+  showToast('工单 ' + num + '（数量 ' + qty + '）+ 栈板 ' + palletStr + ' 已确认，请开始扫码', 'success');
 }
 
 function clearWorkOrder() {
@@ -2396,14 +2388,12 @@ function confirmBatchImport() {
     alert('未识别到有效工单数据，请检查格式：工单号 | 数量');
     return;
   }
-  // 合并到已导入列表（工单号可重复：同号则数量累加，不覆盖）
-  let mergedCount = 0;
+  // 合并到已导入列表（同号工单：覆盖数量，不累加；工单数量固定，扫码数量才累加）
   newOrders.forEach(order => {
     const existIdx = importedWorkOrders.findIndex(w => w.number === order.number);
     if (existIdx >= 0) {
-      importedWorkOrders[existIdx].qty += order.qty;
+      importedWorkOrders[existIdx].qty = order.qty;
       if (!importedWorkOrders[existIdx].product && order.product) importedWorkOrders[existIdx].product = order.product;
-      mergedCount++;
     } else {
       importedWorkOrders.push(order);
     }
@@ -2417,8 +2407,7 @@ function confirmBatchImport() {
   document.getElementById('batchImportText').value = '';
   document.getElementById('batchPreview').textContent = '';
   saveData(); // 持久化保存
-  const mergeMsg = mergedCount > 0 ? `（其中 ${mergedCount} 条同号工单数量已累加）` : '';
-  showToast(`成功导入 ${newOrders.length} 条工单${mergeMsg}${hasError ? '（部分行格式有误已跳过）' : ''}`, hasError ? 'warning' : 'success');
+  showToast(`成功导入 ${newOrders.length} 条工单${hasError ? '（部分行格式有误已跳过）' : ''}`, hasError ? 'warning' : 'success');
 }
 
 function selectWorkOrder(index) {
