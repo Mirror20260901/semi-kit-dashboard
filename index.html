@@ -1601,15 +1601,21 @@ function processScan(code) {
       }
     }
     
-    // 【入库超工单检查】按当前工单的 componentCounts 限制（仅入库动作生效）
-    if (currentAction === '入库') {
-      const compLimit = currentWorkOrder.qty;
+    // 【入库超工单检查】按"工单数量 × BOM 用量"作为每个半品的扫码上限（仅入库动作生效）
+    // 关键：工单数量=成品数；每个半品的扫码上限 = qty × 该半品用量 y（BOM 里每个成品要几个该半品）
+    if (currentAction === '入库' && halfPart) {
+      let perSet = 1;
+      if (currentWorkOrder.product && bomData[currentWorkOrder.product]) {
+        const part = bomData[currentWorkOrder.product].find(c => c.p === halfPart);
+        if (part && part.y && part.y > 0) perSet = part.y;
+      }
+      const compLimit = currentWorkOrder.qty * perSet;
       const currentCompCount = currentWorkOrder.componentCounts[halfPart] || 0;
       if (currentCompCount + scanQty > compLimit) {
         scanInput.className = 'error';
         scanInput.style.animation = 'shake 0.5s ease-in-out';
         setTimeout(() => { scanInput.style.animation = ''; }, 500);
-        scanStatus.innerHTML = '<span style="font-size:1.2rem;font-weight:bold;color:var(--danger)">🚨 超工单报警！</span><br>' + halfPart + ' 已扫 <b>' + currentCompCount + '</b>/' + compLimit + '，本条码 ' + scanQty + '，<b>不允许再扫入！</b>';
+        scanStatus.innerHTML = '<span style="font-size:1.2rem;font-weight:bold;color:var(--danger)">🚨 超工单报警！</span><br>' + halfPart + ' 已扫 <b>' + currentCompCount + '</b>/' + compLimit + '（用量 ' + perSet + ' × 工单 ' + currentWorkOrder.qty + '），本条码 ' + scanQty + '，<b>不允许再扫入！</b>';
         scanStatus.className = 'scan-status err';
         playSound('overlimit');
         showToast('🚨 ' + halfPart + ' 已超工单数量！禁止扫入！', 'error');
@@ -2482,14 +2488,22 @@ function updateWorkOrderDisplay() {
     const woBomList = bomData[currentWorkOrder.product] || [];
     const compLimit = currentWorkOrder.qty;
 
-    // 计算已完成成品数（所有BOM半品最少扫过的次数）——【只算入库】
-    let minCount = Infinity;
+    // 工具函数：取某半品的单套用量 y（默认 1）
+    const perSetOf = (partName) => {
+      const it = woBomList.find(c => c.p === partName);
+      return (it && it.y && it.y > 0) ? it.y : 1;
+    };
+
+    // 计算已完成成品数（所有BOM半品中，已扫数÷用量 的最小值）——【只算入库】
+    let minProducts = Infinity;
     woBomList.forEach(c => {
       const cnt = currentWorkOrder.componentCounts[c.p] || 0;
-      if (cnt < minCount) minCount = cnt;
+      const perSet = perSetOf(c.p);
+      const products = Math.floor(cnt / perSet);
+      if (products < minProducts) minProducts = products;
     });
-    if (woBomList.length === 0) minCount = 0;
-    const completedProducts = minCount;
+    if (woBomList.length === 0) minProducts = 0;
+    const completedProducts = minProducts;
 
     // 【只算入库】超工单预警：入库累计成品数 > 工单数量 才显示
     const overQty = Math.max(0, completedProducts - compLimit);
@@ -2502,19 +2516,22 @@ function updateWorkOrderDisplay() {
       }
     }
 
+    // 总进度：按"每个半品应扫数 = qty × 用量"汇总
+    const totalTarget = woBomList.reduce((sum, c) => sum + compLimit * perSetOf(c.p), 0);
     const totalScanned = Object.values(currentWorkOrder.componentCounts).reduce((a, b) => a + b, 0);
-    const totalTarget = woBomList.length * compLimit;
     const pct = totalTarget > 0 ? Math.round((totalScanned / totalTarget) * 100) : 0;
     const mainColor = overQty > 0 ? 'var(--danger)' : completedProducts >= compLimit ? 'var(--danger)' : pct >= 80 ? 'var(--warning)' : 'var(--success)';
 
-    // Per-component progress
+    // Per-component progress：每个半品自己的限制 = qty × 用量
     const compDetails = woBomList.map(c => {
       const scanned = currentWorkOrder.componentCounts[c.p] || 0;
-      // 【只算入库】以入库累计 vs 工单数量判定"满/超"
-      const done = scanned >= compLimit;
-      const over = scanned > compLimit;
+      const perSet = perSetOf(c.p);
+      const thisLimit = compLimit * perSet;
+      // 【只算入库】以入库累计 vs 该半品实际限制判定"满/超"
+      const done = scanned >= thisLimit;
+      const over = scanned > thisLimit;
       const cColor = over ? 'var(--danger)' : done ? 'var(--warning)' : scanned > 0 ? 'var(--info)' : 'var(--success)';
-      return `<span style="color:${cColor}">${c.p}：${scanned}/${compLimit}</span>`;
+      return `<span style="color:${cColor}">${c.p}：${scanned}/${thisLimit}</span>`;
     }).join(' &nbsp;|&nbsp; ');
 
     el.innerHTML = `已设置工单 | <b>${currentWorkOrder.number}</b> | 成品：${currentWorkOrder.product} | 完成：<span style="color:${mainColor};font-weight:700;font-size:1.1rem">${completedProducts}/${compLimit} 个</span>${overQty > 0 ? ' <b style="color:var(--danger)">[超工单 ' + overQty + ' 个]</b>' : ''} | 总进度：${totalScanned}/${totalTarget}（${pct}%）<br><span style="font-size:.78rem;margin-top:4px;display:inline-block">${compDetails}</span>`;
