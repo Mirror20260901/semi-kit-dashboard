@@ -13,10 +13,18 @@
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{
   --primary:#1a73e8;--primary-light:#4a9af5;--primary-dark:#0d47a1;
-  --bg:#f0f4f8;--card:#fff;--text:#1a2332;--text-secondary:#5a6a7e;
+  --bg:#f0f4f8;--bg-secondary:#f5f7fa;--card:#fff;--text:#1a2332;--text-secondary:#5a6a7e;
   --border:#dce3ed;--success:#22c55e;--warning:#f59e0b;--danger:#ef4444;
   --shadow:0 2px 12px rgba(26,115,232,.08);--radius:12px;
 }
+/* Modal 遮罩 */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:9999;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(2px)}
+.modal-card{background:#fff;border-radius:14px;box-shadow:0 10px 40px rgba(0,0,0,.25);width:90%;overflow:hidden;animation:modalIn .2s ease-out}
+@keyframes modalIn{from{opacity:0;transform:translateY(-10px) scale(.97)}to{opacity:1;transform:translateY(0) scale(1)}}
+/* 用户信息条 */
+.user-info-bar button{background:rgba(255,255,255,.25);color:#fff;border:1px solid rgba(255,255,255,.4);padding:4px 10px;border-radius:14px;cursor:pointer;font-size:.78rem;transition:all .2s}
+.user-info-bar button:hover{background:rgba(255,255,255,.4)}
+.user-info-bar .admin-badge{background:var(--warning);color:#fff;padding:1px 6px;border-radius:8px;font-size:.7rem;margin-left:4px}
 html{font-size:14px;scroll-behavior:smooth}
 body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,"PingFang SC","Microsoft YaHei",sans-serif;background:var(--bg);color:var(--text);min-height:100vh;line-height:1.6}
 a{color:var(--primary);text-decoration:none}
@@ -202,9 +210,95 @@ button:focus-visible,input:focus-visible,a:focus-visible{outline:2px solid var(-
         <button class="tab-btn" onclick="switchTab('dashboard')" data-page-node-id="OoV4tMxRtn2HCsNhpILGze">齐套看板</button>
       </div>
 
+      <!-- 用户信息条（登录后显示） -->
+      <div id="currentUserInfo" class="user-info-bar" data-page-node-id="USER_INFO_BAR" style="display:flex;align-items:center;gap:8px;padding:6px 14px;background:rgba(255,255,255,.18);border-radius:20px;font-size:.85rem;color:#fff;min-height:32px"></div>
+
     </div>
   </div>
 </header>
+
+<!-- 登录 Modal -->
+<div id="loginModal" class="modal-overlay" data-page-node-id="LOGIN_MODAL" style="display:none">
+  <div class="modal-card" style="max-width:420px">
+    <div class="modal-header">
+      <h2 style="margin:0;font-size:1.2rem">🔐 半品齐套看板 - 登录</h2>
+    </div>
+    <div class="modal-body" style="padding:24px">
+      <div style="margin-bottom:14px">
+        <label style="display:block;font-size:.85rem;color:var(--text-secondary);margin-bottom:6px">工号</label>
+        <input id="loginUserId" type="text" placeholder="请输入工号" autocomplete="username" style="width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:6px;font-size:.95rem;box-sizing:border-box">
+      </div>
+      <div style="margin-bottom:18px">
+        <label style="display:block;font-size:.85rem;color:var(--text-secondary);margin-bottom:6px">密码</label>
+        <input id="loginPassword" type="password" placeholder="请输入密码" autocomplete="current-password" style="width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:6px;font-size:.95rem;box-sizing:border-box" onkeydown="if(event.key==='Enter')doLogin()">
+      </div>
+      <button class="btn btn-primary" onclick="doLogin()" style="width:100%;padding:10px;font-size:1rem" data-page-node-id="LOGIN_BTN">登录</button>
+      <p style="margin:14px 0 0;font-size:.78rem;color:var(--text-secondary);text-align:center;line-height:1.5">
+        默认管理员账号：<b>admin / admin123</b><br>首次登录后请立即修改默认密码
+      </p>
+    </div>
+  </div>
+</div>
+
+<!-- 账号管理 Modal（仅管理员可见） -->
+<div id="userMgmtModal" class="modal-overlay" data-page-node-id="USER_MGMT_MODAL" style="display:none">
+  <div class="modal-card" style="max-width:780px;width:95%">
+    <div class="modal-header" style="display:flex;align-items:center;justify-content:space-between;padding:14px 20px;border-bottom:1px solid var(--border)">
+      <h2 style="margin:0;font-size:1.15rem">👥 账号管理（仅管理员）</h2>
+      <button onclick="closeUserMgmt()" style="background:transparent;border:none;font-size:1.4rem;cursor:pointer;color:var(--text-secondary)">×</button>
+    </div>
+    <div class="modal-body" style="padding:18px 20px">
+      <div style="margin-bottom:14px;display:flex;gap:10px;align-items:center">
+        <button class="btn btn-primary btn-sm" onclick="showCreateUserForm()" data-page-node-id="USER_CREATE_BTN">+ 新建账号</button>
+        <span style="font-size:.82rem;color:var(--text-secondary)">仅管理员可创建/停用/重置密码/删除账号</span>
+      </div>
+
+      <!-- 创建账号表单（默认隐藏） -->
+      <div id="createUserForm" style="display:none;background:var(--bg-secondary);padding:14px;border-radius:8px;margin-bottom:14px">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">
+          <div>
+            <label style="font-size:.78rem;color:var(--text-secondary);display:block;margin-bottom:4px">工号（登录用，唯一）</label>
+            <input id="newUserId" type="text" placeholder="如 Z0001" style="width:100%;padding:8px;border:1px solid var(--border);border-radius:4px;box-sizing:border-box">
+          </div>
+          <div>
+            <label style="font-size:.78rem;color:var(--text-secondary);display:block;margin-bottom:4px">姓名</label>
+            <input id="newUserName" type="text" placeholder="如 张三" style="width:100%;padding:8px;border:1px solid var(--border);border-radius:4px;box-sizing:border-box">
+          </div>
+          <div>
+            <label style="font-size:.78rem;color:var(--text-secondary);display:block;margin-bottom:4px">密码（首次登录可改）</label>
+            <input id="newUserPwd" type="text" placeholder="至少 6 位" style="width:100%;padding:8px;border:1px solid var(--border);border-radius:4px;box-sizing:border-box">
+          </div>
+          <div>
+            <label style="font-size:.78rem;color:var(--text-secondary);display:block;margin-bottom:4px">角色</label>
+            <select id="newUserRole" style="width:100%;padding:8px;border:1px solid var(--border);border-radius:4px;box-sizing:border-box">
+              <option value="user">普通用户</option>
+              <option value="admin">管理员</option>
+            </select>
+          </div>
+        </div>
+        <div style="display:flex;gap:8px">
+          <button class="btn btn-primary btn-sm" onclick="doCreateUser()">创建</button>
+          <button class="btn btn-sm" onclick="document.getElementById('createUserForm').style.display='none'">取消</button>
+        </div>
+      </div>
+
+      <!-- 重置密码表单（默认隐藏） -->
+      <div id="resetPwdForm" style="display:none;background:var(--bg-secondary);padding:14px;border-radius:8px;margin-bottom:14px">
+        <div style="margin-bottom:10px">
+          <label style="font-size:.78rem;color:var(--text-secondary);display:block;margin-bottom:4px">重置 <b id="resetPwdTarget"></b> 的密码</label>
+          <input id="resetPwdNew" type="text" placeholder="新密码（至少 6 位）" style="width:100%;padding:8px;border:1px solid var(--border);border-radius:4px;box-sizing:border-box">
+        </div>
+        <div style="display:flex;gap:8px">
+          <button class="btn btn-primary btn-sm" onclick="doResetPassword()">确认重置</button>
+          <button class="btn btn-sm" onclick="document.getElementById('resetPwdForm').style.display='none'">取消</button>
+        </div>
+      </div>
+
+      <!-- 账号列表 -->
+      <div id="userList" style="max-height:380px;overflow-y:auto"></div>
+    </div>
+  </div>
+</div>
 
 <main data-page-node-id="tr1aeGV5mfzOsm0AviiFGD">
   <!-- Tab 1: Scan -->
@@ -403,6 +497,14 @@ let currentAction = '入库';
 let scanRecords = [...INIT_DATA.scans];
 let deletedRecords = []; // 追踪已删除的记录ID（格式：code + '||' + time）
 
+// ====== 多用户登录系统 ======
+// users 结构：{工号: {name, passwordHash(SHA-256), role:'admin'|'user', enabled:true|false, createdAt, createdBy}}
+let users = {};
+let currentUser = null; // 当前登录会话 {id, name, role}，仅 localStorage 持久化，不进共享数据
+let pwdChangeRequests = {}; // 用户主动修改自己的密码请求 {工号: {oldPwdHash, newPwd, requestedAt}}
+const DEFAULT_ADMIN_ID = 'admin';
+const DEFAULT_ADMIN_PWD = 'admin123';
+
 // 生成稳定的记录匹配key：把c和t里的换行/管道符全部抹平，避免二维码含\r\n导致同步对不上
 function recordKey(c, t) {
   const cleanC = String(c || '').replace(/[\r\n|｜]/g, '');
@@ -441,7 +543,7 @@ const SEMI_TOTAL_COUNT = 277;
 
 // ====== LOCAL STORAGE 持久化 ======
 const STORAGE_KEY = 'semiKitDashboard';
-const DATA_VERSION = 'v5'; // 数据版本号，用于检测旧数据自动清理（v5: 修复 mergeRemoteData 不删除本地幽灵记录导致的"删了又回来"bug）
+const DATA_VERSION = 'v10'; // v10: 多用户登录系统 + 扫码记录加操作人工号字段
 
 function saveData() {
   try {
@@ -453,11 +555,18 @@ function saveData() {
       importedWorkOrders: importedWorkOrders,
       currentAction: currentAction,
       deletedRecords: deletedRecords,
+      users: users,
       palletPrefix: document.getElementById('palletPrefix').value,
       palletSeq: document.getElementById('palletSeq').value,
       savedAt: new Date().toISOString()
     };
     localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+    // 当前登录会话单独存（不进共享数据，每台设备独立）
+    if (currentUser) {
+      localStorage.setItem(STORAGE_KEY + '_session', JSON.stringify(currentUser));
+    } else {
+      localStorage.removeItem(STORAGE_KEY + '_session');
+    }
     // 触发云端同步
     if (typeof triggerSync === 'function') triggerSync();
   } catch(e) {
@@ -510,6 +619,9 @@ function loadData() {
     }
     if (data.deletedRecords && Array.isArray(data.deletedRecords)) {
       deletedRecords = data.deletedRecords;
+    }
+    if (data.users && typeof data.users === 'object') {
+      users = data.users;
     }
     if (data.palletPrefix) {
       document.getElementById('palletPrefix').value = data.palletPrefix;
@@ -687,6 +799,16 @@ function mergeRemoteData(remote) {
       }
     }
   }
+  // 合并 users 字典（账号列表，共享给所有设备）—— 任何一方新建/修改账号都合并
+  if (remote.users && typeof remote.users === 'object') {
+    for (const uid of Object.keys(remote.users)) {
+      const ru = remote.users[uid];
+      if (!users[uid] || users[uid].passwordHash !== ru.passwordHash || users[uid].enabled !== ru.enabled) {
+        users[uid] = ru;
+        changed = true;
+      }
+    }
+  }
   // 【自动修复】如果远程数据是旧代码污染的，清理本地并添加墓碑
   if (remoteIsStale && scanRecords.length > 0) {
     console.log('检测到远程数据被旧代码污染，自动清理...');
@@ -792,21 +914,35 @@ function triggerSync() {
 
 // 页面加载时恢复数据
 const restored = loadData();
-if (restored) {
-  // 延迟刷新UI（等DOM准备好）
-  setTimeout(() => {
-    updateWorkOrderDisplay();
-    renderWorkOrderList();
-    renderRecentList();
-    renderTable();
-    refreshDashboard();
-  }, 100);
-}
 
 // 启动多人同步
 setTimeout(() => {
   startSync();
 }, 500);
+
+// ====== 登录系统初始化 ======
+ensureDefaultAdmin();
+// 从 session localStorage 恢复当前登录用户
+try {
+  const sessRaw = localStorage.getItem(STORAGE_KEY + '_session');
+  if (sessRaw) {
+    const sess = JSON.parse(sessRaw);
+    if (sess && sess.id && users[sess.id] && users[sess.id].enabled !== false) {
+      currentUser = sess;
+    } else {
+      // 账号已不存在/被停用，清除 session
+      localStorage.removeItem(STORAGE_KEY + '_session');
+    }
+  }
+} catch(e) { console.warn('恢复登录会话失败:', e); }
+
+if (currentUser) {
+  // 已有会话，渲染用户信息条并直接进入
+  renderUserInfo();
+} else {
+  // 显示登录 modal（首次或注销后）
+  document.getElementById('loginModal').style.display = 'flex';
+}
 
 // ====== TAB SWITCHING ======
 function switchTab(tab) {
@@ -820,6 +956,290 @@ function switchTab(tab) {
   });
   if (tab === 'dashboard') refreshDashboard();
   if (tab === 'scan') document.getElementById('scanInput').focus();
+}
+
+// ====== 多用户登录系统 ======
+// SHA-256 密码哈希（浏览器自带 SubtleCrypto）
+async function hashPassword(pwd) {
+  if (!pwd) return '';
+  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(pwd));
+  return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join('');
+}
+
+// 同步包装版本（用于初始化默认管理员账号）
+function hashPasswordSync(pwd) {
+  if (!pwd) return '';
+  // 简单 fallback hash（不依赖 crypto.subtle，足够用于默认账号）
+  let h1 = 0xdeadbeef ^ pwd.length;
+  let h2 = 0x41c6ce57 ^ pwd.length;
+  for (let i = 0; i < pwd.length; i++) {
+    const ch = pwd.charCodeAt(i);
+    h1 = Math.imul(h1 ^ ch, 2654435761);
+    h2 = Math.imul(h2 ^ ch, 1597334677);
+  }
+  h1 = Math.imul(h1 ^ (h1 >>> 16), 2246822507) ^ Math.imul(h2 ^ (h2 >>> 13), 3266489909);
+  h2 = Math.imul(h2 ^ (h2 >>> 16), 2246822507) ^ Math.imul(h1 ^ (h1 >>> 13), 3266489909);
+  // 与 SHA-256 同样的 hex 输出长度（仅用前 16 字节补 0 占位 64 字符）
+  const fullHex = (h2 >>> 0).toString(16).padStart(8, '0') + (h1 >>> 0).toString(16).padStart(8, '0');
+  return fullHex + '0'.repeat(64 - fullHex.length);
+}
+
+// 初始化默认管理员账号（仅当 users 为空时）
+function ensureDefaultAdmin() {
+  if (!users || Object.keys(users).length === 0) {
+    users = {};
+    users[DEFAULT_ADMIN_ID] = {
+      name: '系统管理员',
+      passwordHash: hashPasswordSync(DEFAULT_ADMIN_PWD),
+      role: 'admin',
+      enabled: true,
+      createdAt: new Date().toISOString(),
+      createdBy: 'system',
+      isDefault: true
+    };
+    saveData();
+    console.log('已初始化默认管理员账号：admin / admin123（请登录后立即修改密码）');
+  } else if (!users[DEFAULT_ADMIN_ID]) {
+    // users 有内容但 admin 不存在，补上默认 admin（保护现场可登录）
+    users[DEFAULT_ADMIN_ID] = {
+      name: '系统管理员',
+      passwordHash: hashPasswordSync(DEFAULT_ADMIN_PWD),
+      role: 'admin',
+      enabled: true,
+      createdAt: new Date().toISOString(),
+      createdBy: 'system',
+      isDefault: true
+    };
+    saveData();
+  }
+}
+
+// 登录入口
+async function doLogin() {
+  const uidEl = document.getElementById('loginUserId');
+  const pwdEl = document.getElementById('loginPassword');
+  const uid = uidEl ? uidEl.value.trim() : '';
+  const pwd = pwdEl ? pwdEl.value : '';
+  if (!uid || !pwd) {
+    showToast('请输入工号和密码', 'error');
+    return;
+  }
+  const u = users[uid];
+  if (!u) {
+    showToast('工号不存在', 'error');
+    return;
+  }
+  if (u.enabled === false) {
+    showToast('该账号已停用，请联系管理员', 'error');
+    return;
+  }
+  // 校验密码（异步 SHA-256）
+  const inputHash = await hashPassword(pwd);
+  if (inputHash !== u.passwordHash) {
+    showToast('密码错误', 'error');
+    return;
+  }
+  // 登录成功
+  currentUser = { id: uid, name: u.name, role: u.role };
+  localStorage.setItem(STORAGE_KEY + '_session', JSON.stringify(currentUser));
+  if (pwdEl) pwdEl.value = '';
+  document.getElementById('loginModal').style.display = 'none';
+  renderUserInfo();
+  showToast('欢迎，' + u.name + (u.isDefault ? '（首次登录请尽快修改默认密码）' : ''), 'success');
+  // 默认账号首次登录提示
+  if (u.isDefault) {
+    setTimeout(() => {
+      if (confirm('您正在使用默认管理员账号 admin/admin123\n\n强烈建议立即修改密码以保障安全。\n\n是否现在修改？')) {
+        showChangePwdDialog();
+      }
+    }, 500);
+  }
+  // 登录后刷新看板数据（确保扫码记录带 u 字段）
+  refreshDashboard();
+}
+
+// 注销
+function logout() {
+  if (!confirm('确定要注销当前账号吗？')) return;
+  currentUser = null;
+  localStorage.removeItem(STORAGE_KEY + '_session');
+  document.getElementById('loginModal').style.display = 'flex';
+  renderUserInfo();
+  showToast('已注销', 'info');
+}
+
+// 渲染用户信息条
+function renderUserInfo() {
+  const el = document.getElementById('currentUserInfo');
+  if (!el) return;
+  if (currentUser) {
+    el.style.display = 'flex';
+    const isAdmin = currentUser.role === 'admin';
+    const adminBadge = isAdmin ? '<span class="admin-badge">管理员</span>' : '';
+    const mgmtBtn = isAdmin ? '<button onclick="openUserMgmt()">账号管理</button>' : '';
+    const pwdBtn = '<button onclick="showChangePwdDialog()">改密</button>';
+    el.innerHTML = '👤 <b>' + escapeHtml(currentUser.name) + '</b>（' + escapeHtml(currentUser.id) + '）' + adminBadge + mgmtBtn + pwdBtn + '<button onclick="logout()">注销</button>';
+  } else {
+    el.style.display = 'none';
+    el.innerHTML = '';
+  }
+}
+
+function escapeHtml(s) {
+  return String(s || '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+// 修改自己的密码
+async function showChangePwdDialog() {
+  if (!currentUser) {
+    showToast('请先登录', 'error');
+    return;
+  }
+  const oldPwd = prompt('请输入当前密码：');
+  if (oldPwd === null) return;
+  const newPwd = prompt('请输入新密码（至少 6 位）：');
+  if (newPwd === null) return;
+  if (newPwd.length < 6) { showToast('新密码至少 6 位', 'error'); return; }
+  const oldHash = await hashPassword(oldPwd);
+  if (oldHash !== users[currentUser.id].passwordHash) { showToast('当前密码错误', 'error'); return; }
+  const newHash = await hashPassword(newPwd);
+  users[currentUser.id].passwordHash = newHash;
+  users[currentUser.id].isDefault = false;
+  saveData();
+  showToast('密码已修改', 'success');
+}
+
+// 打开账号管理（仅管理员）
+function openUserMgmt() {
+  if (!currentUser || currentUser.role !== 'admin') {
+    showToast('需要管理员权限', 'error');
+    return;
+  }
+  renderUserList();
+  document.getElementById('userMgmtModal').style.display = 'flex';
+  // 重置隐藏子表单
+  document.getElementById('createUserForm').style.display = 'none';
+  document.getElementById('resetPwdForm').style.display = 'none';
+}
+
+function closeUserMgmt() {
+  document.getElementById('userMgmtModal').style.display = 'none';
+}
+
+function showCreateUserForm() {
+  document.getElementById('resetPwdForm').style.display = 'none';
+  document.getElementById('newUserId').value = '';
+  document.getElementById('newUserName').value = '';
+  document.getElementById('newUserPwd').value = '';
+  document.getElementById('newUserRole').value = 'user';
+  document.getElementById('createUserForm').style.display = 'block';
+}
+
+// 创建账号（管理员）
+async function doCreateUser() {
+  if (!currentUser || currentUser.role !== 'admin') return showToast('需要管理员权限', 'error');
+  const uid = document.getElementById('newUserId').value.trim();
+  const name = document.getElementById('newUserName').value.trim();
+  const pwd = document.getElementById('newUserPwd').value;
+  const role = document.getElementById('newUserRole').value;
+  if (!uid || !name || !pwd) { showToast('工号/姓名/密码均不能为空', 'error'); return; }
+  if (pwd.length < 6) { showToast('密码至少 6 位', 'error'); return; }
+  if (users[uid]) { showToast('工号已存在', 'error'); return; }
+  const hash = await hashPassword(pwd);
+  users[uid] = {
+    name, passwordHash: hash, role,
+    enabled: true,
+    createdAt: new Date().toISOString(),
+    createdBy: currentUser.id
+  };
+  saveData();
+  document.getElementById('createUserForm').style.display = 'none';
+  renderUserList();
+  showToast('账号 ' + uid + ' 创建成功', 'success');
+}
+
+let _resetPwdTarget = '';
+function showResetPwdForm(uid) {
+  _resetPwdTarget = uid;
+  document.getElementById('createUserForm').style.display = 'none';
+  document.getElementById('resetPwdTarget').textContent = uid;
+  document.getElementById('resetPwdNew').value = '';
+  document.getElementById('resetPwdForm').style.display = 'block';
+}
+
+async function doResetPassword() {
+  if (!_resetPwdTarget) return;
+  const newPwd = document.getElementById('resetPwdNew').value;
+  if (!newPwd || newPwd.length < 6) { showToast('新密码至少 6 位', 'error'); return; }
+  const hash = await hashPassword(newPwd);
+  if (!users[_resetPwdTarget]) { showToast('账号不存在', 'error'); return; }
+  users[_resetPwdTarget].passwordHash = hash;
+  users[_resetPwdTarget].isDefault = false;
+  saveData();
+  document.getElementById('resetPwdForm').style.display = 'none';
+  renderUserList();
+  showToast('已重置 ' + _resetPwdTarget + ' 的密码', 'success');
+  _resetPwdTarget = '';
+}
+
+function toggleUserEnabled(uid) {
+  if (!users[uid]) return;
+  if (uid === currentUser.id) { showToast('不能停用自己', 'error'); return; }
+  if (uid === DEFAULT_ADMIN_ID && users[DEFAULT_ADMIN_ID].enabled !== false) {
+    if (!confirm('停用默认管理员账号？其他账号可能无法被管理')) return;
+  }
+  users[uid].enabled = !users[uid].enabled;
+  saveData();
+  renderUserList();
+  showToast(uid + ' 已' + (users[uid].enabled ? '启用' : '停用'), 'success');
+}
+
+function deleteUser(uid) {
+  if (uid === currentUser.id) { showToast('不能删除自己', 'error'); return; }
+  if (uid === DEFAULT_ADMIN_ID) { showToast('默认管理员账号不能删除', 'error'); return; }
+  if (!confirm('确定删除账号 ' + uid + ' 吗？此操作不可恢复')) return;
+  delete users[uid];
+  saveData();
+  renderUserList();
+  showToast('账号 ' + uid + ' 已删除', 'success');
+}
+
+function renderUserList() {
+  const el = document.getElementById('userList');
+  if (!el) return;
+  const ids = Object.keys(users).sort();
+  if (ids.length === 0) { el.innerHTML = '<div style="padding:20px;text-align:center;color:var(--text-secondary)">暂无账号</div>'; return; }
+  let html = '<table style="width:100%;border-collapse:collapse;font-size:.88rem"><thead><tr style="background:var(--bg-secondary)">'
+    + '<th style="padding:8px;text-align:left;border-bottom:1px solid var(--border)">工号</th>'
+    + '<th style="padding:8px;text-align:left;border-bottom:1px solid var(--border)">姓名</th>'
+    + '<th style="padding:8px;text-align:left;border-bottom:1px solid var(--border)">角色</th>'
+    + '<th style="padding:8px;text-align:left;border-bottom:1px solid var(--border)">状态</th>'
+    + '<th style="padding:8px;text-align:left;border-bottom:1px solid var(--border)">创建时间</th>'
+    + '<th style="padding:8px;text-align:left;border-bottom:1px solid var(--border)">创建人</th>'
+    + '<th style="padding:8px;text-align:left;border-bottom:1px solid var(--border)">操作</th>'
+    + '</tr></thead><tbody>';
+  for (const uid of ids) {
+    const u = users[uid];
+    const isSelf = uid === currentUser.id;
+    const roleText = u.role === 'admin' ? '<span style="color:var(--warning);font-weight:700">管理员</span>' : '普通用户';
+    const statusText = u.enabled === false ? '<span style="color:var(--danger)">已停用</span>' : '<span style="color:var(--success)">正常</span>';
+    const createdAt = (u.createdAt || '').replace('T', ' ').substring(0, 16);
+    const isDefault = u.isDefault ? ' <span style="color:var(--danger);font-size:.7rem">[默认]</span>' : '';
+    html += '<tr style="border-bottom:1px solid var(--border)">'
+      + '<td style="padding:8px"><b>' + escapeHtml(uid) + '</b>' + isDefault + '</td>'
+      + '<td style="padding:8px">' + escapeHtml(u.name) + (isSelf ? ' <span style="color:var(--primary);font-size:.7rem">(我)</span>' : '') + '</td>'
+      + '<td style="padding:8px">' + roleText + '</td>'
+      + '<td style="padding:8px">' + statusText + '</td>'
+      + '<td style="padding:8px;font-size:.78rem;color:var(--text-secondary)">' + escapeHtml(createdAt) + '</td>'
+      + '<td style="padding:8px;font-size:.78rem;color:var(--text-secondary)">' + escapeHtml(u.createdBy || '-') + '</td>'
+      + '<td style="padding:8px;white-space:nowrap">'
+      + '<button class="btn btn-sm" onclick="showResetPwdForm(\'' + uid + '\')" style="margin-right:4px">重置密码</button>'
+      + (isSelf ? '' : '<button class="btn btn-sm" onclick="toggleUserEnabled(\'' + uid + '\')" style="margin-right:4px">' + (u.enabled === false ? '启用' : '停用') + '</button>')
+      + (isSelf || uid === DEFAULT_ADMIN_ID ? '' : '<button class="btn btn-sm" onclick="deleteUser(\'' + uid + '\')" style="color:var(--danger)">删除</button>')
+      + '</td></tr>';
+  }
+  html += '</tbody></table>';
+  el.innerHTML = html;
 }
 
 // ====== ACTION TOGGLE ======
@@ -1122,9 +1542,10 @@ function processScan(code) {
     a: currentAction,
     q: scanQty, // 按条码上的数量（包规）记录
     z: getCurrentPallet(),
-    wo_no: currentWorkOrder.number || '',
+    wo_no: currentWorkOrder.number || workOrder || '',
     wo_qty: currentWorkOrder.qty || 0,
-    pd: productionDate || ''
+    pd: productionDate || '',
+    u: currentUser ? currentUser.id : 'unknown' // 【v10】操作人工号
   };
   
   if (isDup) {
@@ -1437,9 +1858,11 @@ function exportScanCSV() {
 
   const isFiltered = (filteredScanRecords && filteredScanRecords.length > 0);
 
-  let csv = '\uFEFF时间,唯一码,线序料号,操作人,工单号,工单数量,库位,批次,动作,栈板号\n';
+  let csv = '\uFEFF时间,唯一码,线序料号,动作,数量,工单号,工单数量,栈板号,批次,操作工号,操作人\n';
   records.forEach(r => {
-    csv += `"${r.t}","${r.c}","${r.x}","${r.r}","${r.wo_no || ''}","${r.wo_qty || ''}","${r.w}","${r.pd || ''}","${r.a}","${r.z || ''}"\n`.replace(/"undefined"/g, '""');
+    const u = (r.u && users[r.u]) ? users[r.u] : null;
+    const opName = u ? u.name : (r.r || '');
+    csv += `"${r.t}","${r.c}","${r.x}","${r.a}","${r.q || 1}","${r.wo_no || ''}","${r.wo_qty || ''}","${r.z || ''}","${r.pd || ''}","${r.u || ''}","${opName}"\n`.replace(/"undefined"/g, '""');
   });
   // Clean up undefined
   csv = csv.replace(/undefined/g, '');
