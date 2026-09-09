@@ -445,6 +445,30 @@ button:focus-visible,input:focus-visible,a:focus-visible{outline:2px solid var(-
       <div class="kpi-card" data-page-node-id="KCpctDvDpD1kESLtEGmApb"><div class="kpi-label" data-page-node-id="kHEzwZ2E6H96S2ya0ggCGp">当前库存</div><div class="kpi-value" id="kpiSemiTotal" data-page-node-id="5yEXZDcBWjn9aSYngcaihV">0</div></div>
     </div>
 
+    <!-- 工单维度查询卡片（v11 新增） -->
+    <div class="card" style="margin-bottom:20px" data-page-node-id="WO_QUERY_CARD">
+      <div class="card-header" style="cursor:pointer" onclick="document.getElementById('woQueryBody').style.display=document.getElementById('woQueryBody').style.display==='none'?'block':'none'" data-page-node-id="WO_QUERY_HEADER">
+        <h2 style="display:flex;align-items:center;gap:10px" data-page-node-id="WO_QUERY_TITLE">
+          <span data-page-node-id="WO_QUERY_ICON">🔍</span>
+          <span data-page-node-id="WO_QUERY_LABEL">工单维度查询</span>
+          <span id="woQueryHint" style="font-size:.78rem;color:var(--text-secondary);font-weight:400" data-page-node-id="WO_QUERY_HINT">选工单号查齐套率与物料明细</span>
+        </h2>
+        <span style="font-size:.8rem;color:var(--text-secondary)" id="woQueryToggle" data-page-node-id="WO_QUERY_TOGGLE">点击展开 ▼</span>
+      </div>
+      <div class="card-body" id="woQueryBody" style="display:none" data-page-node-id="WO_QUERY_BODY">
+        <div class="search-bar" style="margin-bottom:14px" data-page-node-id="WO_QUERY_BAR">
+          <select id="woQuerySelect" style="padding:8px 12px;border:1px solid var(--border);border-radius:6px;font-size:.9rem;background:#fff;min-width:200px;cursor:pointer" data-page-node-id="WO_QUERY_SELECT">
+            <option value="">— 选择已存在的工单 —</option>
+          </select>
+          <span style="color:var(--text-secondary);font-size:.85rem">或直接输入：</span>
+          <input type="text" id="woQueryInput" placeholder="输入工单号" style="padding:8px 12px;border:1px solid var(--border);border-radius:6px;font-size:.9rem;min-width:140px" onkeydown="if(event.key==='Enter')queryWorkOrder()" data-page-node-id="WO_QUERY_INPUT">
+          <button class="btn btn-primary btn-sm" onclick="queryWorkOrder()" data-page-node-id="WO_QUERY_BTN">🔍 查询</button>
+          <button class="btn btn-sm" onclick="clearWorkOrderQuery()" data-page-node-id="WO_QUERY_CLEAR">✕ 清除</button>
+        </div>
+        <div id="woQueryResult" data-page-node-id="WO_QUERY_RESULT"></div>
+      </div>
+    </div>
+
     <!-- Detail Table -->
     <div class="card" data-page-node-id="xSoC5QtaI62C1xUcAoGIEh">
       <div class="card-header" data-page-node-id="qXAtC5idJtnNrS58hrXDjh">
@@ -465,6 +489,7 @@ button:focus-visible,input:focus-visible,a:focus-visible{outline:2px solid var(-
                 <th data-page-node-id="kIgAd4e6UUcqblQOyFuM9q">成品料号</th>
                 <th data-page-node-id="0Ca7fdtfEgqXbChA0krbDt">半品数</th>
                 <th data-page-node-id="a0DwdI0QJfdhKiV128weDX">可配套数</th>
+                <th data-page-node-id="KIT_RATE_COL" title="齐套率 = 已配套成品数 / 总需求数">齐套率</th>
                 <th data-page-node-id="kEbd2YcJ6fXMiHk6pyoITm">齐套状态</th>
                 <th data-page-node-id="sT2bxvc1OkGFBGGKRwdlY9">缺料半品</th>
                 <th data-page-node-id="AAg925g5YfufhNsdfo8qzc">最大缺口</th>
@@ -2364,29 +2389,38 @@ function recalculate() {
     let shortageParts = [];
     let minStock = Infinity;
     let maxStock = 0;
-    
+
     parts.forEach(part => {
       const stock = inventory[part.p] || 0;
       const need = part.y || 1;
       const gap = need - stock;
-      
+
       minStock = Math.min(minStock, stock);
       maxStock = Math.max(maxStock, stock);
-      
+
       if (stock < need) {
         shortageParts.push({name: part.p, stock, need, gap});
       }
       kitQty = Math.min(kitQty, Math.floor(stock / need));
     });
-    
+
     if (parts.length === 0) { kitQty = 0; minStock = 0; }
     if (kitQty === Infinity) kitQty = 0;
     const maxGap = parts.length > 0 ? maxStock - minStock : 0;
-    
+
+    // 【v11】齐套率（基于全局库存 vs 单套用量）：当库存刚好够 1 套时齐套率 100%
+    // 这里用"每种半品库存/单套用量"的最小值来表达齐套率（百分比形式）
+    let kitRate = 0;
+    if (parts.length > 0) {
+      const ratios = parts.map(part => (inventory[part.p] || 0) / (part.y || 1));
+      const minRatio = Math.min(...ratios);
+      kitRate = Math.min(minRatio, 1) * 100;
+    }
     return {
       cp,
       partCount: parts.length,
       kitQty,
+      kitRate: kitRate.toFixed(1),
       status: kitQty > 0 ? '可配套' : (shortageParts.length > 0 ? '缺料' : '待备料'),
       shortageCount: shortageParts.length,
       shortageParts,
@@ -2413,59 +2447,100 @@ function refreshDashboard() {
   
   // Table
   renderTable(data);
-  
+
   // Charts
   renderCharts(data);
+
+  // 【v11】刷新工单查询下拉 + 工单查询结果
+  _afterDashboardRefresh();
 }
+
+// 当前查询的工单（null 表示不筛选，按全局库存看）
+let _selectedWorkOrder = null; // {number, product, qty, componentCounts}
 
 function renderTable(data) {
   const tbody = document.getElementById('dashBody');
   const search = (document.getElementById('searchInput').value || '').toLowerCase();
-  
+
   let filtered = data;
   if (search) {
     filtered = data.filter(d => d.cp.toLowerCase().includes(search));
   }
-  
+
+  // 齐套率着色阈值
+  function rateColor(rate) {
+    const n = parseFloat(rate);
+    if (n >= 80) return 'var(--success)';
+    if (n >= 50) return 'var(--warning)';
+    return 'var(--danger)';
+  }
+
   let html = '';
   filtered.forEach((d, idx) => {
     const statusBadge = d.status === '可配套' ? 'badge-green' : (d.status === '缺料' ? 'badge-red' : 'badge-yellow');
     const hasDetail = d.shortageParts.length > 0 || (bomData[d.cp] && bomData[d.cp].length > 0);
-    
+
     html += `<tr class="${hasDetail ? 'expand-row' : ''}" ${hasDetail ? 'onclick="toggleDetail(this)"' : ''}>
       <td><strong>${d.cp}</strong></td>
       <td>${d.partCount}</td>
       <td><strong style="font-size:1.1rem;color:${d.kitQty > 0 ? 'var(--success)' : 'var(--danger)'}">${d.kitQty}</strong></td>
+      <td><strong style="color:${rateColor(d.kitRate)};font-size:1.05rem">${d.kitRate}%</strong></td>
       <td><span class="badge ${statusBadge}">${d.status}</span></td>
       <td>${d.shortageCount > 0 ? '<span style="color:var(--danger)">' + d.shortageCount + ' 种</span>' : '-'}</td>
       <td>${d.maxGap > 0 ? d.maxGap : '-'}</td>
     </tr>`;
-    
+
     if (hasDetail) {
       const parts = bomData[d.cp] || [];
-      html += `<tr class="detail-row"><td colspan="6">
+      // 工单查询后：需要数 = 工单总数量 × 单套用量；齐套率 = 入库数 / 需要数
+      const woContext = _selectedWorkOrder && _selectedWorkOrder.product === d.cp ? _selectedWorkOrder : null;
+      const woQty = woContext ? woContext.qty : 1;
+
+      html += `<tr class="detail-row"><td colspan="7">
         <table style="width:100%;font-size:.84rem">
-          <tr style="background:#e8f0fe"><th style="padding:6px 10px">半品料号</th><th style="padding:6px 10px">接头规格</th><th style="padding:6px 10px">库存</th><th style="padding:6px 10px">状态</th></tr>
+          <tr style="background:#e8f0fe">
+            <th style="padding:6px 10px">半品料号</th>
+            <th style="padding:6px 10px">接头规格</th>
+            <th style="padding:6px 10px">线长</th>
+            <th style="padding:6px 10px">单套用量</th>
+            <th style="padding:6px 10px">需要数${woContext ? '<br><span style="font-size:.7rem;color:var(--primary)">（工单 ' + woContext.number + ' × ' + woQty + '）</span>' : ''}</th>
+            <th style="padding:6px 10px">库存</th>
+            <th style="padding:6px 10px">齐套率</th>
+            <th style="padding:6px 10px">状态</th>
+          </tr>
       `;
       parts.forEach(p => {
         const stock = inventory[p.p] || 0;
-        const need = p.y || 1;
+        const perSet = p.y || 1;
+        const needQty = woContext ? woQty * perSet : perSet;
+        // 齐套率：库存/需要数（上限 100%）
+        const rate = needQty > 0 ? Math.min(stock / needQty, 1) * 100 : 0;
         let st, cls;
-        if (stock >= need) { st = '充足'; cls = 'badge-green'; }
-        else if (stock > 0) { st = '低库存'; cls = 'badge-yellow'; }
+        if (stock >= needQty) { st = '充足'; cls = 'badge-green'; }
+        else if (stock > 0) { st = '部分缺'; cls = 'badge-yellow'; }
         else { st = '缺料'; cls = 'badge-red'; }
+        // 工单入库进度
+        let woProgress = '';
+        if (woContext && woContext.componentCounts) {
+          const inQty = woContext.componentCounts[p.p] || 0;
+          if (inQty > 0) woProgress = ' <span style="font-size:.7rem;color:var(--primary)">(已入' + inQty + ')</span>';
+        }
         html += `<tr>
           <td style="padding:6px 10px;font-family:monospace;font-size:.8rem">${p.p}</td>
           <td style="padding:6px 10px">${p.j || '-'}</td>
-          <td style="padding:6px 10px;text-align:center;font-weight:600;${stock < need ? 'color:var(--danger)' : ''}">${stock}</td>
+          <td style="padding:6px 10px">${p.l || '-'}</td>
+          <td style="padding:6px 10px;text-align:center">${perSet}</td>
+          <td style="padding:6px 10px;text-align:center;font-weight:600">${needQty}${woProgress}</td>
+          <td style="padding:6px 10px;text-align:center;font-weight:600;${stock < needQty ? 'color:var(--danger)' : ''}">${stock}</td>
+          <td style="padding:6px 10px;text-align:center;font-weight:700;color:${rateColor(rate)}">${rate.toFixed(0)}%</td>
           <td style="padding:6px 10px"><span class="badge ${cls}">${st}</span></td>
         </tr>`;
       });
       html += '</table></td></tr>';
     }
   });
-  
-  tbody.innerHTML = html || '<tr><td colspan="6" style="text-align:center;padding:40px;color:var(--text-secondary)">暂无数据，请先加载库存 CSV</td></tr>';
+
+  tbody.innerHTML = html || '<tr><td colspan="7" style="text-align:center;padding:40px;color:var(--text-secondary)">暂无数据，请先加载库存 CSV</td></tr>';
 }
 
 function toggleDetail(row) {
@@ -2474,6 +2549,194 @@ function toggleDetail(row) {
   if (detail && detail.classList.contains('detail-row')) {
     detail.classList.toggle('show');
   }
+}
+
+// ====== 工单维度查询（v11） ======
+// 收集所有可查询的工单（已确认工单 + 批量导入 + 扫码记录里的工单号）
+function collectAllWorkOrders() {
+  const map = new Map(); // number -> {number, product, qty, componentCounts}
+  // 1. 当前已确认工单
+  if (currentWorkOrder && currentWorkOrder.number) {
+    map.set(currentWorkOrder.number, {
+      number: currentWorkOrder.number,
+      product: currentWorkOrder.product || '',
+      qty: currentWorkOrder.qty || 0,
+      componentCounts: currentWorkOrder.componentCounts || {}
+    });
+  }
+  // 2. 批量导入工单
+  if (Array.isArray(importedWorkOrders)) {
+    importedWorkOrders.forEach(w => {
+      if (w && w.number && !map.has(w.number)) {
+        map.set(w.number, {
+          number: w.number,
+          product: w.product || '',
+          qty: w.qty || 0,
+          componentCounts: {}
+        });
+      }
+    });
+  }
+  // 3. 从扫码记录里提（去重，按工单号归并）
+  scanRecords.forEach(r => {
+    const wn = r.wo_no || r.w || '';
+    if (!wn) return;
+    if (!map.has(wn)) {
+      map.set(wn, {
+        number: wn,
+        product: '', // 从扫码内容无法反推成品料号
+        qty: r.wo_qty || 0,
+        componentCounts: {}
+      });
+    }
+    const wo = map.get(wn);
+    // 累加 componentCounts（按半品计）
+    if (r.x && r.a === '入库') {
+      wo.componentCounts[r.x] = (wo.componentCounts[r.x] || 0) + (r.q || 1);
+    }
+  });
+  return Array.from(map.values()).sort((a, b) => (b.qty || 0) - (a.qty || 0));
+}
+
+// 刷新工单下拉选项
+function refreshWorkOrderSelect() {
+  const sel = document.getElementById('woQuerySelect');
+  if (!sel) return;
+  const list = collectAllWorkOrders();
+  let html = '<option value="">— 选择已存在的工单 —</option>';
+  list.forEach(w => {
+    const label = w.number + (w.product ? ' / ' + w.product : '') + (w.qty ? ' × ' + w.qty : '');
+    html += '<option value="' + escapeHtml(w.number) + '">' + escapeHtml(label) + '</option>';
+  });
+  sel.innerHTML = html;
+}
+
+// 工单查询入口
+function queryWorkOrder() {
+  const input = document.getElementById('woQueryInput').value.trim();
+  const selectVal = document.getElementById('woQuerySelect').value;
+  const woNo = input || selectVal;
+  if (!woNo) {
+    showToast('请输入工单号或从下拉选择', 'error');
+    return;
+  }
+  const list = collectAllWorkOrders();
+  let found = list.find(w => w.number === woNo);
+  if (!found) {
+    // 输入的工单号不在列表里——用当前 currentWorkOrder 兜底
+    if (currentWorkOrder && currentWorkOrder.number === woNo) {
+      found = {
+        number: currentWorkOrder.number,
+        product: currentWorkOrder.product || '',
+        qty: currentWorkOrder.qty || 0,
+        componentCounts: currentWorkOrder.componentCounts || {}
+      };
+    } else {
+      showToast('工单 ' + woNo + ' 未找到，请先确认/导入该工单', 'error');
+      return;
+    }
+  }
+  _selectedWorkOrder = found;
+  renderWorkOrderQueryResult();
+  renderTable(window._dashData || []);
+  document.getElementById('woQueryHint').textContent = '当前查询：' + found.number + (found.product ? ' / ' + found.product : '') + (found.qty ? ' × ' + found.qty : '');
+}
+
+function clearWorkOrderQuery() {
+  _selectedWorkOrder = null;
+  document.getElementById('woQueryInput').value = '';
+  document.getElementById('woQuerySelect').value = '';
+  document.getElementById('woQueryHint').textContent = '选工单号查齐套率与物料明细';
+  document.getElementById('woQueryResult').innerHTML = '';
+  renderTable(window._dashData || []);
+}
+
+// 渲染工单查询结果（齐套率 + 物料明细汇总）
+function renderWorkOrderQueryResult() {
+  const el = document.getElementById('woQueryResult');
+  if (!el) return;
+  const wo = _selectedWorkOrder;
+  if (!wo) { el.innerHTML = ''; return; }
+
+  // 没识别出成品料号：提示
+  if (!wo.product) {
+    el.innerHTML = '<div style="padding:16px;background:var(--bg-secondary);border-radius:8px;color:var(--text-secondary);font-size:.88rem">⚠️ 该工单未关联成品料号（扫码时未识别），无法计算齐套率。请先用扫码识别成品料号或确认工单。</div>';
+    return;
+  }
+  const parts = bomData[wo.product] || [];
+  if (parts.length === 0) {
+    el.innerHTML = '<div style="padding:16px;background:var(--bg-secondary);border-radius:8px;color:var(--danger);font-size:.88rem">❌ 成品 ' + wo.product + ' 不在 BOM 数据中</div>';
+    return;
+  }
+
+  // 计算每个半品的入库/需要/齐套率
+  const rows = parts.map(p => {
+    const stock = inventory[p.p] || 0;
+    const perSet = p.y || 1;
+    const need = wo.qty * perSet;
+    const inQty = wo.componentCounts[p.p] || 0;
+    const remain = need - inQty;
+    const rate = need > 0 ? Math.min(inQty / need, 1) * 100 : 0;
+    const stockRate = need > 0 ? Math.min(stock / need, 1) * 100 : 0;
+    return { p, stock, perSet, need, inQty, remain, rate, stockRate };
+  });
+
+  // 工单整体齐套率 = min(入库数/需要数) — 即已完成成品数 / 工单总数量
+  let completedQty = Infinity;
+  parts.forEach(p => {
+    const perSet = p.y || 1;
+    const need = wo.qty * perSet;
+    const inQty = wo.componentCounts[p.p] || 0;
+    completedQty = Math.min(completedQty, Math.floor(inQty / perSet));
+  });
+  if (!isFinite(completedQty)) completedQty = 0;
+  const woKitRate = wo.qty > 0 ? (completedQty / wo.qty * 100) : 0;
+  const woStockRate = Math.min(...rows.map(r => r.stockRate));
+
+  const rateColor = (n) => n >= 80 ? 'var(--success)' : (n >= 50 ? 'var(--warning)' : 'var(--danger)');
+
+  let html = '<div style="background:linear-gradient(135deg,#f0f7ff,#e3f2fd);border-radius:10px;padding:18px;margin-bottom:14px">'
+    + '<div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">'
+    + '<div><div style="font-size:.85rem;color:var(--text-secondary);margin-bottom:4px">工单</div>'
+    + '<div style="font-size:1.15rem;font-weight:700">' + escapeHtml(wo.number) + ' / ' + escapeHtml(wo.product) + ' × ' + wo.qty + ' 套</div></div>'
+    + '<div style="display:flex;gap:24px">'
+    + '<div style="text-align:center"><div style="font-size:.78rem;color:var(--text-secondary)">工单入库齐套率</div><div style="font-size:2rem;font-weight:800;color:' + rateColor(woKitRate) + '">' + woKitRate.toFixed(1) + '%</div><div style="font-size:.72rem;color:var(--text-secondary)">已完成 ' + completedQty + ' / ' + wo.qty + ' 套</div></div>'
+    + '<div style="text-align:center"><div style="font-size:.78rem;color:var(--text-secondary)">库存满足率</div><div style="font-size:2rem;font-weight:800;color:' + rateColor(woStockRate) + '">' + woStockRate.toFixed(1) + '%</div><div style="font-size:.72rem;color:var(--text-secondary)">当前库存覆盖度</div></div>'
+    + '</div></div></div>';
+
+  // 物料明细表（含齐套率）
+  html += '<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:.86rem">'
+    + '<thead><tr style="background:var(--bg-secondary)">'
+    + '<th style="padding:8px;text-align:left;border-bottom:1px solid var(--border)">半品料号</th>'
+    + '<th style="padding:8px;text-align:center;border-bottom:1px solid var(--border)">单套用量</th>'
+    + '<th style="padding:8px;text-align:center;border-bottom:1px solid var(--border)">需要数</th>'
+    + '<th style="padding:8px;text-align:center;border-bottom:1px solid var(--border)">已入库</th>'
+    + '<th style="padding:8px;text-align:center;border-bottom:1px solid var(--border)">剩余需入</th>'
+    + '<th style="padding:8px;text-align:center;border-bottom:1px solid var(--border)">当前库存</th>'
+    + '<th style="padding:8px;text-align:center;border-bottom:1px solid var(--border)">入库齐套率</th>'
+    + '</tr></thead><tbody>';
+  rows.forEach(r => {
+    const stColor = r.remain <= 0 ? 'var(--success)' : (r.inQty > 0 ? 'var(--warning)' : 'var(--danger)');
+    const stText = r.remain <= 0 ? '已完成' : (r.inQty > 0 ? '入库中' : '未开始');
+    html += '<tr style="border-bottom:1px solid var(--border)">'
+      + '<td style="padding:8px;font-family:monospace;font-size:.8rem">' + escapeHtml(r.p.p) + '</td>'
+      + '<td style="padding:8px;text-align:center">' + r.perSet + '</td>'
+      + '<td style="padding:8px;text-align:center;font-weight:600">' + r.need + '</td>'
+      + '<td style="padding:8px;text-align:center;font-weight:600;color:' + stColor + '">' + r.inQty + ' <span style="font-size:.7rem">(' + stText + ')</span></td>'
+      + '<td style="padding:8px;text-align:center">' + (r.remain > 0 ? '<span style="color:var(--danger)">' + r.remain + '</span>' : '<span style="color:var(--success)">0</span>') + '</td>'
+      + '<td style="padding:8px;text-align:center">' + r.stock + '</td>'
+      + '<td style="padding:8px;text-align:center;font-weight:700;color:' + rateColor(r.rate) + '">' + r.rate.toFixed(0) + '%</td>'
+      + '</tr>';
+  });
+  html += '</tbody></table></div>';
+
+  el.innerHTML = html;
+}
+
+// 让 dashboard 刷新时同步工单下拉 + 工单查询结果（v11 集成点）
+function _afterDashboardRefresh() {
+  refreshWorkOrderSelect();
+  if (_selectedWorkOrder) renderWorkOrderQueryResult();
 }
 
 function filterTable() {
@@ -2535,9 +2798,14 @@ function exportToExcel() {
   const ws1 = XLSX.utils.aoa_to_sheet(bomSheetData);
   XLSX.utils.book_append_sheet(wb, ws1, 'BOM物料清单');
   
-  // Sheet 2: 半品库存主数据
+  // Sheet 2: 半品库存主数据（v11 齐套率按工单查询切换）
+  const woCtx = _selectedWorkOrder && _selectedWorkOrder.product ? _selectedWorkOrder : null;
   const inventoryData = [];
-  inventoryData.push(['所属成品料号', '线序料号', '接头规格', '线长', '单套用量', '累计入库', '累计出库', '当前库存', '库存状态']);
+  if (woCtx) {
+    inventoryData.push(['所属成品料号', '线序料号', '接头规格', '线长', '单套用量', '需要数（工单×' + woCtx.qty + '）', '累计入库', '累计出库', '当前库存', '工单入库齐套率', '库存状态']);
+  } else {
+    inventoryData.push(['所属成品料号', '线序料号', '接头规格', '线长', '单套用量', '累计入库', '累计出库', '当前库存', '单套齐套率', '库存状态']);
+  }
   Object.keys(bomData).forEach(cp => {
     bomData[cp].forEach(item => {
       const qty = inventory[item.p] || 0;
@@ -2550,29 +2818,78 @@ function exportToExcel() {
           else if (r.a === '出库') outCount += q;
         }
       });
-      const status = qty === 0 ? '缺料' : (qty < 10 ? '低库存' : '正常');
-      inventoryData.push([cp, item.p, item.j, item.l, item.y, inCount, outCount, qty, status]);
+      let status, rateStr;
+      if (woCtx) {
+        const need = woCtx.qty * (item.y || 1);
+        const woIn = woCtx.componentCounts[item.p] || 0;
+        const rate = need > 0 ? Math.min(woIn / need, 1) * 100 : 0;
+        rateStr = rate.toFixed(0) + '%';
+        status = woIn >= need ? '工单已齐套' : (qty === 0 ? '缺料' : (qty < need ? '需补' : '库存够'));
+        inventoryData.push([cp, item.p, item.j, item.l, item.y, need, inCount, outCount, qty, rateStr, status]);
+      } else {
+        const perSet = item.y || 1;
+        const rate = perSet > 0 ? Math.min(qty / perSet, 1) * 100 : 0;
+        rateStr = rate.toFixed(0) + '%';
+        status = qty === 0 ? '缺料' : (qty < perSet ? '低库存' : '正常');
+        inventoryData.push([cp, item.p, item.j, item.l, item.y, inCount, outCount, qty, rateStr, status]);
+      }
     });
   });
   const ws2 = XLSX.utils.aoa_to_sheet(inventoryData);
   XLSX.utils.book_append_sheet(wb, ws2, '半品库存主数据');
   
-  // Sheet 3: 成品齐套看板
+  // Sheet 3: 成品齐套看板（v11 加齐套率列）
   const dashData = [];
-  dashData.push(['成品料号', '半品数', '可配套数', '齐套状态', '缺料半品', '缺口数量']);
+  dashData.push(['成品料号', '半品数', '可配套数', '齐套率', '齐套状态', '缺料半品', '缺口数量']);
   data.forEach(d => {
-    dashData.push([d.cp, d.partCount, d.kitQty, d.status, d.shortageCount, d.maxGap]);
+    dashData.push([d.cp, d.partCount, d.kitQty, d.kitRate + '%', d.status, d.shortageCount, d.maxGap]);
   });
   const ws3 = XLSX.utils.aoa_to_sheet(dashData);
   XLSX.utils.book_append_sheet(wb, ws3, '成品齐套看板');
+
+  // Sheet 3.5: 工单齐套率汇总（v11 新增；当前查询工单时输出该工单明细，否则跳过）
+  if (_selectedWorkOrder && _selectedWorkOrder.product && bomData[_selectedWorkOrder.product]) {
+    const wo = _selectedWorkOrder;
+    const parts = bomData[wo.product] || [];
+    let completedQty = Infinity;
+    parts.forEach(p => {
+      const perSet = p.y || 1;
+      const inQty = wo.componentCounts[p.p] || 0;
+      completedQty = Math.min(completedQty, Math.floor(inQty / perSet));
+    });
+    if (!isFinite(completedQty)) completedQty = 0;
+    const woKitRate = wo.qty > 0 ? (completedQty / wo.qty * 100).toFixed(1) : '0';
+    const woSheet = [];
+    woSheet.push(['工单齐套率汇总', '']);
+    woSheet.push(['工单号', wo.number]);
+    woSheet.push(['成品料号', wo.product]);
+    woSheet.push(['工单数量', wo.qty]);
+    woSheet.push(['已完成套数', completedQty]);
+    woSheet.push(['工单入库齐套率', woKitRate + '%']);
+    woSheet.push([]);
+    woSheet.push(['半品料号', '单套用量', '需要数', '已入库', '剩余需入', '当前库存', '入库齐套率']);
+    parts.forEach(p => {
+      const stock = inventory[p.p] || 0;
+      const perSet = p.y || 1;
+      const need = wo.qty * perSet;
+      const inQty = wo.componentCounts[p.p] || 0;
+      const remain = Math.max(need - inQty, 0);
+      const rate = need > 0 ? Math.min(inQty / need, 1) * 100 : 0;
+      woSheet.push([p.p, perSet, need, inQty, remain, stock, rate.toFixed(0) + '%']);
+    });
+    const wsWo = XLSX.utils.aoa_to_sheet(woSheet);
+    XLSX.utils.book_append_sheet(wb, wsWo, '工单齐套率汇总-' + wo.number);
+  }
   
   // Sheet 4: 扫码区
   const scanData = [];
-  scanData.push(['时间', '唯一码', '线序料号', '操作人', '工单号', '工单数量', '库位', '批次', '动作', '栈板号']);
+  scanData.push(['时间', '唯一码', '线序料号', '动作', '数量', '工单号', '工单数量', '栈板号', '批次', '操作工号', '操作人']);
   scanRecords.forEach(r => {
     const code = r.c;
     const partNum = code.substring(3, 21);
-    scanData.push([r.t, code, partNum, r.r, r.wo_no || '', r.wo_qty || '', r.w, r.pd || '', r.a, r.z || '']);
+    const u = (r.u && users[r.u]) ? users[r.u] : null;
+    const opName = u ? u.name : (r.r || '');
+    scanData.push([r.t, code, partNum, r.a, r.q || 1, r.wo_no || '', r.wo_qty || '', r.z || '', r.pd || '', r.u || '', opName]);
   });
   const ws4 = XLSX.utils.aoa_to_sheet(scanData);
   XLSX.utils.book_append_sheet(wb, ws4, '扫码区');
