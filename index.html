@@ -2102,11 +2102,11 @@ function loadBOMFromRows(rows) {
     if (!row || row.length === 0) return;
     
     const cp = String(row[0] || '').trim();
-    // 【表头不计数】第一列是列名（含"料号/成品/产品/编号/规格"等关键词）时跳过，不纳入料号数据
-    if (/料号|成品|产品|编号|规格|product/i.test(cp)) return;
-    
     const bp = String(row[1] || '').trim();
     if (!cp || !bp) return;
+    
+    // 【表头不计数】料号列必须含数字；纯文字（表头列名、说明行等非料号内容）一律跳过，不计入料号数据
+    if (!/\d/.test(cp) || !/\d/.test(bp)) return;
     
     // 【有效款过滤】仅导入白名单内的成品料号，跳过历史遗留旧款
     if (onlyValid && !whitelist.has(cp)) {
