@@ -1048,12 +1048,13 @@ function mergeRemoteData(remote) {
         bomData[cp] = remote.bomData[cp];
         changed = true;
       } else {
-        // 合并半品条目（去重：成品+半品+接头+线长 完全相同则跳过）
+        // 合并半品条目（去重：同成品下同半品料号只保留一个）
         const existing = bomData[cp];
+        const localParts = new Set(existing.map(e => e.p));
         for (const remoteItem of remote.bomData[cp]) {
-          const dup = existing.some(e => e.p === remoteItem.p && e.j === remoteItem.j && e.l === remoteItem.l);
-          if (!dup) {
+          if (!localParts.has(remoteItem.p)) {
             existing.push(remoteItem);
+            localParts.add(remoteItem.p);
             changed = true;
           }
         }
@@ -1214,6 +1215,7 @@ async function syncCycle() {
     lastSyncTime = new Date();
     updateSyncStatus('synced', '已同步');
     if (hadChanges) {
+      dedupBomData();
       saveData();
       refreshAllUI();
     }
