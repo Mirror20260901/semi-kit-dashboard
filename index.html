@@ -1203,20 +1203,22 @@ function processScan(code) {
     return;
   }
   
-  // 1. 先检查栈板号
-  const palletPrefixVal = document.getElementById('palletPrefix').value;
-  const palletSeqVal = document.getElementById('palletSeq').value;
-  if (!palletPrefixVal || !palletSeqVal) {
-    scanInput.className = 'error';
-    scanStatus.textContent = '⚠️ 请先设置栈板号（选择前缀+输入序号）再扫码！';
-    scanStatus.className = 'scan-status err';
-    playSound('error');
-    setTimeout(() => { scanInput.className = ''; scanInput.value = ''; scanInput.focus(); }, 2000);
-    return;
+  // 1. 先检查栈板号（出库不需要）
+  if (currentAction === '入库') {
+    const palletPrefixVal = document.getElementById('palletPrefix').value;
+    const palletSeqVal = document.getElementById('palletSeq').value;
+    if (!palletPrefixVal || !palletSeqVal) {
+      scanInput.className = 'error';
+      scanStatus.textContent = '⚠️ 请先设置栈板号（选择前缀+输入序号）再扫码！';
+      scanStatus.className = 'scan-status err';
+      playSound('error');
+      setTimeout(() => { scanInput.className = ''; scanInput.value = ''; scanInput.focus(); }, 2000);
+      return;
+    }
   }
 
-  // 2. 再检查工单
-  if (!currentWorkOrder.number) {
+  // 2. 再检查工单（出库不需要）
+  if (currentAction === '入库' && !currentWorkOrder.number) {
     scanInput.className = 'error';
     scanStatus.textContent = '⚠️ 请先在上方设置工单号和数量后再扫码！';
     scanStatus.className = 'scan-status err';
@@ -1303,8 +1305,8 @@ function processScan(code) {
     scanQty = 1;
   }
   
-  // ===== 通用检查：BOM验证 + 超限报警（新旧格式共用）=====
-  if (halfPart) {
+  // ===== 通用检查：BOM验证 + 超限报警（仅入库检查）=====
+  if (halfPart && currentAction === '入库') {
     // 从半品料号提取成品料号（-P之前的部分）
     const pIdx = halfPart.indexOf('-P');
     const productFromHalfPart = pIdx > 0 ? halfPart.substring(0, pIdx) : '';
@@ -1419,6 +1421,19 @@ function processScan(code) {
         setTimeout(() => { scanInput.className = ''; scanInput.value = ''; scanInput.focus(); }, 4000);
         return;
       }
+    }
+  }
+  
+  // 出库校验：没入过库的码不允许出库
+  if (currentAction === '出库') {
+    const hasInbound = scanRecords.some(r => r.c === code && r.a === '入库');
+    if (!hasInbound) {
+      scanInput.className = 'error';
+      scanStatus.textContent = '❌ 该二维码未入库，不允许出库！';
+      scanStatus.className = 'scan-status err';
+      playSound('error');
+      setTimeout(() => { scanInput.className = ''; scanInput.value = ''; scanInput.focus(); }, 2500);
+      return;
     }
   }
   
@@ -1743,9 +1758,9 @@ function deleteByDate() {
 function exportScanCSV() {
   const records = filteredScanRecords.length > 0 ? filteredScanRecords : scanRecords.filter(r => r.c);
   if (records.length === 0) { showToast('暂无数据可导出', 'info'); return; }
-  let csv = '\uFEFF时间,唯一码,线序料号,操作人,工单号,工单数量,库位,批次,动作,栈板号\n';
+  let csv = '\uFEFF时间,唯一码,线序料号,操作人,工单号,数量(包规),库位,批次,动作,栈板号\n';
   records.forEach(r => {
-    csv += `"${r.t}","${r.c}","${r.x}","${r.r}","${r.wo_no || ''}","${r.wo_qty || ''}","${r.w}","${r.pd || ''}","${r.a}","${r.z || ''}"\n`.replace(/"undefined"/g, '""');
+    csv += `"${r.t}","${r.c}","${r.x}","${r.r}","${r.wo_no || ''}","${r.q || ''}","${r.w}","${r.pd || ''}","${r.a}","${r.z || ''}"\n`.replace(/"undefined"/g, '""');
   });
   // Clean up undefined
   csv = csv.replace(/undefined/g, '');
