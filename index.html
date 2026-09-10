@@ -25,7 +25,7 @@ a{color:var(--primary);text-decoration:none}
 .header{background:linear-gradient(135deg,var(--primary-dark),var(--primary));color:#fff;padding:16px 24px;position:sticky;top:0;z-index:100;box-shadow:0 2px 16px rgba(0,0,0,.15)}
 .header-inner{max-width:1400px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px}
 .header h1{font-size:1.4rem;font-weight:700;letter-spacing:.5px}
-.header-actions{display:flex;gap:8px;align-items:center}
+.header-actions{display:flex;gap:8px;align-items:center;position:relative}
 
 /* Tabs */
 .tabs{display:flex;gap:4px;background:rgba(255,255,255,.15);border-radius:8px;padding:3px}
@@ -199,6 +199,14 @@ button:focus-visible,input:focus-visible,a:focus-visible{outline:2px solid var(-
 .login-box .remember input{width:auto;margin:0}
 .user-badge{display:inline-flex;align-items:center;gap:4px;padding:3px 10px;background:rgba(255,255,255,.2);border-radius:12px;font-size:.78rem;color:#fff;cursor:pointer}
 .user-badge:hover{background:rgba(255,255,255,.3)}
+.user-dropdown{position:absolute;top:100%;right:0;margin-top:6px;background:#fff;border-radius:10px;box-shadow:0 4px 20px rgba(0,0,0,.18);min-width:180px;z-index:9999;overflow:hidden;animation:dropdownFadeIn .15s ease}
+@keyframes dropdownFadeIn{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:translateY(0)}}
+.user-dropdown-header{padding:12px 16px 8px;background:#f8f9fa}
+.user-dropdown-name{font-weight:600;font-size:.9rem;color:#333}
+.user-dropdown-role{font-size:.75rem;color:#888;margin-top:2px}
+.user-dropdown-divider{height:1px;background:#eee;margin:4px 0}
+.user-dropdown-item{padding:10px 16px;font-size:.85rem;color:#333;cursor:pointer;transition:background .12s}
+.user-dropdown-item:hover{background:#f0f4ff}
 </style>
 </head>
 <body>
@@ -220,7 +228,18 @@ button:focus-visible,input:focus-visible,a:focus-visible{outline:2px solid var(-
   <div class="header-inner">
     <h1>📦 半品齐套管理看板</h1>
       <div class="header-actions">
-      <div id="userBadge" class="user-badge" onclick="showUserMenu()" title="点击切换账号">👤 <span id="userDisplayName"></span></div>
+      <div id="userBadge" class="user-badge" onclick="toggleUserMenu()" title="点击切换账号">👤 <span id="userDisplayName"></span> ▾</div>
+      <div id="userDropdown" class="user-dropdown" style="display:none">
+        <div class="user-dropdown-header">
+          <div class="user-dropdown-name" id="dropdownUserName"></div>
+          <div class="user-dropdown-role" id="dropdownUserRole"></div>
+        </div>
+        <div class="user-dropdown-divider"></div>
+        <div class="user-dropdown-item" onclick="doSwitchAccount()">🔄 切换账号</div>
+        <div class="user-dropdown-item" id="menuManageUsers" onclick="openUserModal()" style="display:none">👥 用户管理</div>
+        <div class="user-dropdown-divider"></div>
+        <div class="user-dropdown-item" onclick="doLogout()" style="color:#e74c3c">🚪 退出登录</div>
+      </div>
       <div id="syncIndicator" class="sync-indicator" title="多人同步状态">
         <span class="sync-dot"></span>
         <span class="sync-text">同步中...</span>
@@ -560,6 +579,7 @@ function checkAuth() {
 
 // 退出登录
 function doLogout() {
+  closeUserDropdown();
   currentUser = null;
   sessionStorage.removeItem('currentUser');
   localStorage.removeItem('currentUser');
@@ -571,21 +591,52 @@ function doLogout() {
   document.getElementById('loginError').style.display = 'none';
 }
 
-// 用户菜单
-function showUserMenu() {
-  if (!currentUser) return;
-  let msg = `当前用户：${currentUser.name}（${currentUser.username}）\n角色：${currentUser.role === 'admin' ? '管理员' : '操作员'}`;
-  if (currentUser.role === 'admin') {
-    msg += '\n\n点"确定"打开用户管理\n点"取消"退出登录';
-    if (confirm(msg)) {
-      openUserModal();
-    } else {
-      if (confirm('确定退出登录？')) doLogout();
-    }
+// 用户下拉菜单
+function toggleUserMenu() {
+  const dd = document.getElementById('userDropdown');
+  if (dd.style.display === 'none') {
+    // 填充用户信息
+    document.getElementById('dropdownUserName').textContent = `${currentUser.name}（${currentUser.username}）`;
+    document.getElementById('dropdownUserRole').textContent = currentUser.role === 'admin' ? '管理员' : '操作员';
+    // 管理员才显示用户管理
+    document.getElementById('menuManageUsers').style.display = currentUser.role === 'admin' ? '' : 'none';
+    dd.style.display = 'block';
+    // 点击其他地方自动关闭
+    setTimeout(() => {
+      document.addEventListener('click', closeUserMenuOnOutside, { once: true });
+    }, 10);
   } else {
-    msg += '\n\n确定退出登录？';
-    if (confirm(msg)) doLogout();
+    dd.style.display = 'none';
   }
+}
+function closeUserMenuOnOutside(e) {
+  const dd = document.getElementById('userDropdown');
+  const badge = document.getElementById('userBadge');
+  if (!dd.contains(e.target) && !badge.contains(e.target)) {
+    dd.style.display = 'none';
+  } else {
+    setTimeout(() => {
+      document.addEventListener('click', closeUserMenuOnOutside, { once: true });
+    }, 10);
+  }
+}
+function closeUserDropdown() {
+  document.getElementById('userDropdown').style.display = 'none';
+}
+// 切换账号：退出后重新显示登录框，保留用户名
+function doSwitchAccount() {
+  closeUserDropdown();
+  const prevUser = currentUser ? currentUser.username : '';
+  currentUser = null;
+  sessionStorage.removeItem('currentUser');
+  localStorage.removeItem('currentUser');
+  localStorage.removeItem('loginExpiry');
+  document.getElementById('mainApp').style.display = 'none';
+  document.getElementById('loginOverlay').style.display = '';
+  document.getElementById('loginUsername').value = prevUser;
+  document.getElementById('loginPassword').value = '';
+  document.getElementById('loginError').style.display = 'none';
+  document.getElementById('loginPassword').focus();
 }
 
 // 用户管理弹窗
