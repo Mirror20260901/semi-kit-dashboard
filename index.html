@@ -1356,12 +1356,12 @@ function processScan(code) {
       }
     }
     
-    // BOM匹配：一个工单可对应多个成品料号，允许匹配任意成品的半品
+    // BOM匹配：每个成品料号对应独立工单，切换成品料号需重新录入工单
     let bomMatched = false;
     let matchedProduct = ''; // 匹配到的成品料号，用于超限检查
 
     if (currentWorkOrder.product) {
-      // 先尝试匹配当前已识别的成品
+      // 只匹配当前工单关联的成品料号
       const woBomList = bomData[currentWorkOrder.product] || [];
       if (woBomList.some(c => c.p === halfPart)) {
         bomMatched = true;
@@ -1371,20 +1371,22 @@ function processScan(code) {
         bomMatched = true;
         matchedProduct = currentWorkOrder.product;
       }
-      // 当前成品没匹配到，再尝试全局BOM中其他成品的半品
+      // 不匹配当前工单：检查是否属于其他成品料号
       if (!bomMatched) {
+        let otherProduct = '';
         for (const cp in bomData) {
           if (cp === currentWorkOrder.product) continue;
-          if (bomData[cp].some(c => c.p === halfPart)) {
-            bomMatched = true;
-            matchedProduct = cp;
-            break;
-          }
-          if (productFromHalfPart && bomData[cp].some(c => c.p === productFromHalfPart)) {
-            bomMatched = true;
-            matchedProduct = cp;
-            break;
-          }
+          if (bomData[cp].some(c => c.p === halfPart)) { otherProduct = cp; break; }
+          if (productFromHalfPart && bomData[cp].some(c => c.p === productFromHalfPart)) { otherProduct = cp; break; }
+        }
+        if (otherProduct) {
+          // 该码属于其他成品料号，需要重新录入工单
+          scanInput.className = 'error';
+          scanStatus.innerHTML = '🚨 <b>成品料号不匹配！</b><br>当前工单关联成品：<b>' + currentWorkOrder.product + '</b><br>该二维码属于成品：<b>' + otherProduct + '</b><br>请先重新录入新工单号再扫码';
+          scanStatus.className = 'scan-status err';
+          playSound('error');
+          setTimeout(() => { scanInput.className = ''; scanInput.value = ''; scanInput.focus(); }, 4000);
+          return;
         }
       }
     } else {
