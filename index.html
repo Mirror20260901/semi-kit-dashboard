@@ -1253,6 +1253,15 @@ function processScan(code) {
   if (isPipeFormat) {
     // ===== 管道符格式：101396002｜8180900969-P1A1-P2B2｜00035｜00100｜260905｜00001 =====
     const parts = code.split(/[｜|]/).map(s => s.trim());
+    // 管道符格式必须至少4段（工单号｜半品料号｜线长｜数量），不足则视为不完整扫码直接拒绝
+    if (parts.length < 4) {
+      scanInput.className = 'error';
+      scanStatus.textContent = '❌ 扫码内容不完整，请重新扫码！';
+      scanStatus.className = 'scan-status err';
+      playSound('error');
+      setTimeout(() => { scanInput.className = ''; scanInput.value = ''; scanInput.focus(); }, 2000);
+      return;
+    }
     workOrder = parts[0] || '';
     halfPart = parts[1] || '';
     // parts[2] = 线长（暂不使用）
@@ -1316,6 +1325,16 @@ function processScan(code) {
     }
     halfPart = extractHalfPart(code);
     scanQty = 1;
+  }
+  
+  // 兜底检查：半品料号为空说明扫码内容不完整或格式无法识别，拒绝创建记录
+  if (!halfPart) {
+    scanInput.className = 'error';
+    scanStatus.textContent = '❌ 无法识别半品料号，请确认扫码内容完整后重试！';
+    scanStatus.className = 'scan-status err';
+    playSound('error');
+    setTimeout(() => { scanInput.className = ''; scanInput.value = ''; scanInput.focus(); }, 2000);
+    return;
   }
   
   // ===== 通用检查：BOM验证 + 超限报警（仅入库检查）=====
