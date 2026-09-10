@@ -132,7 +132,7 @@ tr:hover td{background:#f8faff}
 
 /* Recent scan list */
 .recent-list{max-width:100%;margin:0 auto;display:flex;flex-direction:column}
-.recent-item{display:flex;align-items:center;gap:6px;padding:8px 10px;border-bottom:1px solid var(--border);font-size:.82rem;overflow-x:auto}
+.recent-item{display:flex;align-items:center;gap:6px;padding:8px 10px;border-bottom:1px solid var(--border);font-size:.82rem;user-select:text}
 .recent-item:last-child{border-bottom:none}
 .recent-time{width:120px;flex-shrink:0;color:var(--text-secondary);font-size:.78rem}
 .recent-code{width:220px;flex-shrink:0;font-family:"SF Mono",Monaco,Consolas,monospace;font-size:.76rem;color:var(--primary-dark);overflow:hidden;text-overflow:ellipsis}
@@ -399,7 +399,7 @@ button:focus-visible,input:focus-visible,a:focus-visible{outline:2px solid var(-
           <button class="btn btn-sm" style="background:var(--danger);color:#fff" onclick="deleteByDate()">🗑️ 删除该日期</button>
         </div>
         <div id="scanRecordCount" style="font-size:.8rem;color:var(--text-secondary);margin-bottom:8px">共 0 条记录</div>
-        <div class="recent-list" id="recentList" style="max-height:400px;overflow-y:auto">
+        <div class="recent-list" id="recentList" style="max-height:400px">
           <div style="padding:20px;text-align:center;color:var(--text-secondary)">暂无扫码记录</div>
         </div>
       </div>
@@ -1225,7 +1225,7 @@ function processScan(code) {
       scanStatus.textContent = '⚠️ 请先设置栈板号（选择前缀+输入序号）再扫码！';
       scanStatus.className = 'scan-status err';
       playSound('error');
-      setTimeout(() => { scanInput.className = ''; scanInput.value = ''; scanInput.focus(); }, 2000);
+      setTimeout(() => { scanInput.className = ''; scanInput.value = ''; if(!document.getSelection().toString())scanInput.focus(); }, 2000);
       return;
     }
   }
@@ -1236,7 +1236,7 @@ function processScan(code) {
     scanStatus.textContent = '⚠️ 请先在上方设置工单号和数量后再扫码！';
     scanStatus.className = 'scan-status err';
     playSound('error');
-    setTimeout(() => { scanInput.className = ''; scanInput.value = ''; scanInput.focus(); }, 2000);
+    setTimeout(() => { scanInput.className = ''; scanInput.value = ''; if(!document.getSelection().toString())scanInput.focus(); }, 2000);
     return;
   }
 
@@ -1259,7 +1259,7 @@ function processScan(code) {
       scanStatus.textContent = '❌ 扫码内容不完整，请重新扫码！';
       scanStatus.className = 'scan-status err';
       playSound('error');
-      setTimeout(() => { scanInput.className = ''; scanInput.value = ''; scanInput.focus(); }, 2000);
+      setTimeout(() => { scanInput.className = ''; scanInput.value = ''; if(!document.getSelection().toString())scanInput.focus(); }, 2000);
       return;
     }
     workOrder = parts[0] || '';
@@ -1279,7 +1279,7 @@ function processScan(code) {
       scanStatus.textContent = '❌ 无法识别半品料号';
       scanStatus.className = 'scan-status err';
       playSound('error');
-      setTimeout(() => { scanInput.className = ''; scanInput.value = ''; scanInput.focus(); }, 1500);
+      setTimeout(() => { scanInput.className = ''; scanInput.value = ''; if(!document.getSelection().toString())scanInput.focus(); }, 1500);
       return;
     }
     
@@ -1299,7 +1299,7 @@ function processScan(code) {
       scanStatus.textContent = '❌ 无法识别料号线序';
       scanStatus.className = 'scan-status err';
       playSound('error');
-      setTimeout(() => { scanInput.className = ''; scanInput.value = ''; scanInput.focus(); }, 1500);
+      setTimeout(() => { scanInput.className = ''; scanInput.value = ''; if(!document.getSelection().toString())scanInput.focus(); }, 1500);
       return;
     }
     
@@ -1319,7 +1319,7 @@ function processScan(code) {
       setTimeout(() => {
         scanInput.className = '';
         scanInput.value = '';
-        scanInput.focus();
+        if(!document.getSelection().toString())scanInput.focus();
       }, 1500);
       return;
     }
@@ -1333,7 +1333,7 @@ function processScan(code) {
     scanStatus.textContent = '❌ 无法识别半品料号，请确认扫码内容完整后重试！';
     scanStatus.className = 'scan-status err';
     playSound('error');
-    setTimeout(() => { scanInput.className = ''; scanInput.value = ''; scanInput.focus(); }, 2000);
+    setTimeout(() => { scanInput.className = ''; scanInput.value = ''; if(!document.getSelection().toString())scanInput.focus(); }, 2000);
     return;
   }
   
@@ -1410,7 +1410,7 @@ function processScan(code) {
           scanStatus.innerHTML = '🚨 <b>成品料号不匹配！</b><br>当前工单关联成品：<b>' + currentWorkOrder.product + '</b><br>该二维码属于成品：<b>' + otherProduct + '</b><br>请先重新录入新工单号再扫码';
           scanStatus.className = 'scan-status err';
           playSound('error');
-          setTimeout(() => { scanInput.className = ''; scanInput.value = ''; scanInput.focus(); }, 4000);
+          setTimeout(() => { scanInput.className = ''; scanInput.value = ''; if(!document.getSelection().toString())scanInput.focus(); }, 4000);
           return;
         }
       }
@@ -1435,7 +1435,7 @@ function processScan(code) {
       scanStatus.textContent = '❌ 半品料号 ' + halfPart + ' 不在当前工单BOM中！';
       scanStatus.className = 'scan-status err';
       playSound('error');
-      setTimeout(() => { scanInput.className = ''; scanInput.value = ''; scanInput.focus(); }, 2500);
+      setTimeout(() => { scanInput.className = ''; scanInput.value = ''; if(!document.getSelection().toString())scanInput.focus(); }, 2500);
       return;
     }
     
@@ -1452,7 +1452,7 @@ function processScan(code) {
         scanStatus.className = 'scan-status err';
         playSound('overlimit');
         showToast('🚨 ' + halfPart + ' 已超工单数量！禁止扫入！', 'error');
-        setTimeout(() => { scanInput.className = ''; scanInput.value = ''; scanInput.focus(); }, 4000);
+        setTimeout(() => { scanInput.className = ''; scanInput.value = ''; if(!document.getSelection().toString())scanInput.focus(); }, 4000);
         return;
       }
     }
@@ -1466,7 +1466,7 @@ function processScan(code) {
       scanStatus.textContent = '❌ 该二维码未入库，不允许出库！';
       scanStatus.className = 'scan-status err';
       playSound('error');
-      setTimeout(() => { scanInput.className = ''; scanInput.value = ''; scanInput.focus(); }, 2500);
+      setTimeout(() => { scanInput.className = ''; scanInput.value = ''; if(!document.getSelection().toString())scanInput.focus(); }, 2500);
       return;
     }
   }
@@ -1536,7 +1536,7 @@ function processScan(code) {
   setTimeout(() => {
     scanInput.className = '';
     scanInput.value = '';
-    scanInput.focus();
+    if(!document.getSelection().toString())scanInput.focus();
   }, 1500);
 }
 
@@ -1669,7 +1669,7 @@ function renderRecentList() {
       ${palletStr}
       <span class="recent-act"><span class="badge ${r.a === '入库' ? 'badge-green' : 'badge-red'}" style="font-size:.76rem">${r.a}</span></span>
       <span class="recent-btns">
-        <button class="btn btn-sm" style="padding:3px 6px;background:#1a73e8;color:#fff;font-size:.7rem;border:none;border-radius:4px;cursor:pointer" onclick="copyScanRecord(${realIdx})" title="复制本行数据">📋</button>
+
         <button class="btn btn-sm" style="padding:3px 6px;background:var(--danger);color:#fff;font-size:.7rem;border:none;border-radius:4px;cursor:pointer" onclick="deleteSingleRecord(${realIdx})" title="删除此记录">🗑</button>
       </span>
     </div>`}).join('');
