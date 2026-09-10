@@ -2040,6 +2040,7 @@ function loadBOMFromRows(rows) {
   if (added === 0) {
     showToast('没有新增数据，所有条目已存在', 'info');
   } else {
+    bomCleared = false;
     showToast(`已追加 ${added} 条BOM，跳过 ${skipped} 条重复`, 'success');
   }
   document.getElementById('bomLoadStatus').textContent = '✅ 已加载 ' + productList.length + ' 个成品';
@@ -2081,6 +2082,7 @@ function loadBOMFromPaste() {
   if (added === 0) {
     showToast('没有新增数据，所有条目已存在', 'info');
   } else {
+    bomCleared = false;
     showToast(`已追加 ${added} 条BOM，跳过 ${skipped} 条重复`, 'success');
   }
   document.getElementById('bomLoadStatus').textContent = '✅ 已加载 ' + productList.length + ' 个成品';
@@ -2246,6 +2248,7 @@ function addBOMManual() {
         bomData[cp].push({ p: bp, j: j, l: l, y: y });
       }
       if (!(bp in inventory)) inventory[bp] = 0;
+      bomCleared = false;
       cancelBOMEdit();
       refreshDashboard();
       saveData();
@@ -2268,6 +2271,7 @@ function addBOMManual() {
   document.getElementById('manualL').value = '0';
   document.getElementById('manualY').value = '1';
   
+  bomCleared = false;
   refreshDashboard();
   saveData();
   showToast('已添加：' + cp + ' → ' + bp, 'success');
