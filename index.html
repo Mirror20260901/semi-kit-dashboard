@@ -423,6 +423,9 @@ button:focus-visible,input:focus-visible,a:focus-visible{outline:2px solid var(-
       <div class="card-body">
         <div class="search-bar">
           <input type="text" id="searchInput" placeholder="搜索成品料号..." oninput="filterTable()">
+          <select id="woFilter" onchange="filterTable()" style="padding:8px 12px;border:1px solid var(--border);border-radius:6px;font-size:.85rem;min-width:150px">
+            <option value="">全部工单</option>
+          </select>
           <button class="btn btn-outline btn-sm" onclick="sortTable()">🔄 按可配套数排序</button>
           <button class="btn btn-outline btn-sm" onclick="expandAll()">📂 全部展开</button>
           <button class="btn btn-outline btn-sm" onclick="collapseAll()">📁 全部收起</button>
@@ -433,6 +436,7 @@ button:focus-visible,input:focus-visible,a:focus-visible{outline:2px solid var(-
             <thead>
               <tr>
                 <th>成品料号</th>
+                <th>工单号</th>
                 <th>半品数</th>
                 <th>可配套数</th>
                 <th>齐套状态</th>
@@ -2432,8 +2436,24 @@ function recalculate() {
     const maxGap = parts.length > 0 ? maxStock - minStock : 0;
     
     const kitRate = parts.length > 0 ? ((parts.length - shortageParts.length) / parts.length * 100).toFixed(1) : '0.0';
+    
+    // Extract work order numbers for this product from scan records
+    const woNumbers = new Set();
+    scanRecords.forEach(r => {
+      if (r.x) {
+        const pIdx = r.x.indexOf('-P');
+        if (pIdx > 0) {
+          const prodCode = r.x.substring(0, pIdx);
+          if (prodCode === cp && r.wo_no) {
+            woNumbers.add(r.wo_no);
+          }
+        }
+      }
+    });
+    
     return {
       cp,
+      woNumbers: Array.from(woNumbers).join(', ') || '-',
       partCount: parts.length,
       kitQty,
       status: kitQty > 0 ? '可配套' : (shortageParts.length > 0 ? '缺料' : '待备料'),
@@ -2461,6 +2481,19 @@ function refreshDashboard() {
   const totalInventory = Object.values(inventory).reduce((sum, qty) => sum + qty, 0);
   document.getElementById('kpiSemiTotal').textContent = totalInventory;
   
+  // Populate work order filter dropdown
+  const woFilter = document.getElementById('woFilter');
+  const currentWoValue = woFilter.value;
+  const woSet = new Set();
+  data.forEach(d => {
+    if (d.woNumbers && d.woNumbers !== '-') {
+      d.woNumbers.split(', ').forEach(wo => woSet.add(wo));
+    }
+  });
+  const sortedWos = Array.from(woSet).sort();
+  woFilter.innerHTML = '<option value="">全部工单</option>' + 
+    sortedWos.map(wo => `<option value="${wo}" ${wo === currentWoValue ? 'selected' : ''}>${wo}</option>`).join('');
+  
   // Table
   renderTable(data);
   
@@ -2471,10 +2504,14 @@ function refreshDashboard() {
 function renderTable(data) {
   const tbody = document.getElementById('dashBody');
   const search = (document.getElementById('searchInput').value || '').toLowerCase();
+  const woFilter = (document.getElementById('woFilter').value || '').trim();
   
   let filtered = data;
   if (search) {
-    filtered = data.filter(d => d.cp.toLowerCase().includes(search));
+    filtered = filtered.filter(d => d.cp.toLowerCase().includes(search));
+  }
+  if (woFilter) {
+    filtered = filtered.filter(d => d.woNumbers && d.woNumbers.includes(woFilter));
   }
   
   let html = '';
@@ -2494,7 +2531,7 @@ function renderTable(data) {
     
     if (hasDetail) {
       const parts = bomData[d.cp] || [];
-      html += `<tr class="detail-row"><td colspan="7">
+      html += `<tr class="detail-row"><td colspan="8">
         <table style="width:100%;font-size:.84rem">
           <tr style="background:#e8f0fe"><th style="padding:6px 10px">半品料号</th><th style="padding:6px 10px">接头规格</th><th style="padding:6px 10px">库存</th><th style="padding:6px 10px">状态</th></tr>
       `;
@@ -2516,7 +2553,7 @@ function renderTable(data) {
     }
   });
   
-  tbody.innerHTML = html || '<tr><td colspan="7" style="text-align:center;padding:40px;color:var(--text-secondary)">暂无数据，请先加载库存 CSV</td></tr>';
+  tbody.innerHTML = html || '<tr><td colspan="8" style="text-align:center;padding:40px;color:var(--text-secondary)">暂无数据，请先加载库存 CSV</td></tr>';
 }
 
 function toggleDetail(row) {
@@ -2608,9 +2645,9 @@ function exportToExcel() {
   
   // Sheet 3: 成品齐套看板
   const dashData = [];
-  dashData.push(['成品料号', '半品数', '可配套数', '齐套状态', '齐套率', '缺料半品', '缺口数量']);
+  dashData.push(['成品料号', '工单号', '半品数', '可配套数', '齐套状态', '齐套率', '缺料半品', '缺口数量']);
   data.forEach(d => {
-    dashData.push([d.cp, d.partCount, d.kitQty, d.status, d.kitRate + '%', d.shortageCount, d.maxGap]);
+    dashData.push([d.cp, d.woNumbers, d.partCount, d.kitQty, d.status, d.kitRate + '%', d.shortageCount, d.maxGap]);
   });
   const ws3 = XLSX.utils.aoa_to_sheet(dashData);
   XLSX.utils.book_append_sheet(wb, ws3, '成品齐套看板');
