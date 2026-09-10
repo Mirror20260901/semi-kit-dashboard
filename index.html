@@ -506,6 +506,7 @@ function recomputeInventory() {
 }
 
 let bomData = INIT_DATA.bom;
+let bomCleared = false; // 用户手动清除BOM后，同步不再恢复
 let productList = Object.keys(INIT_DATA.bom);
 
 // 半品总数（用于KPI显示）
@@ -797,6 +798,7 @@ function saveData() {
       scanRecords: scanRecords,
       inventory: inventory,
       bomData: bomData,
+      bomCleared: bomCleared,
       productList: productList,
       currentWorkOrder: currentWorkOrder,
       importedWorkOrders: importedWorkOrders,
@@ -869,6 +871,9 @@ function loadData() {
     // 恢复BOM数据（用户导入/粘贴的，不再丢失）
     if (data.bomData && typeof data.bomData === 'object') {
       bomData = data.bomData;
+    }
+    if (data.bomCleared) {
+      bomCleared = true;
     }
     // 清理异常BOM条目（含+或*的公式字符串）
     cleanBomData();
@@ -1026,7 +1031,7 @@ function mergeRemoteData(remote) {
   // inventory 不再通过远程合并，改为各设备从 scanRecords 重新计算（防止污染数据覆盖正确值）
 
   // ===== 合并远程 BOM 数据（取并集，确保多设备导入的BOM不丢失）=====
-  if (remote.bomData && typeof remote.bomData === 'object') {
+  if (!bomCleared && remote.bomData && typeof remote.bomData === 'object') {
     for (const cp of Object.keys(remote.bomData)) {
       if (!bomData[cp]) {
         bomData[cp] = remote.bomData[cp];
@@ -1044,7 +1049,7 @@ function mergeRemoteData(remote) {
       }
     }
   }
-  if (remote.productList && Array.isArray(remote.productList)) {
+  if (!bomCleared && remote.productList && Array.isArray(remote.productList)) {
     for (const cp of remote.productList) {
       if (!productList.includes(cp)) {
         productList.push(cp);
@@ -2129,6 +2134,7 @@ function clearAllBOM() {
   if (!confirm(`确认清除全部BOM数据？\n当前共 ${productList.length} 个成品，清除后需重新导入。\n（扫码记录和库存不受影响）`)) return;
   bomData = {};
   productList = [];
+  bomCleared = true;
   saveData();
   refreshDashboard();
   document.getElementById('bomLoadStatus').textContent = 'BOM已清空';
