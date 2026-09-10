@@ -487,7 +487,7 @@ async function sha256(text) {
 async function initDefaultUsers() {
   if (users.length === 0) {
     const hash = await sha256('admin123');
-    users.push({ username: 'admin', passwordHash: hash, name: '管理员', role: 'admin' });
+    users.push({ username: 'admin', passwordHash: hash, name: '管理员', role: 'admin', updatedAt: Date.now() });
     saveUsers();
   }
 }
@@ -639,7 +639,7 @@ async function addUser() {
   }
   
   const passwordHash = await sha256(password);
-  users.push({ username, passwordHash, name: name || username, role });
+  users.push({ username, passwordHash, name: name || username, role, updatedAt: Date.now() });
   saveUsers();
   renderUserList();
   document.getElementById('newUserUsername').value = '';
@@ -654,6 +654,7 @@ async function resetUserPassword(username) {
   const user = users.find(u => u.username === username);
   if (user) {
     user.passwordHash = await sha256(newPwd);
+    user.updatedAt = Date.now();
     saveUsers();
     showToast('密码已重置', 'success');
   }
@@ -891,12 +892,19 @@ function mergeRemoteData(remote) {
     }
   }
 
-  // ===== 合并远程用户数据（取并集）=====
+  // ===== 合并远程用户数据（按时间戳取最新）=====
   if (remote.users && Array.isArray(remote.users)) {
     for (const ru of remote.users) {
       const existing = users.find(u => u.username === ru.username);
       if (!existing) {
         users.push(ru);
+        changed = true;
+      } else if ((ru.updatedAt || 0) > (existing.updatedAt || 0)) {
+        // 远程版本更新（如密码已修改），以远程为准
+        existing.passwordHash = ru.passwordHash;
+        existing.name = ru.name || existing.name;
+        existing.role = ru.role || existing.role;
+        existing.updatedAt = ru.updatedAt;
         changed = true;
       }
     }
