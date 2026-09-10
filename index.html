@@ -2560,7 +2560,7 @@ function renderTable(data) {
       const parts = bomData[d.cp] || [];
       html += `<tr class="detail-row"><td colspan="9">
         <table style="width:100%;font-size:.84rem">
-          <tr style="background:#e8f0fe"><th style="padding:6px 10px">半品料号</th><th style="padding:6px 10px">接头规格</th><th style="padding:6px 10px">库存</th><th style="padding:6px 10px">状态</th><th style="padding:6px 10px">缺料数量</th></tr>
+          <tr style="background:#e8f0fe"><th style="padding:6px 10px">半品料号</th><th style="padding:6px 10px">接头规格</th><th style="padding:6px 10px">库存</th><th style="padding:6px 10px">缺料数量</th><th style="padding:6px 10px">状态</th></tr>
       `;
       parts.forEach(p => {
         const stock = inventory[p.p] || 0;
@@ -2580,8 +2580,8 @@ function renderTable(data) {
           <td style="padding:6px 10px;font-family:monospace;font-size:.8rem">${p.p}</td>
           <td style="padding:6px 10px">${p.j || '-'}</td>
           <td style="padding:6px 10px;text-align:center;font-weight:600;${stock < woQtyNum && woQtyNum > 0 ? 'color:var(--danger)' : ''}">${stock}</td>
-          <td style="padding:6px 10px"><span class="badge ${cls}">${st}</span></td>
           <td style="padding:6px 10px;text-align:center;font-weight:600;color:${shortage > 0 ? 'var(--danger)' : 'var(--success)'}">${shortage}</td>
+          <td style="padding:6px 10px"><span class="badge ${cls}">${st}</span></td>
         </tr>`;
       });
       html += '</table></td></tr>';
