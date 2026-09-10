@@ -2682,10 +2682,10 @@ document.getElementById('scanSearchInput').addEventListener('keydown', function(
   }
 });
 
-// Auto-focus scan input - exclude all form elements and cards
+// Auto-focus scan input - exclude all form elements, cards, and record list area
 document.addEventListener('click', function(e) {
   if (document.getElementById('tab-scan').classList.contains('active') && 
-      !e.target.closest('input, button, select, textarea, .card-header, label, a, [onclick]')) {
+      !e.target.closest('input, button, select, textarea, .card-header, label, a, [onclick], .recent-list, .recent-item')) {
     document.getElementById('scanInput').focus();
   }
 });
