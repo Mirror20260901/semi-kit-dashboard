@@ -436,12 +436,12 @@ button:focus-visible,input:focus-visible,a:focus-visible{outline:2px solid var(-
               <tr>
                 <th>成品料号</th>
                 <th>线序料号款数</th>
+                <th>缺料半品款数</th>
                 <th>工单号</th>
                 <th>工单数量</th>
                 <th>齐套数量</th>
                 <th>齐套状态</th>
                 <th>齐套率</th>
-                <th>缺料半品</th>
                 <th>最大缺口</th>
               </tr>
             </thead>
@@ -2544,12 +2544,12 @@ function renderTable(data) {
     html += `<tr class="${hasDetail ? 'expand-row' : ''}" ${hasDetail ? 'onclick="toggleDetail(this)"' : ''}>
       <td><strong>${d.cp}</strong></td>
       <td>${d.partCount}</td>
+      <td style="text-align:center;font-weight:600;color:${d.shortageCount > 0 ? 'var(--danger)' : 'var(--success)'}">${d.shortageCount}</td>
       <td>${d.woNumbers || '-'}</td>
       <td>${d.woQty || '-'}</td>
       <td><strong style="font-size:1.1rem;color:${d.kitQty > 0 ? 'var(--success)' : 'var(--danger)'}">${d.kitQty}</strong></td>
       <td><span class="badge ${statusBadge}">${d.status}</span></td>
       <td style="text-align:center;font-weight:600;color:${parseFloat(d.kitRate) >= 100 ? 'var(--success)' : parseFloat(d.kitRate) >= 50 ? '#e67e22' : 'var(--danger)'}">${d.kitRate}%</td>
-      <td>${d.shortageCount > 0 ? '<span style="color:var(--danger)">' + d.shortageCount + ' 种</span>' : '-'}</td>
       <td>${d.maxGap > 0 ? d.maxGap : '-'}</td>
     </tr>`;
     
@@ -2677,9 +2677,9 @@ function exportToExcel() {
   
   // Sheet 3: 成品齐套看板
   const dashData = [];
-  dashData.push(['成品料号', '线序料号款数', '工单号', '工单数量', '齐套数量', '齐套状态', '齐套率', '缺料半品', '最大缺口']);
+  dashData.push(['成品料号', '线序料号款数', '缺料半品款数', '工单号', '工单数量', '齐套数量', '齐套状态', '齐套率', '最大缺口']);
   data.forEach(d => {
-    dashData.push([d.cp, d.partCount, d.woNumbers || '-', d.woQty, d.kitQty, d.status, d.kitRate + '%', d.shortageCount, d.maxGap]);
+    dashData.push([d.cp, d.partCount, d.shortageCount, d.woNumbers || '-', d.woQty, d.kitQty, d.status, d.kitRate + '%', d.maxGap]);
   });
   const ws3 = XLSX.utils.aoa_to_sheet(dashData);
   XLSX.utils.book_append_sheet(wb, ws3, '成品齐套看板');
