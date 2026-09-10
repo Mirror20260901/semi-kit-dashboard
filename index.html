@@ -131,7 +131,7 @@ tr:hover td{background:#f8faff}
 .bar-value{font-size:.78rem;font-weight:600;width:40px;text-align:right;flex-shrink:0}
 
 /* Recent scan list */
-.recent-list{max-width:100%;margin:0 auto}
+.recent-list{max-width:100%;margin:0 auto;display:flex;flex-direction:column}
 .recent-item{display:flex;align-items:center;gap:6px;padding:8px 10px;border-bottom:1px solid var(--border);font-size:.82rem;overflow-x:auto}
 .recent-item:last-child{border-bottom:none}
 .recent-time{width:120px;flex-shrink:0;color:var(--text-secondary);font-size:.78rem}
@@ -1611,14 +1611,14 @@ function showToast(msg, type) {
 }
 
 // ====== RECENT LIST ======
-let filteredScanRecords = []; // 当前过滤后的记录（用于显示）
+let filteredScanRecords = null; // null=未筛选显示全部, []=筛选后无结果, [...]=筛选结果
 
 function renderRecentList() {
   const el = document.getElementById('recentList');
   const countEl = document.getElementById('scanRecordCount');
-  const records = filteredScanRecords.length > 0 ? filteredScanRecords : scanRecords.filter(r => r.c);
+  const records = (filteredScanRecords !== null) ? filteredScanRecords : scanRecords.filter(r => r.c);
   
-  countEl.textContent = `共 ${records.length} 条记录` + (filteredScanRecords.length > 0 ? '（已筛选）' : '');
+  countEl.textContent = `共 ${records.length} 条记录` + (filteredScanRecords !== null ? '（已筛选）' : '');
   
   if (records.length === 0) {
     el.innerHTML = '<div style="padding:20px;text-align:center;color:var(--text-secondary)">暂无扫码记录</div>';
@@ -1691,7 +1691,7 @@ function clearScanFilter() {
   document.getElementById('scanSearchInput').value = '';
   document.getElementById('scanDateFilter').value = '';
   document.getElementById('scanActionFilter').value = '';
-  filteredScanRecords = [];
+  filteredScanRecords = null;
   renderRecentList();
 }
 
@@ -1743,7 +1743,7 @@ function deleteSingleRecord(index) {
   }
   
   // Clear filter and refresh
-  filteredScanRecords = [];
+  filteredScanRecords = null;
   saveData();
   renderRecentList();
   updateWorkOrderDisplay();
@@ -1790,7 +1790,7 @@ function deleteByDate() {
   }
   
   // Clear filter and refresh
-  filteredScanRecords = [];
+  filteredScanRecords = null;
   document.getElementById('scanDateFilter').value = '';
   saveData();
   renderRecentList();
@@ -2625,7 +2625,7 @@ async function clearAllData() {
   currentWorkOrder = { number: '', product: '', qty: 0, targetQty: 0, componentCounts: {} };
   importedWorkOrders = [];
   currentAction = '入库';
-  filteredScanRecords = [];
+  filteredScanRecords = null;
   
   // 清空 UI 输入
   document.getElementById('woNumber').value = '';
