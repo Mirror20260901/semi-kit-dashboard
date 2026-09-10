@@ -452,6 +452,8 @@ function saveData() {
       _version: DATA_VERSION,
       scanRecords: scanRecords,
       inventory: inventory,
+      bomData: bomData,
+      productList: productList,
       currentWorkOrder: currentWorkOrder,
       importedWorkOrders: importedWorkOrders,
       currentAction: currentAction,
@@ -504,6 +506,13 @@ function loadData() {
     }
     // 不从 localStorage 恢复 inventory，改为从初始库存+扫码记录重新计算
     recomputeInventory();
+    // 恢复BOM数据（用户导入/粘贴的，不再丢失）
+    if (data.bomData && typeof data.bomData === 'object') {
+      bomData = data.bomData;
+    }
+    if (data.productList && Array.isArray(data.productList)) {
+      productList = data.productList;
+    }
     if (data.currentWorkOrder) {
       currentWorkOrder = data.currentWorkOrder;
       // 从扫码记录重新计算已归数量，不依赖保存的旧值
@@ -615,6 +624,34 @@ function mergeRemoteData(remote) {
   let changed = false;
   // inventory 不再通过远程合并，改为各设备从 scanRecords 重新计算（防止污染数据覆盖正确值）
 
+  // ===== 合并远程 BOM 数据（取并集，确保多设备导入的BOM不丢失）=====
+  if (remote.bomData && typeof remote.bomData === 'object') {
+    for (const cp of Object.keys(remote.bomData)) {
+      if (!bomData[cp]) {
+        bomData[cp] = remote.bomData[cp];
+        changed = true;
+      } else {
+        // 合并半品条目（去重：成品+半品+接头+线长 完全相同则跳过）
+        const existing = bomData[cp];
+        for (const remoteItem of remote.bomData[cp]) {
+          const dup = existing.some(e => e.p === remoteItem.p && e.j === remoteItem.j && e.l === remoteItem.l);
+          if (!dup) {
+            existing.push(remoteItem);
+            changed = true;
+          }
+        }
+      }
+    }
+  }
+  if (remote.productList && Array.isArray(remote.productList)) {
+    for (const cp of remote.productList) {
+      if (!productList.includes(cp)) {
+        productList.push(cp);
+        changed = true;
+      }
+    }
+  }
+
   // 【自动修复】检测远程数据是否被旧代码污染（无 _version 或版本不匹配）
   const remoteIsStale = !remote._version || remote._version !== DATA_VERSION;
 
@@ -723,6 +760,8 @@ async function syncCycle() {
       _version: DATA_VERSION,
       scanRecords: pushRecords,
       // inventory 不在远程同步，各设备从 INITIAL_INVENTORY + scanRecords 重新计算
+      bomData: bomData,
+      productList: productList,
       importedWorkOrders: importedWorkOrders,
       currentWorkOrder: {
         number: currentWorkOrder.number,
