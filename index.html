@@ -2681,9 +2681,8 @@ function renderTable(data) {
   // Update KPIs based on filtered data (总成品数用全部数据)
   const total = data.length;
   const kitOk = filtered.filter(d => d.kitQty > 0).length;
-  const totalSemiParts = new Set();
-  filtered.forEach(d => { (bomData[d.cp] || []).forEach(p => totalSemiParts.add(p.p)); });
-  const totalInventory = Array.from(totalSemiParts).reduce((sum, p) => sum + (inventory[p] || 0), 0);
+  // 当前库存 = 所有有过扫码记录的半品库存总和（不再只统计BOM内的）
+  const totalInventory = Object.values(inventory).reduce((sum, v) => sum + (v || 0), 0);
   
   document.getElementById('kpiTotal').textContent = total;
   document.getElementById('kpiKit').textContent = kitOk;
