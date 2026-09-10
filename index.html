@@ -2433,7 +2433,7 @@ function recalculate() {
     
     if (parts.length === 0) { kitQty = 0; minStock = 0; }
     if (kitQty === Infinity) kitQty = 0;
-    const maxGap = parts.length > 0 ? maxStock - minStock : 0;
+
     
     // Extract work order numbers and quantity for this product from scan records
     let woNo = '';
@@ -2451,6 +2451,9 @@ function recalculate() {
       }
     });
     
+    // 最大缺口 = 工单数量 - 数量最小的线序料号的数量
+    const maxGap = (woQty > 0 && parts.length > 0) ? Math.max(0, woQty - minStock) : 0;
+
     // 齐套率 = 完全齐套的套数 ÷ 工单总数量 × 100%
     const kitRate = woQty > 0 ? ((kitQty / woQty) * 100).toFixed(1) : '0.0';
     
