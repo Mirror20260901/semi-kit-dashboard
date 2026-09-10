@@ -2559,20 +2559,28 @@ function renderTable(data) {
       const parts = bomData[d.cp] || [];
       html += `<tr class="detail-row"><td colspan="8">
         <table style="width:100%;font-size:.84rem">
-          <tr style="background:#e8f0fe"><th style="padding:6px 10px">半品料号</th><th style="padding:6px 10px">接头规格</th><th style="padding:6px 10px">库存</th><th style="padding:6px 10px">状态</th></tr>
+          <tr style="background:#e8f0fe"><th style="padding:6px 10px">半品料号</th><th style="padding:6px 10px">接头规格</th><th style="padding:6px 10px">库存</th><th style="padding:6px 10px">状态</th><th style="padding:6px 10px">缺料数量</th></tr>
       `;
       parts.forEach(p => {
         const stock = inventory[p.p] || 0;
-        const need = p.y || 1;
-        let st, cls;
-        if (stock >= need) { st = '充足'; cls = 'badge-green'; }
-        else if (stock > 0) { st = '低库存'; cls = 'badge-yellow'; }
-        else { st = '缺料'; cls = 'badge-red'; }
+        const woQtyNum = parseInt(d.woQty) || 0;
+        let st, cls, shortage;
+        if (woQtyNum > 0) {
+          if (stock > woQtyNum) { st = '充足'; cls = 'badge-green'; }
+          else if (stock === woQtyNum) { st = '满足'; cls = 'badge-green'; }
+          else { st = '缺料'; cls = 'badge-red'; }
+          shortage = Math.max(0, woQtyNum - stock);
+        } else {
+          if (stock > 0) { st = '有库存'; cls = 'badge-green'; }
+          else { st = '缺料'; cls = 'badge-red'; }
+          shortage = 0;
+        }
         html += `<tr>
           <td style="padding:6px 10px;font-family:monospace;font-size:.8rem">${p.p}</td>
           <td style="padding:6px 10px">${p.j || '-'}</td>
-          <td style="padding:6px 10px;text-align:center;font-weight:600;${stock < need ? 'color:var(--danger)' : ''}">${stock}</td>
+          <td style="padding:6px 10px;text-align:center;font-weight:600;${stock < woQtyNum && woQtyNum > 0 ? 'color:var(--danger)' : ''}">${stock}</td>
           <td style="padding:6px 10px"><span class="badge ${cls}">${st}</span></td>
+          <td style="padding:6px 10px;text-align:center;font-weight:600;color:${shortage > 0 ? 'var(--danger)' : 'var(--success)'}">${shortage}</td>
         </tr>`;
       });
       html += '</table></td></tr>';
