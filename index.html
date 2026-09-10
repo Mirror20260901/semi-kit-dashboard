@@ -939,8 +939,19 @@ function dedupBomData() {
     });
     bomData[cp] = filtered;
   }
+  // 排重productList（防止同成品出现两行）
+  const uniquePL = [];
+  const plSeen = new Set();
+  productList.forEach(cp => {
+    if (!plSeen.has(cp)) { plSeen.add(cp); uniquePL.push(cp); }
+  });
+  if (uniquePL.length < productList.length) {
+    removed += productList.length - uniquePL.length;
+    productList.length = 0;
+    productList.push(...uniquePL);
+  }
   if (removed > 0) {
-    console.log(`[BOM排重] 移除 ${removed} 条重复半品料号`);
+    console.log(`[BOM排重] 移除 ${removed} 条重复`);
     saveData();
   }
 }
