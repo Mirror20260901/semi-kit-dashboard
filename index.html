@@ -132,12 +132,13 @@ tr:hover td{background:#f8faff}
 
 /* Recent scan list */
 .recent-list{max-width:100%;margin:0 auto}
-.recent-item{display:grid;grid-template-columns:130px 1fr 110px 60px 70px 80px 90px 70px 120px;align-items:center;gap:8px;padding:10px 12px;border-bottom:1px solid var(--border);font-size:.85rem}
+.recent-item{display:grid;grid-template-columns:128px 2fr 95px 2fr 52px 65px 78px 88px 65px 50px;align-items:center;gap:8px;padding:10px 12px;border-bottom:1px solid var(--border);font-size:.85rem}
 .recent-item:last-child{border-bottom:none}
 .recent-time{color:var(--text-secondary);font-size:.8rem;white-space:nowrap}
-.recent-code{font-family:"SF Mono",Monaco,Consolas,monospace;font-size:.78rem;color:var(--primary-dark);word-break:break-all}
-.recent-halfpart{font-size:.78rem;word-break:break-all;color:#333}
-.recent-product{font-size:.78rem;color:#555;white-space:nowrap}
+.recent-code{font-family:"SF Mono",Monaco,Consolas,monospace;font-size:.78rem;color:var(--primary-dark);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+.recent-halfpart{font-size:.78rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0;color:#333}
+.recent-product{font-size:.78rem;color:#555;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+.recent-action{display:flex;align-items:center;gap:6px;justify-content:center}
 
 /* Mobile */
 @media(max-width:640px){
@@ -1642,10 +1643,8 @@ function renderRecentList() {
       ${operatorStr}
       ${pdStr}
       ${palletStr}
-      <span style="display:flex;align-items:center;gap:4px;justify-content:center">
-        <span class="badge ${r.a === '入库' ? 'badge-green' : 'badge-red'}" style="font-size:.78rem">${r.a}</span>
-        <button class="btn btn-sm" style="padding:3px 8px;background:var(--danger);color:#fff;font-size:.7rem;border:none;border-radius:4px;cursor:pointer" onclick="deleteSingleRecord(${realIdx})" title="删除此记录">🗑</button>
-      </span>
+      <span class="badge ${r.a === '入库' ? 'badge-green' : 'badge-red'}" style="font-size:.78rem">${r.a}</span>
+      <button class="btn btn-sm" style="padding:3px 8px;background:var(--danger);color:#fff;font-size:.7rem;border:none;border-radius:4px;cursor:pointer" onclick="deleteSingleRecord(${realIdx})" title="删除此记录">🗑</button>
   `}).join('');
 }
 
