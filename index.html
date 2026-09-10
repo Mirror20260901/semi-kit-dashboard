@@ -426,6 +426,9 @@ button:focus-visible,input:focus-visible,a:focus-visible{outline:2px solid var(-
           <select id="woFilter" onchange="filterTable()" style="padding:8px 12px;border:1px solid var(--border);border-radius:6px;font-size:.85rem;min-width:150px">
             <option value="">全部工单</option>
           </select>
+          <select id="lineSeqFilter" onchange="filterTable()" style="padding:8px 12px;border:1px solid var(--border);border-radius:6px;font-size:.85rem;min-width:180px">
+            <option value="">全部线序料号</option>
+          </select>
           <button class="btn btn-outline btn-sm" onclick="sortTable()">🔄 按可配套数排序</button>
           <button class="btn btn-outline btn-sm" onclick="expandAll()">📂 全部展开</button>
           <button class="btn btn-outline btn-sm" onclick="collapseAll()">📁 全部收起</button>
@@ -2488,6 +2491,17 @@ function refreshDashboard() {
   woFilter.innerHTML = '<option value="">全部工单</option>' + 
     sortedWos.map(wo => `<option value="${wo}" ${wo === currentWoValue ? 'selected' : ''}>${wo}</option>`).join('');
   
+  // Populate line sequence part filter dropdown
+  const lineSeqFilter = document.getElementById('lineSeqFilter');
+  const currentLineSeqValue = lineSeqFilter.value;
+  const lineSeqSet = new Set();
+  data.forEach(d => {
+    (bomData[d.cp] || []).forEach(item => lineSeqSet.add(item.p));
+  });
+  const sortedLineSeqs = Array.from(lineSeqSet).sort();
+  lineSeqFilter.innerHTML = '<option value="">全部线序料号</option>' +
+    sortedLineSeqs.map(ls => `<option value="${ls}" ${ls === currentLineSeqValue ? 'selected' : ''}>${ls}</option>`).join('');
+
   // Table
   renderTable(data);
   
@@ -2499,6 +2513,7 @@ function renderTable(data) {
   const tbody = document.getElementById('dashBody');
   const search = (document.getElementById('searchInput').value || '').toLowerCase();
   const woFilter = (document.getElementById('woFilter').value || '').trim();
+  const lineSeqFilter = (document.getElementById('lineSeqFilter').value || '').trim();
   
   let filtered = data;
   if (search) {
@@ -2506,6 +2521,12 @@ function renderTable(data) {
   }
   if (woFilter) {
     filtered = filtered.filter(d => d.woNumbers && d.woNumbers.includes(woFilter));
+  }
+  if (lineSeqFilter) {
+    filtered = filtered.filter(d => {
+      const parts = bomData[d.cp] || [];
+      return parts.some(p => p.p === lineSeqFilter);
+    });
   }
   
   // Update KPIs based on filtered data
