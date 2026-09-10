@@ -2475,17 +2475,6 @@ function refreshDashboard() {
   recalculate();
   const data = window._dashData || [];
   
-  // KPIs
-  const total = data.length;
-  const kitOk = data.filter(d => d.kitQty > 0).length;
-  const kitRate = total > 0 ? ((kitOk / total) * 100).toFixed(1) : 0;
-  
-  document.getElementById('kpiTotal').textContent = total;
-  document.getElementById('kpiKit').textContent = kitOk;
-  // 计算库存总数量
-  const totalInventory = Object.values(inventory).reduce((sum, qty) => sum + qty, 0);
-  document.getElementById('kpiSemiTotal').textContent = totalInventory;
-  
   // Populate work order filter dropdown
   const woFilter = document.getElementById('woFilter');
   const currentWoValue = woFilter.value;
@@ -2519,6 +2508,17 @@ function renderTable(data) {
     filtered = filtered.filter(d => d.woNumbers && d.woNumbers.includes(woFilter));
   }
   
+  // Update KPIs based on filtered data
+  const total = filtered.length;
+  const kitOk = filtered.filter(d => d.kitQty > 0).length;
+  const totalSemiParts = new Set();
+  filtered.forEach(d => { (bomData[d.cp] || []).forEach(p => totalSemiParts.add(p.p)); });
+  const totalInventory = Array.from(totalSemiParts).reduce((sum, p) => sum + (inventory[p] || 0), 0);
+  
+  document.getElementById('kpiTotal').textContent = total;
+  document.getElementById('kpiKit').textContent = kitOk;
+  document.getElementById('kpiSemiTotal').textContent = totalInventory;
+  
   let html = '';
   filtered.forEach((d, idx) => {
     const statusBadge = d.status === '可配套' ? 'badge-green' : (d.status === '缺料' ? 'badge-red' : 'badge-yellow');
@@ -2526,6 +2526,8 @@ function renderTable(data) {
     
     html += `<tr class="${hasDetail ? 'expand-row' : ''}" ${hasDetail ? 'onclick="toggleDetail(this)"' : ''}>
       <td><strong>${d.cp}</strong></td>
+      <td>${d.woNumbers || '-'}</td>
+      <td>${d.woQty || '-'}</td>
       <td>${d.partCount}</td>
       <td><strong style="font-size:1.1rem;color:${d.kitQty > 0 ? 'var(--success)' : 'var(--danger)'}">${d.kitQty}</strong></td>
       <td><span class="badge ${statusBadge}">${d.status}</span></td>
