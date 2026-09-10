@@ -244,8 +244,9 @@ button:focus-visible,input:focus-visible,a:focus-visible{outline:2px solid var(-
           <div class="user-dropdown-role" id="dropdownUserRole"></div>
         </div>
         <div class="user-dropdown-divider"></div>
-        <div class="user-dropdown-item" onclick="doSwitchAccount()">🔄 切换账号</div>
-        <div class="user-dropdown-item" id="menuManageUsers" onclick="openUserModal()" style="display:none">👥 用户管理</div>
+        <div class="user-dropdown-item" onclick="openChangePwdModal()"> 修改密码</div>
+        <div class="user-dropdown-item" onclick="doSwitchAccount()"> 切换账号</div>
+        <div class="user-dropdown-item" id="menuManageUsers" onclick="openUserModal()" style="display:none"> 用户管理</div>
         <div class="user-dropdown-divider"></div>
         <div class="user-dropdown-item" onclick="doLogout()" style="color:#e74c3c">🚪 退出登录</div>
       </div>
@@ -597,6 +598,37 @@ function checkAuth() {
 }
 
 // 退出登录
+function openChangePwdModal() {
+  document.getElementById('changePwdModal').style.display = 'flex';
+  document.getElementById('oldPwdInput').value = '';
+  document.getElementById('newPwdInput').value = '';
+  document.getElementById('confirmPwdInput').value = '';
+  closeUserDropdown();
+}
+
+function closeChangePwdModal() {
+  document.getElementById('changePwdModal').style.display = 'none';
+}
+
+function doChangePwd() {
+  const oldPwd = document.getElementById('oldPwdInput').value.trim();
+  const newPwd = document.getElementById('newPwdInput').value.trim();
+  const confirmPwd = document.getElementById('confirmPwdInput').value.trim();
+  
+  if (!oldPwd || !newPwd) { showToast('请填写完整', 'error'); return; }
+  if (newPwd !== confirmPwd) { showToast('两次密码不一致', 'error'); return; }
+  if (newPwd.length < 4) { showToast('密码至少4位', 'error'); return; }
+  
+  const user = users.find(u => u.username === currentUser.username);
+  if (!user) { showToast('用户不存在', 'error'); return; }
+  if (user.password !== oldPwd) { showToast('当前密码错误', 'error'); return; }
+  
+  user.password = newPwd;
+  saveUsers();
+  closeChangePwdModal();
+  showToast('密码修改成功', 'success');
+}
+
 function doLogout() {
   closeUserDropdown();
   currentUser = null;
@@ -1835,7 +1867,7 @@ function deleteByDate() {
 
 // ====== CSV EXPORT ======
 function exportScanCSV() {
-  const records = filteredScanRecords.length > 0 ? filteredScanRecords : scanRecords.filter(r => r.c);
+  const records = (filteredScanRecords && filteredScanRecords.length > 0) ? filteredScanRecords : scanRecords.filter(r => r.c);
   if (records.length === 0) { showToast('暂无数据可导出', 'info'); return; }
   let csv = '\uFEFF时间,唯一码,成品料号,线序料号,操作人,工单号,工单数量,入库数量,库位,批次,动作,栈板号\n';
   records.forEach(r => {
@@ -2974,6 +3006,18 @@ function onScanFailure(error) {
   </div>
   <div class="camera-container">
     <div id="reader"></div>
+  </div>
+</div>
+
+<!-- 修改密码弹窗 -->
+<div id="changePwdModal" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.5);z-index:9998;align-items:center;justify-content:center">
+  <div style="background:#fff;border-radius:12px;padding:24px;width:380px">
+    <h3 style="margin:0 0 16px">🔑 修改密码</h3>
+    <input type="password" id="oldPwdInput" placeholder="当前密码" style="width:100%;padding:8px 10px;border:1px solid #ddd;border-radius:6px;margin-bottom:8px;box-sizing:border-box">
+    <input type="password" id="newPwdInput" placeholder="新密码" style="width:100%;padding:8px 10px;border:1px solid #ddd;border-radius:6px;margin-bottom:8px;box-sizing:border-box">
+    <input type="password" id="confirmPwdInput" placeholder="确认新密码" style="width:100%;padding:8px 10px;border:1px solid #ddd;border-radius:6px;margin-bottom:12px;box-sizing:border-box">
+    <button onclick="doChangePwd()" style="width:100%;padding:8px;background:var(--primary);color:#fff;border:none;border-radius:6px;cursor:pointer;font-size:.9rem;margin-bottom:8px">确认修改</button>
+    <button onclick="closeChangePwdModal()" style="width:100%;padding:8px;background:#eee;border:none;border-radius:6px;cursor:pointer;font-size:.9rem">取消</button>
   </div>
 </div>
 
