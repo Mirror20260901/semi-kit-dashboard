@@ -855,6 +855,8 @@ function loadData() {
     }
     // 清理异常BOM条目（含+或*的公式字符串）
     cleanBomData();
+    // 半品料号排重
+    dedupBomData();
     if (data.productList && Array.isArray(data.productList)) {
       productList = data.productList;
     }
@@ -899,6 +901,24 @@ function cleanBomData() {
   }
   if (cleaned > 0) {
     console.log(`[BOM清理] 移除了 ${cleaned} 条异常BOM条目`);
+    saveData();
+  }
+}
+
+// BOM半品料号排重（同成品下同半品料号只保留第一个）
+function dedupBomData() {
+  let removed = 0;
+  for (const cp of Object.keys(bomData)) {
+    const seen = new Set();
+    const filtered = bomData[cp].filter(item => {
+      if (seen.has(item.p)) { removed++; return false; }
+      seen.add(item.p);
+      return true;
+    });
+    bomData[cp] = filtered;
+  }
+  if (removed > 0) {
+    console.log(`[BOM排重] 移除 ${removed} 条重复半品料号`);
     saveData();
   }
 }
@@ -1982,14 +2002,15 @@ function loadBOMFromRows(rows) {
     const y = parseInt(row[4]) || 1;
     
     if (!bomData[cp]) bomData[cp] = [];
-    // 检查是否已存在（成品+半品+接头+线长 完全相同则视为重复）
-    const exists = bomData[cp].some(e => e.p === bp && e.j === j && e.l === l);
-    if (!exists) {
+    // 半品料号排重：同成品下相同半品料号只保留一个（后面的覆盖前面的）
+    const dupIdx = bomData[cp].findIndex(e => e.p === bp);
+    if (dupIdx >= 0) {
+      bomData[cp][dupIdx] = { p: bp, j: j, l: l, y: y };
+      skipped++;
+    } else {
       bomData[cp].push({ p: bp, j: j, l: l, y: y });
       if (!productList.includes(cp)) productList.push(cp);
       added++;
-    } else {
-      skipped++;
     }
     if (!(bp in inventory)) inventory[bp] = 0;
   });
@@ -2022,14 +2043,15 @@ function loadBOMFromPaste() {
       // 跳过异常料号（含+或*的公式字符串）
       if (/[+*]/.test(bp)) { skipped++; return; }
       if (!bomData[cp]) bomData[cp] = [];
-      // 检查是否已存在（成品+半品+接头+线长 完全相同则视为重复）
-      const exists = bomData[cp].some(e => e.p === bp && e.j === j && e.l === l);
-      if (!exists) {
+      // 半品料号排重：同成品下相同半品料号只保留一个
+      const dupIdx = bomData[cp].findIndex(e => e.p === bp);
+      if (dupIdx >= 0) {
+        bomData[cp][dupIdx] = { p: bp, j: j, l: l, y: y };
+        skipped++;
+      } else {
         bomData[cp].push({ p: bp, j: j, l: l, y: y });
         if (!productList.includes(cp)) productList.push(cp);
         added++;
-      } else {
-        skipped++;
       }
       if (!(bp in inventory)) inventory[bp] = 0;
     }
