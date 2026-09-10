@@ -2528,8 +2528,8 @@ function renderTable(data) {
     });
   }
   
-  // Update KPIs based on filtered data
-  const total = filtered.length;
+  // Update KPIs based on filtered data (总成品数用全部数据)
+  const total = data.length;
   const kitOk = filtered.filter(d => d.kitQty > 0).length;
   const totalSemiParts = new Set();
   filtered.forEach(d => { (bomData[d.cp] || []).forEach(p => totalSemiParts.add(p.p)); });
