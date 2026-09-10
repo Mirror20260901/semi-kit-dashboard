@@ -131,11 +131,13 @@ tr:hover td{background:#f8faff}
 .bar-value{font-size:.78rem;font-weight:600;width:40px;text-align:right;flex-shrink:0}
 
 /* Recent scan list */
-.recent-list{max-width:700px;margin:0 auto}
-.recent-item{display:flex;align-items:center;justify-content:space-between;padding:10px 16px;border-bottom:1px solid var(--border);font-size:.88rem}
+.recent-list{max-width:100%;margin:0 auto}
+.recent-item{display:grid;grid-template-columns:130px 1fr 110px 60px 70px 80px 90px 70px 50px;align-items:center;gap:8px;padding:10px 12px;border-bottom:1px solid var(--border);font-size:.85rem}
 .recent-item:last-child{border-bottom:none}
-.recent-time{color:var(--text-secondary);font-size:.8rem}
-.recent-code{font-family:"SF Mono",Monaco,Consolas,monospace;font-size:.82rem;color:var(--primary-dark)}
+.recent-time{color:var(--text-secondary);font-size:.8rem;white-space:nowrap}
+.recent-code{font-family:"SF Mono",Monaco,Consolas,monospace;font-size:.78rem;color:var(--primary-dark);word-break:break-all}
+.recent-halfpart{font-size:.78rem;word-break:break-all;color:#333}
+.recent-product{font-size:.78rem;color:#555;white-space:nowrap}
 
 /* Mobile */
 @media(max-width:640px){
@@ -1612,21 +1614,31 @@ function renderRecentList() {
   
   el.innerHTML = records.map((r, idx) => {
     const realIdx = scanRecords.indexOf(r);
-    const qtyStr = r.q ? `<span style="color:var(--primary);font-weight:600">×${r.q}</span>` : '';
-    const displayCode = r.c.length > 40 ? r.c.substring(0, 40) + '...' : r.c;
-    const palletStr = r.z ? `<span style="background:#e8f4fd;color:#1a73e8;padding:1px 6px;border-radius:4px;font-size:.72rem;font-weight:500">${r.z}</span>` : '';
-    const pdStr = r.pd ? `<span style="background:#fff8e1;color:#e65100;padding:1px 6px;border-radius:4px;font-size:.72rem;font-weight:500">📦${r.pd}</span>` : '';
+    const displayCode = r.c.length > 60 ? r.c.substring(0, 60) + '...' : r.c;
+    const palletStr = r.z ? `<span style="background:#e8f4fd;color:#1a73e8;padding:2px 8px;border-radius:4px;font-size:.72rem;font-weight:500">${r.z}</span>` : '<span style="color:#ccc">-</span>';
+    const pdStr = r.pd ? `<span style="background:#fff8e1;color:#e65100;padding:2px 8px;border-radius:4px;font-size:.72rem;font-weight:500">${r.pd}</span>` : '<span style="color:#ccc">-</span>';
     const operatorUser = users.find(u => u.username === r.r);
-    const operatorStr = r.r ? `<span style="background:#f3e5f5;color:#7b1fa2;padding:1px 6px;border-radius:4px;font-size:.72rem;font-weight:500" title="操作人">${operatorUser ? operatorUser.name : r.r}</span>` : '';
+    const operatorStr = r.r ? `<span style="background:#f3e5f5;color:#7b1fa2;padding:2px 8px;border-radius:4px;font-size:.72rem;font-weight:500">${operatorUser ? operatorUser.name : r.r}</span>` : '<span style="color:#ccc">-</span>';
+    // 提取成品料号：半品料号中-P之前的部分
+    let productCode = '-';
+    if (r.x) {
+      const pIdx = r.x.indexOf('-P');
+      if (pIdx > 0) productCode = r.x.substring(0, pIdx);
+    }
     return `
-    <div class="recent-item" style="display:flex;align-items:center;gap:8px">
-      <span class="recent-time" style="min-width:120px">${r.t}</span>
-      <span class="recent-code" style="flex:1;font-size:.75rem;word-break:break-all" title="${r.c.replace(/"/g, '&quot;')}">${displayCode}</span>
-      <span style="min-width:80px">${r.x || '-'}</span>
-      <span style="min-width:60px;text-align:center;color:var(--primary);font-weight:600">${r.q || ''}</span>
-      ${operatorStr}${pdStr}${palletStr}
-      <span class="badge ${r.a === '入库' ? 'badge-green' : 'badge-red'}" style="min-width:45px;text-align:center">${r.a}</span>
-      <button class="btn btn-sm" style="padding:4px 8px;background:var(--danger);color:#fff;font-size:.75rem" onclick="deleteSingleRecord(${realIdx})" title="删除此记录">🗑️</button>
+    <div class="recent-item">
+      <span class="recent-time" title="${r.t}">${r.t}</span>
+      <span class="recent-code" title="${r.c.replace(/"/g, '&quot;')}">${displayCode}</span>
+      <span class="recent-product" title="${productCode}">${productCode}</span>
+      <span class="recent-halfpart" title="${r.x || ''}">${r.x || '-'}</span>
+      <span style="text-align:center;color:var(--primary);font-weight:700;font-size:.88rem">${r.q || ''}</span>
+      ${operatorStr}
+      ${pdStr}
+      ${palletStr}
+      <span class="badge ${r.a === '入库' ? 'badge-green' : 'badge-red'}" style="text-align:center;font-size:.78rem">${r.a}</span>
+    </div>
+    <div style="text-align:right;padding:0 12px 4px;border-bottom:1px solid var(--border)">
+      <button class="btn btn-sm" style="padding:3px 10px;background:var(--danger);color:#fff;font-size:.72rem;border:none;border-radius:4px;cursor:pointer" onclick="deleteSingleRecord(${realIdx})" title="删除此记录">🗑️ 删除</button>
     </div>
   `}).join('');
 }
@@ -1759,9 +1771,11 @@ function deleteByDate() {
 function exportScanCSV() {
   const records = filteredScanRecords.length > 0 ? filteredScanRecords : scanRecords.filter(r => r.c);
   if (records.length === 0) { showToast('暂无数据可导出', 'info'); return; }
-  let csv = '\uFEFF时间,唯一码,线序料号,操作人,工单号,工单数量,入库数量,库位,批次,动作,栈板号\n';
+  let csv = '\uFEFF时间,唯一码,成品料号,线序料号,操作人,工单号,工单数量,入库数量,库位,批次,动作,栈板号\n';
   records.forEach(r => {
-    csv += `"${r.t}","${r.c}","${r.x}","${r.r}","${r.wo_no || ''}","${r.wo_qty || ''}","${r.q || ''}","${r.w}","${r.pd || ''}","${r.a}","${r.z || ''}"\n`.replace(/"undefined"/g, '""');
+    const pIdx = (r.x || '').indexOf('-P');
+    const prodCode = pIdx > 0 ? (r.x || '').substring(0, pIdx) : '';
+    csv += `"${r.t}","${r.c}","${prodCode}","${r.x}","${r.r}","${r.wo_no || ''}","${r.wo_qty || ''}","${r.q || ''}","${r.w}","${r.pd || ''}","${r.a}","${r.z || ''}"\n`.replace(/"undefined"/g, '""');
   });
   // Clean up undefined
   csv = csv.replace(/undefined/g, '');
@@ -2439,11 +2453,13 @@ function exportToExcel() {
   
   // Sheet 4: 扫码区
   const scanData = [];
-  scanData.push(['时间', '唯一码', '线序料号', '操作人', '工单号', '工单数量', '入库数量', '库位', '批次', '动作', '栈板号']);
+  scanData.push(['时间', '唯一码', '成品料号', '线序料号', '操作人', '工单号', '工单数量', '入库数量', '库位', '批次', '动作', '栈板号']);
   scanRecords.forEach(r => {
     const code = r.c;
     const partNum = code.substring(3, 21);
-    scanData.push([r.t, code, partNum, r.r, r.wo_no || '', r.wo_qty || '', r.q || '', r.w, r.pd || '', r.a, r.z || '']);
+    const pIdx = (r.x || '').indexOf('-P');
+    const prodCode = pIdx > 0 ? (r.x || '').substring(0, pIdx) : '';
+    scanData.push([r.t, code, prodCode, partNum, r.r, r.wo_no || '', r.wo_qty || '', r.q || '', r.w, r.pd || '', r.a, r.z || '']);
   });
   const ws4 = XLSX.utils.aoa_to_sheet(scanData);
   XLSX.utils.book_append_sheet(wb, ws4, '扫码区');
