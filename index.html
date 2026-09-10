@@ -278,7 +278,8 @@ button:focus-visible,input:focus-visible,a:focus-visible{outline:2px solid var(-
           <div style="font-weight:600;margin-bottom:8px">📊 从 Excel/CSV 导入（增量追加，已有数据保留）</div>
           <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
             <input type="file" id="bomFileInput" accept=".xlsx,.xls,.csv" onchange="loadBOMFile(event)" style="font-size:.85rem">
-            <button class="btn btn-primary btn-sm" onclick="exportBOM()" style="background:var(--success);border:none;padding:5px 12px;border-radius:6px;font-size:.8rem;cursor:pointer">💾 导出BOM</button>
+            <button class="btn btn-primary btn-sm" onclick="exportBOM()" style="background:var(--success);border:none;padding:5px 12px;border-radius:6px;font-size:.8rem;cursor:pointer"> 导出BOM</button>
+            <button class="btn btn-sm" onclick="clearAllBOM()" style="background:var(--danger);color:#fff;border:none;padding:5px 12px;border-radius:6px;font-size:.8rem;cursor:pointer">🗑️ 清除BOM</button>
             <span style="font-size:.78rem;color:var(--text-secondary)">列顺序：成品料号 | 半品料号 | 接头规格 | 线长 | 用量</span>
           </div>
           <div id="bomLoadStatus" style="font-size:.8rem;color:var(--text-secondary);margin-top:6px"></div>
@@ -2121,6 +2122,17 @@ function exportBOM() {
   a.click();
   URL.revokeObjectURL(url);
   showToast('BOM 已导出', 'success');
+}
+
+function clearAllBOM() {
+  if (productList.length === 0) { showToast('BOM数据已为空', 'info'); return; }
+  if (!confirm(`确认清除全部BOM数据？\n当前共 ${productList.length} 个成品，清除后需重新导入。\n（扫码记录和库存不受影响）`)) return;
+  bomData = {};
+  productList = [];
+  saveData();
+  refreshDashboard();
+  document.getElementById('bomLoadStatus').textContent = 'BOM已清空';
+  showToast('BOM数据已全部清除', 'success');
 }
 
 // ====== BOM SEARCH (for manual edit) ======
