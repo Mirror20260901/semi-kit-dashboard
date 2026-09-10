@@ -132,7 +132,7 @@ tr:hover td{background:#f8faff}
 
 /* Recent scan list */
 .recent-list{max-width:100%;margin:0 auto}
-.recent-item{display:grid;grid-template-columns:128px 2fr 95px 2fr 52px 65px 78px 88px 65px 50px;align-items:center;gap:8px;padding:10px 12px;border-bottom:1px solid var(--border);font-size:.85rem}
+.recent-item{display:grid;grid-template-columns:128px 260px 95px 200px 52px 65px 78px 88px 65px 100px;align-items:center;gap:8px;padding:10px 12px;border-bottom:1px solid var(--border);font-size:.85rem}
 .recent-item:last-child{border-bottom:none}
 .recent-time{color:var(--text-secondary);font-size:.8rem;white-space:nowrap}
 .recent-code{font-family:"SF Mono",Monaco,Consolas,monospace;font-size:.78rem;color:var(--primary-dark);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
@@ -1622,7 +1622,7 @@ function renderRecentList() {
   
   el.innerHTML = records.map((r, idx) => {
     const realIdx = scanRecords.indexOf(r);
-    const displayCode = r.c.length > 60 ? r.c.substring(0, 60) + '...' : r.c;
+    const displayCode = r.c.length > 30 ? r.c.substring(0, 30) + '…' : r.c;
     const palletStr = r.z ? `<span style="background:#e8f4fd;color:#1a73e8;padding:2px 8px;border-radius:4px;font-size:.72rem;font-weight:500">${r.z}</span>` : '<span style="color:#ccc">-</span>';
     const pdStr = r.pd ? `<span style="background:#fff8e1;color:#e65100;padding:2px 8px;border-radius:4px;font-size:.72rem;font-weight:500">${r.pd}</span>` : '<span style="color:#ccc">-</span>';
     const operatorUser = users.find(u => u.username === r.r);
