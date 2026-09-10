@@ -268,7 +268,7 @@ button:focus-visible,input:focus-visible,a:focus-visible{outline:2px solid var(-
       <div class="card-body" id="bomDetail" style="display:none">
         <!-- Excel/CSV Upload -->
         <div style="margin-bottom:16px">
-          <div style="font-weight:600;margin-bottom:8px">📊 从 Excel/CSV 导入（覆盖现有数据）</div>
+          <div style="font-weight:600;margin-bottom:8px">📊 从 Excel/CSV 导入（增量追加，已有数据保留）</div>
           <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
             <input type="file" id="bomFileInput" accept=".xlsx,.xls,.csv" onchange="loadBOMFile(event)" style="font-size:.85rem">
             <span style="font-size:.78rem;color:var(--text-secondary)">列顺序：成品料号 | 半品料号 | 接头规格 | 线长 | 用量</span>
@@ -1839,10 +1839,8 @@ function parseCSVText(text) {
 }
 
 function loadBOMFromRows(rows) {
-  bomData = {};
-  productList = [];
   let headerSkipped = false;
-  let count = 0;
+  let added = 0, skipped = 0;
   
   rows.forEach(row => {
     if (!row || row.length === 0) return;
@@ -1857,20 +1855,29 @@ function loadBOMFromRows(rows) {
     const bp = String(row[1] || '').trim();
     if (!cp || !bp) return;
     
+    const j = String(row[2] || '').trim();
+    const l = parseInt(row[3]) || 0;
+    const y = parseInt(row[4]) || 1;
+    
     if (!bomData[cp]) bomData[cp] = [];
-    bomData[cp].push({
-      p: bp,
-      j: String(row[2] || '').trim(),
-      l: parseInt(row[3]) || 0,
-      y: parseInt(row[4]) || 1
-    });
-    if (!productList.includes(cp)) productList.push(cp);
+    // 检查是否已存在（成品+半品+接头+线长 完全相同则视为重复）
+    const exists = bomData[cp].some(e => e.p === bp && e.j === j && e.l === l);
+    if (!exists) {
+      bomData[cp].push({ p: bp, j: j, l: l, y: y });
+      if (!productList.includes(cp)) productList.push(cp);
+      added++;
+    } else {
+      skipped++;
+    }
     if (!(bp in inventory)) inventory[bp] = 0;
-    count++;
   });
   
-  document.getElementById('bomLoadStatus').textContent = '✅ 已加载 ' + productList.length + ' 个成品，' + count + ' 条BOM';
-  showToast('BOM 数据已加载：' + productList.length + ' 个成品', 'success');
+  if (added === 0) {
+    showToast('没有新增数据，所有条目已存在', 'info');
+  } else {
+    showToast(`已追加 ${added} 条BOM，跳过 ${skipped} 条重复`, 'success');
+  }
+  document.getElementById('bomLoadStatus').textContent = '✅ 已加载 ' + productList.length + ' 个成品';
   refreshDashboard();
 }
 
