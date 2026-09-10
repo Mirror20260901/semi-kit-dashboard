@@ -422,13 +422,13 @@ button:focus-visible,input:focus-visible,a:focus-visible{outline:2px solid var(-
       </div>
       <div class="card-body">
         <div class="search-bar">
-          <input type="text" id="searchInput" placeholder="搜索成品料号..." oninput="filterTable()">
           <select id="woFilter" onchange="filterTable()" style="padding:8px 12px;border:1px solid var(--border);border-radius:6px;font-size:.85rem;min-width:150px">
             <option value="">全部工单</option>
           </select>
           <select id="lineSeqFilter" onchange="filterTable()" style="padding:8px 12px;border:1px solid var(--border);border-radius:6px;font-size:.85rem;min-width:180px">
             <option value="">全部线序料号</option>
           </select>
+          <input type="text" id="searchInput" placeholder="搜索成品料号..." oninput="filterTable()">
           <button class="btn btn-outline btn-sm" onclick="sortTable()">🔄 按可配套数排序</button>
           <button class="btn btn-outline btn-sm" onclick="expandAll()">📂 全部展开</button>
           <button class="btn btn-outline btn-sm" onclick="collapseAll()">📁 全部收起</button>
