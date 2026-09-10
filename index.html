@@ -852,6 +852,8 @@ function loadData() {
     if (data.bomData && typeof data.bomData === 'object') {
       bomData = data.bomData;
     }
+    // 清理异常BOM条目（含+或*的公式字符串）
+    cleanBomData();
     if (data.productList && Array.isArray(data.productList)) {
       productList = data.productList;
     }
@@ -878,6 +880,25 @@ function loadData() {
   } catch(e) {
     console.warn('从本地存储恢复数据失败:', e);
     return false;
+  }
+}
+
+// 清理异常BOM数据（半品料号含+或*的公式字符串）
+function cleanBomData() {
+  let cleaned = 0;
+  for (const cp of Object.keys(bomData)) {
+    const before = bomData[cp].length;
+    bomData[cp] = bomData[cp].filter(p => !/[+*]/.test(p.p));
+    cleaned += before - bomData[cp].length;
+    if (bomData[cp].length === 0) {
+      delete bomData[cp];
+      const idx = productList.indexOf(cp);
+      if (idx >= 0) productList.splice(idx, 1);
+    }
+  }
+  if (cleaned > 0) {
+    console.log(`[BOM清理] 移除了 ${cleaned} 条异常BOM条目`);
+    saveData();
   }
 }
 
@@ -1952,6 +1973,8 @@ function loadBOMFromRows(rows) {
     const cp = String(row[0] || '').trim();
     const bp = String(row[1] || '').trim();
     if (!cp || !bp) return;
+    // 跳过异常料号（含+或*的公式字符串，不是真正的半品料号）
+    if (/[+*]/.test(bp)) { skipped++; return; }
     
     const j = String(row[2] || '').trim();
     const l = parseInt(row[3]) || 0;
@@ -1995,6 +2018,8 @@ function loadBOMFromPaste() {
       const y = parseInt(parts[4]) || 1;
       // 跳过表头
       if (/料号|成品|编号|product/i.test(cp)) { skipped++; return; }
+      // 跳过异常料号（含+或*的公式字符串）
+      if (/[+*]/.test(bp)) { skipped++; return; }
       if (!bomData[cp]) bomData[cp] = [];
       // 检查是否已存在（成品+半品+接头+线长 完全相同则视为重复）
       const exists = bomData[cp].some(e => e.p === bp && e.j === j && e.l === l);
