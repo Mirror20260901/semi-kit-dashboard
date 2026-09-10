@@ -877,11 +877,11 @@ function loadData() {
     }
     // 清理异常BOM条目（含+或*的公式字符串）
     cleanBomData();
-    // 半品料号排重
-    dedupBomData();
     if (data.productList && Array.isArray(data.productList)) {
       productList = data.productList;
     }
+    // 半品料号排重（必须在productList恢复之后）
+    dedupBomData();
     if (data.currentWorkOrder) {
       currentWorkOrder = data.currentWorkOrder;
       // 从扫码记录重新计算已归数量，不依赖保存的旧值
