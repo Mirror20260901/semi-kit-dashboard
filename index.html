@@ -1637,7 +1637,17 @@ function renderRecentList() {
   const countEl = document.getElementById('scanRecordCount');
   const records = (filteredScanRecords !== null) ? filteredScanRecords : scanRecords.filter(r => r.c);
   
-  countEl.textContent = `共 ${records.length} 条记录` + (filteredScanRecords !== null ? '（已筛选）' : '');
+  // 计算入库/出库总数量
+  let totalIn = 0, totalOut = 0;
+  records.forEach(r => {
+    const q = (r.q && r.q > 0) ? r.q : 1;
+    if (r.a === '入库') totalIn += q;
+    else if (r.a === '出库') totalOut += q;
+  });
+  
+  countEl.innerHTML = `共 ${records.length} 条记录` + (filteredScanRecords !== null ? '（已筛选）' : '') +
+    ` <span style="color:var(--success);font-weight:600;margin-left:8px">入库 ${totalIn}</span>` +
+    ` <span style="color:var(--danger);font-weight:600;margin-left:4px">出库 ${totalOut}</span>`;
   
   if (records.length === 0) {
     el.innerHTML = '<div style="padding:20px;text-align:center;color:var(--text-secondary)">暂无扫码记录</div>';
