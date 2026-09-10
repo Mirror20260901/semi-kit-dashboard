@@ -437,6 +437,7 @@ button:focus-visible,input:focus-visible,a:focus-visible{outline:2px solid var(-
               <tr>
                 <th>成品料号</th>
                 <th>工单号</th>
+                <th>工单数量</th>
                 <th>半品数</th>
                 <th>可配套数</th>
                 <th>齐套状态</th>
@@ -2435,25 +2436,29 @@ function recalculate() {
     if (kitQty === Infinity) kitQty = 0;
     const maxGap = parts.length > 0 ? maxStock - minStock : 0;
     
-    const kitRate = parts.length > 0 ? ((parts.length - shortageParts.length) / parts.length * 100).toFixed(1) : '0.0';
-    
-    // Extract work order numbers for this product from scan records
+    // Extract work order numbers and quantity for this product from scan records
     const woNumbers = new Set();
+    let woQty = 0;
     scanRecords.forEach(r => {
       if (r.x) {
         const pIdx = r.x.indexOf('-P');
         if (pIdx > 0) {
           const prodCode = r.x.substring(0, pIdx);
-          if (prodCode === cp && r.wo_no) {
-            woNumbers.add(r.wo_no);
+          if (prodCode === cp) {
+            if (r.wo_no) woNumbers.add(r.wo_no);
+            if (r.wo_qty && !woQty) woQty = parseInt(r.wo_qty);
           }
         }
       }
     });
     
+    // 齐套率 = 完全齐套的套数 ÷ 工单总数量 × 100%
+    const kitRate = woQty > 0 ? ((kitQty / woQty) * 100).toFixed(1) : '0.0';
+    
     return {
       cp,
       woNumbers: Array.from(woNumbers).join(', ') || '-',
+      woQty: woQty || '-',
       partCount: parts.length,
       kitQty,
       status: kitQty > 0 ? '可配套' : (shortageParts.length > 0 ? '缺料' : '待备料'),
@@ -2531,7 +2536,7 @@ function renderTable(data) {
     
     if (hasDetail) {
       const parts = bomData[d.cp] || [];
-      html += `<tr class="detail-row"><td colspan="8">
+      html += `<tr class="detail-row"><td colspan="9">
         <table style="width:100%;font-size:.84rem">
           <tr style="background:#e8f0fe"><th style="padding:6px 10px">半品料号</th><th style="padding:6px 10px">接头规格</th><th style="padding:6px 10px">库存</th><th style="padding:6px 10px">状态</th></tr>
       `;
@@ -2553,7 +2558,7 @@ function renderTable(data) {
     }
   });
   
-  tbody.innerHTML = html || '<tr><td colspan="8" style="text-align:center;padding:40px;color:var(--text-secondary)">暂无数据，请先加载库存 CSV</td></tr>';
+  tbody.innerHTML = html || '<tr><td colspan="9" style="text-align:center;padding:40px;color:var(--text-secondary)">暂无数据，请先加载库存 CSV</td></tr>';
 }
 
 function toggleDetail(row) {
@@ -2645,9 +2650,9 @@ function exportToExcel() {
   
   // Sheet 3: 成品齐套看板
   const dashData = [];
-  dashData.push(['成品料号', '工单号', '半品数', '可配套数', '齐套状态', '齐套率', '缺料半品', '缺口数量']);
+  dashData.push(['成品料号', '工单号', '工单数量', '半品数', '可配套数', '齐套状态', '齐套率', '缺料半品', '缺口数量']);
   data.forEach(d => {
-    dashData.push([d.cp, d.woNumbers, d.partCount, d.kitQty, d.status, d.kitRate + '%', d.shortageCount, d.maxGap]);
+    dashData.push([d.cp, d.woNumbers, d.woQty, d.partCount, d.kitQty, d.status, d.kitRate + '%', d.shortageCount, d.maxGap]);
   });
   const ws3 = XLSX.utils.aoa_to_sheet(dashData);
   XLSX.utils.book_append_sheet(wb, ws3, '成品齐套看板');
