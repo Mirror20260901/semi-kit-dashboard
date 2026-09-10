@@ -132,7 +132,7 @@ tr:hover td{background:#f8faff}
 
 /* Recent scan list */
 .recent-list{max-width:100%;margin:0 auto;display:flex;flex-direction:column}
-.recent-item{display:flex;align-items:center;gap:6px;padding:8px 10px;border-bottom:1px solid var(--border);font-size:.82rem;user-select:text}
+.recent-item{display:flex;align-items:center;gap:6px;padding:8px 10px;border-bottom:1px solid var(--border);font-size:.82rem;user-select:text!important;cursor:text}
 .recent-item:last-child{border-bottom:none}
 .recent-time{width:120px;flex-shrink:0;color:var(--text-secondary);font-size:.78rem}
 .recent-code{width:220px;flex-shrink:0;font-family:"SF Mono",Monaco,Consolas,monospace;font-size:.76rem;color:var(--primary-dark);overflow:hidden;text-overflow:ellipsis}
@@ -2687,6 +2687,16 @@ document.addEventListener('click', function(e) {
   if (document.getElementById('tab-scan').classList.contains('active') && 
       !e.target.closest('input, button, select, textarea, .card-header, label, a, [onclick], .recent-list, .recent-item')) {
     document.getElementById('scanInput').focus();
+  }
+});
+
+// Allow text selection in record list (override any default behavior)
+document.getElementById('recentList').addEventListener('selectstart', function(e) {
+  e.stopPropagation();
+});
+document.getElementById('recentList').addEventListener('mousedown', function(e) {
+  if (e.target.closest('.recent-item')) {
+    e.stopPropagation();
   }
 });
 
