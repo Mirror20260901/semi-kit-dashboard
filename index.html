@@ -829,6 +829,22 @@ function loadData() {
     location.replace(location.href.split('#')[0]);
     return false;
   }
+  // 仅清空BOM数据：URL带#clearbom
+  if (location.hash === '#clearbom') {
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (raw) {
+        const data = JSON.parse(raw);
+        data.bomData = {};
+        data.productList = [];
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+        console.log('[清空BOM] 已清除所有BOM数据');
+      }
+    } catch(e) {}
+    location.hash = '';
+    location.replace(location.href.split('#')[0]);
+    return false;
+  }
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) return false;
