@@ -503,6 +503,10 @@ function recomputeInventory() {
       result[hp] = Math.max(0, (result[hp] || 0) - q);
     }
   }
+  // 确保BOM里所有半品料号都注册进库存表（恢复/导入的新BOM可正常累计与展示）
+  for (const _cp in bomData) {
+    (bomData[_cp] || []).forEach(_p => { if (!(_p.p in result)) result[_p.p] = 0; });
+  }
   inventory = result;
 }
 
@@ -1415,6 +1419,9 @@ function processScan(code) {
   // 管道符格式靠 | 分段，剔除回车不影响；QR关键字格式（工单号：... 料号线序：...）用正则匹配，剔除换行后依然命中。
   code = String(code).replace(/\r/g, '').replace(/\n/g, '');
   hideRawScan();
+  // 【立即清空】提交时马上清掉扫码框，不再靠1.5秒后的定时器——
+  // 否则连续快速扫码时，定时器会把第二枪打到旧内容上导致串码
+  scanInput.value = '';
   
   // 0.5 防重复：提取半品料号，检查2秒内是否已扫过
   const _hp = code.includes('|') || code.includes('｜') ? code.split(/[｜|]/)[1]?.trim() : '';
@@ -1447,7 +1454,7 @@ function processScan(code) {
       scanStatus.textContent = '⚠️ 请先设置栈板号（选择前缀+输入序号）再扫码！';
       scanStatus.className = 'scan-status err';
       playSound('error');
-      setTimeout(() => { scanInput.className = ''; scanInput.value = ''; if(!document.getSelection().toString())scanInput.focus(); }, 2000);
+      setTimeout(() => { scanInput.className = ''; if(!document.getSelection().toString())scanInput.focus(); }, 2000);
       return;
     }
   }
@@ -1458,7 +1465,7 @@ function processScan(code) {
     scanStatus.textContent = '⚠️ 请先在上方设置工单号和数量后再扫码！';
     scanStatus.className = 'scan-status err';
     playSound('error');
-    setTimeout(() => { scanInput.className = ''; scanInput.value = ''; if(!document.getSelection().toString())scanInput.focus(); }, 2000);
+    setTimeout(() => { scanInput.className = ''; if(!document.getSelection().toString())scanInput.focus(); }, 2000);
     return;
   }
 
@@ -1482,7 +1489,7 @@ function processScan(code) {
       scanStatus.className = 'scan-status err';
       showRawScan(code);
       playSound('error');
-      setTimeout(() => { scanInput.className = ''; scanInput.value = ''; if(!document.getSelection().toString())scanInput.focus(); }, 2000);
+      setTimeout(() => { scanInput.className = ''; if(!document.getSelection().toString())scanInput.focus(); }, 2000);
       return;
     }
     workOrder = parts[0] || '';
@@ -1503,7 +1510,7 @@ function processScan(code) {
       scanStatus.className = 'scan-status err';
       showRawScan(code);
       playSound('error');
-      setTimeout(() => { scanInput.className = ''; scanInput.value = ''; if(!document.getSelection().toString())scanInput.focus(); }, 1500);
+      setTimeout(() => { scanInput.className = ''; if(!document.getSelection().toString())scanInput.focus(); }, 1500);
       return;
     }
     
@@ -1524,7 +1531,7 @@ function processScan(code) {
       scanStatus.className = 'scan-status err';
       showRawScan(code);
       playSound('error');
-      setTimeout(() => { scanInput.className = ''; scanInput.value = ''; if(!document.getSelection().toString())scanInput.focus(); }, 1500);
+      setTimeout(() => { scanInput.className = ''; if(!document.getSelection().toString())scanInput.focus(); }, 1500);
       return;
     }
     
@@ -1544,7 +1551,6 @@ function processScan(code) {
       setTimeout(() => { scanInput.style.animation = ''; }, 500);
       setTimeout(() => {
         scanInput.className = '';
-        scanInput.value = '';
         if(!document.getSelection().toString())scanInput.focus();
       }, 1500);
       return;
@@ -1560,7 +1566,7 @@ function processScan(code) {
     scanStatus.className = 'scan-status err';
     showRawScan(code);
     playSound('error');
-    setTimeout(() => { scanInput.className = ''; scanInput.value = ''; if(!document.getSelection().toString())scanInput.focus(); }, 2000);
+    setTimeout(() => { scanInput.className = ''; if(!document.getSelection().toString())scanInput.focus(); }, 2000);
     return;
   }
   
@@ -1637,7 +1643,7 @@ function processScan(code) {
           scanStatus.innerHTML = '🚨 <b>成品料号不匹配！</b><br>当前工单关联成品：<b>' + currentWorkOrder.product + '</b><br>该二维码属于成品：<b>' + otherProduct + '</b><br>请先重新录入新工单号再扫码';
           scanStatus.className = 'scan-status err';
           playSound('error');
-          setTimeout(() => { scanInput.className = ''; scanInput.value = ''; if(!document.getSelection().toString())scanInput.focus(); }, 4000);
+          setTimeout(() => { scanInput.className = ''; if(!document.getSelection().toString())scanInput.focus(); }, 4000);
           return;
         }
       }
@@ -1662,7 +1668,7 @@ function processScan(code) {
       scanStatus.textContent = '❌ 半品料号 ' + halfPart + ' 不在当前工单BOM中！';
       scanStatus.className = 'scan-status err';
       playSound('error');
-      setTimeout(() => { scanInput.className = ''; scanInput.value = ''; if(!document.getSelection().toString())scanInput.focus(); }, 2500);
+      setTimeout(() => { scanInput.className = ''; if(!document.getSelection().toString())scanInput.focus(); }, 2500);
       return;
     }
     
@@ -1679,7 +1685,7 @@ function processScan(code) {
         scanStatus.className = 'scan-status err';
         playSound('overlimit');
         showToast('🚨 ' + halfPart + ' 已超工单数量！禁止扫入！', 'error');
-        setTimeout(() => { scanInput.className = ''; scanInput.value = ''; if(!document.getSelection().toString())scanInput.focus(); }, 4000);
+        setTimeout(() => { scanInput.className = ''; if(!document.getSelection().toString())scanInput.focus(); }, 4000);
         return;
       }
     }
@@ -1693,7 +1699,7 @@ function processScan(code) {
       scanStatus.textContent = '❌ 该二维码未入库，不允许出库！';
       scanStatus.className = 'scan-status err';
       playSound('error');
-      setTimeout(() => { scanInput.className = ''; scanInput.value = ''; if(!document.getSelection().toString())scanInput.focus(); }, 2500);
+      setTimeout(() => { scanInput.className = ''; if(!document.getSelection().toString())scanInput.focus(); }, 2500);
       return;
     }
   }
@@ -1755,10 +1761,10 @@ function processScan(code) {
     scanRecords.unshift(record);
     saveDataDebounced(); // 持久化保存
     
-    // Update inventory（按条码上的数量累加）
-    if (halfPart && halfPart in inventory) {
-      if (currentAction === '入库') inventory[halfPart] += scanQty;
-      else if (currentAction === '出库') inventory[halfPart] = Math.max(0, inventory[halfPart] - scanQty);
+    // Update inventory（按条码上的数量累加；BOM外的半品也注册进库存表）
+    if (halfPart) {
+      if (currentAction === '入库') inventory[halfPart] = (inventory[halfPart] || 0) + scanQty;
+      else if (currentAction === '出库') inventory[halfPart] = Math.max(0, (inventory[halfPart] || 0) - scanQty);
     }
     
     // Update per-component work order progress（按条码上的数量累计）
@@ -1779,7 +1785,6 @@ function processScan(code) {
   
   setTimeout(() => {
     scanInput.className = '';
-    scanInput.value = '';
     if(!document.getSelection().toString())scanInput.focus();
   }, 1500);
 }
