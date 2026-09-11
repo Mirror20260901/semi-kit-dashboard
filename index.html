@@ -962,7 +962,7 @@ const SYNC_CONFIG = {
   owner: 'Mirror20260901',
   repo: 'semi-kit-dashboard',
   path: 'shared-v2.json',
-  pollInterval: 5000,
+  pollInterval: 30000,
   apiBase: 'https://api.github.com'
 };
 
@@ -1196,7 +1196,6 @@ async function syncCycle() {
     const dataToPush = {
       _version: DATA_VERSION,
       scanRecords: pushRecords,
-      // inventory 不在远程同步，各设备从 INITIAL_INVENTORY + scanRecords 重新计算
       bomData: bomData,
       productList: productList,
       users: users,
@@ -1211,7 +1210,10 @@ async function syncCycle() {
       deletedRecords: mergedDeleted,
       updatedAt: new Date().toISOString()
     };
-    await pushSharedData(dataToPush);
+    // 只在有实际变化时才推送，避免无变化时因时间戳不同导致反复触发 Pages 重建
+    if (hadChanges) {
+      await pushSharedData(dataToPush);
+    }
     lastSyncTime = new Date();
     updateSyncStatus('synced', '已同步');
     if (hadChanges) {
