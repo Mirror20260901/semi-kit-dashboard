@@ -1335,18 +1335,18 @@ scanInput.addEventListener('keydown', function(e) {
 });
 
 // ===== 扫码枪增强1：免回车自动提交 =====
-// 原理：扫码枪等同"高速键盘"，整串字符在1秒内输入完毕，人工键入达不到该速度。
-// 兼容扫码枪回车后缀被关闭的情况。
+// 原理：扫码枪等同"高速键盘"，整串字符在2.5秒内输入完毕（兼容蓝牙枪/带延时设置的枪），
+// 人工键入达不到该速度。兼容扫码枪回车后缀被关闭的情况。
 let _gunTimer = null, _gunFirst = 0, _gunChars = 0;
 function _gunReset(){ clearTimeout(_gunTimer); _gunTimer = null; _gunFirst = 0; _gunChars = 0; }
 scanInput.addEventListener('input', function(e) {
   const now = Date.now();
-  if (!_gunTimer || now - _gunFirst > 1000) { _gunFirst = now; _gunChars = 0; }
-  _gunChars += (e.inputType === 'insertFromPaste') ? 10 : 1;
+  if (!_gunTimer || now - _gunFirst > 2500) { _gunFirst = now; _gunChars = 0; }
+  _gunChars += (e.inputType === 'insertFromPaste') ? 12 : 1;
   clearTimeout(_gunTimer);
   _gunTimer = setTimeout(() => {
     const val = scanInput.value.trim();
-    const gunLike = (Date.now() - _gunFirst) < 1000 && _gunChars >= 8 && val.length >= 8;
+    const gunLike = (Date.now() - _gunFirst) < 2500 && _gunChars >= 12 && val.length >= 8;
     _gunReset();
     if (gunLike) processScan(val);
   }, 150);
