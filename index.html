@@ -1314,8 +1314,26 @@ scanInput.addEventListener('keydown', function(e) {
   }
 });
 
+// 扫码防抖：记录最近扫码的半品料号和时间，防止扫码枪重复触发
+const _recentScans = []; // [{halfPart, time}]
+const SCAN_DEDUP_WINDOW = 2000; // 2秒内相同半品料号视为重复
+
 function processScan(code) {
   if (!code) return;
+  
+  // 0.5 防重复：提取半品料号，检查2秒内是否已扫过
+  const _hp = code.includes('|') || code.includes('｜') ? code.split(/[｜|]/)[1]?.trim() : '';
+  if (_hp) {
+    const now = Date.now();
+    // 清理过期记录
+    while (_recentScans.length > 0 && now - _recentScans[0].time > SCAN_DEDUP_WINDOW) _recentScans.shift();
+    // 检查是否重复
+    if (_recentScans.some(s => s.halfPart === _hp)) {
+      console.log(`[防重复] 跳过重复扫码: ${_hp}`);
+      return;
+    }
+    _recentScans.push({ halfPart: _hp, time: now });
+  }
   
   // 0. 检查登录状态
   if (!currentUser) {
