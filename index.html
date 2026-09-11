@@ -580,6 +580,9 @@ async function doLogin() {
   document.getElementById('mainApp').style.display = '';
   document.getElementById('userDisplayName').textContent = currentUser.name;
   errorEl.style.display = 'none';
+  // 登录后自动聚焦扫码框（扫码枪依赖焦点输入）
+  const _st = document.getElementById('tab-scan');
+  if (_st && _st.classList.contains('active')) document.getElementById('scanInput').focus();
 }
 
 // 检查是否已登录
@@ -603,6 +606,9 @@ function checkAuth() {
       document.getElementById('loginOverlay').style.display = 'none';
       document.getElementById('mainApp').style.display = '';
       document.getElementById('userDisplayName').textContent = currentUser.name;
+      // 免登录恢复后自动聚焦扫码框
+      const _st2 = document.getElementById('tab-scan');
+      if (_st2 && _st2.classList.contains('active')) document.getElementById('scanInput').focus();
       return true;
     } catch(e) {}
   }
@@ -1310,6 +1316,8 @@ function setAction(act) {
   currentAction = act;
   document.getElementById('btnIn').className = 'action-btn' + (act === '入库' ? ' active-in' : '');
   document.getElementById('btnOut').className = 'action-btn' + (act === '出库' ? ' active-out' : '');
+  // 焦点还给扫码框：点按钮后扫码枪才能继续扫码
+  document.getElementById('scanInput').focus();
 }
 
 // ====== SCAN HANDLING ======
@@ -1317,10 +1325,51 @@ const scanInput = document.getElementById('scanInput');
 const scanStatus = document.getElementById('scanStatus');
 
 scanInput.addEventListener('keydown', function(e) {
+  // 输入法防误触：拼音组字状态下的 Enter 不当作扫码提交
+  if (e.isComposing || e.keyCode === 229) return;
   if (e.key === 'Enter') {
     e.preventDefault();
+    _gunReset();
     processScan(this.value.trim());
   }
+});
+
+// ===== 扫码枪增强1：免回车自动提交 =====
+// 原理：扫码枪等同"高速键盘"，整串字符在1秒内输入完毕，人工键入达不到该速度。
+// 兼容扫码枪回车后缀被关闭的情况。
+let _gunTimer = null, _gunFirst = 0, _gunChars = 0;
+function _gunReset(){ clearTimeout(_gunTimer); _gunTimer = null; _gunFirst = 0; _gunChars = 0; }
+scanInput.addEventListener('input', function(e) {
+  const now = Date.now();
+  if (!_gunTimer || now - _gunFirst > 1000) { _gunFirst = now; _gunChars = 0; }
+  _gunChars += (e.inputType === 'insertFromPaste') ? 10 : 1;
+  clearTimeout(_gunTimer);
+  _gunTimer = setTimeout(() => {
+    const val = scanInput.value.trim();
+    const gunLike = (Date.now() - _gunFirst) < 1000 && _gunChars >= 8 && val.length >= 8;
+    _gunReset();
+    if (gunLike) processScan(val);
+  }, 150);
+});
+
+// ===== 扫码枪增强2：焦点保持 =====
+// 点击页面空白处或按钮后自动把焦点还给扫码框，防止扫码枪"打字打到空气中"。
+// 不抢夺其他输入框（搜索、日期、栈板号等）的焦点；弹窗打开时不干预。
+document.addEventListener('click', function(e) {
+  const scanTab = document.getElementById('tab-scan');
+  if (!scanTab || !scanTab.classList.contains('active')) return;
+  const cam = document.getElementById('cameraModal');
+  if (cam && cam.classList.contains('show')) return;
+  const anyModalOpen = [...document.querySelectorAll('[id*="Modal"],[id*="modal"]')].some(m => {
+    const d = m.style.display; return d && d !== 'none';
+  });
+  if (anyModalOpen) return;
+  const t = e.target;
+  const tag = t && t.tagName ? t.tagName.toUpperCase() : '';
+  if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || t.isContentEditable) return;
+  const ae = document.activeElement;
+  if (ae && (ae.tagName === 'INPUT' || ae.tagName === 'TEXTAREA' || ae.tagName === 'SELECT')) return;
+  scanInput.focus();
 });
 
 // 扫码防抖：记录最近扫码的半品料号和时间，防止扫码枪重复触发
