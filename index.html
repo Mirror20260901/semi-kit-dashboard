@@ -1754,14 +1754,9 @@ function renderRecentList() {
     else if (r.a === '出库') totalOut += q;
   });
   
-  // 筛选记录的总数量合计
-  let totalQty = 0;
-  records.forEach(r => { totalQty += (r.q && r.q > 0) ? r.q : 1; });
-  
   countEl.innerHTML = `共 ${records.length} 条记录` + (filteredScanRecords !== null ? '（已筛选）' : '') +
     ` <span style="color:var(--success);font-weight:600;margin-left:8px">入库 ${totalIn}</span>` +
-    ` <span style="color:var(--danger);font-weight:600;margin-left:4px">出库 ${totalOut}</span>` +
-    ` <span style="color:#333;font-weight:600;margin-left:8px">合计 ${totalQty}</span>`;
+    ` <span style="color:var(--danger);font-weight:600;margin-left:4px">出库 ${totalOut}</span>`;
   
   if (records.length === 0) {
     el.innerHTML = '<div style="padding:20px;text-align:center;color:var(--text-secondary)">暂无扫码记录</div>';
@@ -1785,6 +1780,7 @@ function renderRecentList() {
     <div class="recent-item">
       <span class="recent-time" title="${r.t}">${r.t}</span>
       <span class="recent-code" title="${r.c.replace(/"/g, '&quot;')}">${displayCode}</span>
+      <span class="recent-wo" title="${r.wo_no || '-'}" style="font-weight:600;color:#1a73e8;min-width:60px">${r.wo_no || '-'}</span>
       <span class="recent-product" title="${productCode}">${productCode}</span>
       <span class="recent-halfpart" title="${r.x || ''}">${r.x || '-'}</span>
       <span class="recent-qty">${r.q || ''}</span>
