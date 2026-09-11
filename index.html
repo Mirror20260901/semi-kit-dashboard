@@ -1723,7 +1723,24 @@ function processScan(code) {
     wo_qty: currentWorkOrder.qty || 0,
     pd: productionDate || ''
   };
-  
+
+  // 【出库回写】出库时界面不要求设置工单/栈板，当前设置值与该码无关。
+  // 工单号/工单数量/栈板号/批次 改为回写该码入库时的值（同码最近一条入库记录），
+  // 保证出入库台账与CSV口径一致：出库记录可追溯到原入库工单和栈板。
+  if (currentAction === '出库') {
+    let _inRec = null;
+    for (let i = scanRecords.length - 1; i >= 0; i--) {
+      if (scanRecords[i].c === code && scanRecords[i].a === '入库') { _inRec = scanRecords[i]; break; }
+    }
+    if (_inRec) {
+      record.w = _inRec.w || record.w || '';
+      record.z = _inRec.z || '';
+      record.wo_no = _inRec.wo_no || _inRec.w || record.w || '';
+      record.wo_qty = _inRec.wo_qty || 0;
+      record.pd = _inRec.pd || record.pd || '';
+    }
+  }
+
   if (isDup) {
     scanInput.className = 'duplicate';
     scanStatus.textContent = '🚨 重复扫码警报！该码已' + currentAction + '过！';
@@ -2814,11 +2831,23 @@ function renderTable(data) {
     });
   }
   
-  // Update KPIs based on filtered data (总成品数用全部数据)
+  // Update KPIs based on filtered data
+  // 总成品数：不随筛选联动，始终统计全部成品
   const total = data.length;
+  // 可齐套成品数：随筛选条件联动
   const kitOk = filtered.filter(d => d.kitQty > 0).length;
-  // 当前库存 = 所有有过扫码记录的半品库存总和（不再只统计BOM内的）
-  const totalInventory = Object.values(inventory).reduce((sum, v) => sum + (v || 0), 0);
+  // 当前库存：随筛选条件联动——有筛选时只汇总筛选后成品对应BOM半品的库存；
+  // 无筛选时汇总全部半品库存（含BOM外有扫码记录的半品）
+  const hasDashFilter = !!(search || woFilter || lineSeqFilter);
+  let totalInventory;
+  if (!hasDashFilter) {
+    totalInventory = Object.values(inventory).reduce((sum, v) => sum + (v || 0), 0);
+  } else {
+    const _partSet = new Set();
+    filtered.forEach(d => (bomData[d.cp] || []).forEach(p => _partSet.add(p.p)));
+    totalInventory = 0;
+    _partSet.forEach(p => { totalInventory += (inventory[p] || 0); });
+  }
   
   document.getElementById('kpiTotal').textContent = total;
   document.getElementById('kpiKit').textContent = kitOk;
