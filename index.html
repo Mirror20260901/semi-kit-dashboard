@@ -1331,13 +1331,23 @@ function setAction(act) {
 const scanInput = document.getElementById('scanInput');
 const scanStatus = document.getElementById('scanStatus');
 
+// 【内嵌回车兼容】二维码内容本身可能含 \r\n（如 101386002|8180914762-PBB4-P1D2\r\n|04895|...），
+// 扫码枪会把码内嵌的回车打成交键：若立即提交会把完整条码拦腰截断。
+// 因此回车后延迟 150ms 再提交；若期间有新字符进入（枪仍在继续打字），说明该回车
+// 是码内容内嵌的，取消本次提交，由下方 input 防抖在码真正结束时提交完整内容。
+let _enterFinalizeTimer = null;
 scanInput.addEventListener('keydown', function(e) {
   // 输入法防误触：拼音组字状态下的 Enter 不当作扫码提交
   if (e.isComposing || e.keyCode === 229) return;
   if (e.key === 'Enter') {
     e.preventDefault();
     _gunReset();
-    processScan(this.value.trim());
+    clearTimeout(_enterFinalizeTimer);
+    _enterFinalizeTimer = setTimeout(() => {
+      _enterFinalizeTimer = null;
+      const val = scanInput.value.trim();
+      if (val) processScan(val);
+    }, 150);
   }
 });
 
@@ -1347,6 +1357,7 @@ scanInput.addEventListener('keydown', function(e) {
 let _gunTimer = null, _gunFirst = 0, _gunChars = 0;
 function _gunReset(){ clearTimeout(_gunTimer); _gunTimer = null; _gunFirst = 0; _gunChars = 0; }
 scanInput.addEventListener('input', function(e) {
+  clearTimeout(_enterFinalizeTimer); // 有新字符进来 => 之前的回车是码内嵌的，取消提交继续拼接
   const now = Date.now();
   if (!_gunTimer || now - _gunFirst > 2500) { _gunFirst = now; _gunChars = 0; }
   _gunChars += (e.inputType === 'insertFromPaste') ? 12 : 1;
@@ -1400,6 +1411,9 @@ function hideRawScan() {
 
 function processScan(code) {
   if (!code) return;
+  // 【关键修复】剔除二维码内容里内嵌的回车换行（现场半成品标识卡码内容含 ...P1D2\r\n|04895...）。
+  // 管道符格式靠 | 分段，剔除回车不影响；QR关键字格式（工单号：... 料号线序：...）用正则匹配，剔除换行后依然命中。
+  code = String(code).replace(/\r/g, '').replace(/\n/g, '');
   hideRawScan();
   
   // 0.5 防重复：提取半品料号，检查2秒内是否已扫过
