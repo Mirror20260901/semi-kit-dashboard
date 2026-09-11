@@ -547,7 +547,16 @@ async async function doLogin() {
     return;
   }
   
-  const hash = await sha256(password);
+  let hash;
+  try {
+    hash = await sha256(password);
+  } catch(e) {
+    errorEl.textContent = '登录失败：' + e.message;
+    errorEl.style.display = 'block';
+    console.error('sha256 error:', e);
+    return;
+  }
+  
   const user = users.find(u => u.username === username && u.passwordHash === hash);
   
   if (!user) {
