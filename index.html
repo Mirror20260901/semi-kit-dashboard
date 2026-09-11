@@ -25,7 +25,7 @@ a{color:var(--primary);text-decoration:none}
 .header{background:linear-gradient(135deg,var(--primary-dark),var(--primary));color:#fff;padding:16px 24px;position:sticky;top:0;z-index:100;box-shadow:0 2px 16px rgba(0,0,0,.15)}
 .header-inner{max-width:1400px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px}
 .header h1{font-size:1.4rem;font-weight:700;letter-spacing:.5px}
-.header-actions{display:flex;gap:8px;align-items:center;position:relative}
+.header-actions{display:flex;gap:8px;align-items:center}
 
 /* Tabs */
 .tabs{display:flex;gap:4px;background:rgba(255,255,255,.15);border-radius:8px;padding:3px}
@@ -131,19 +131,11 @@ tr:hover td{background:#f8faff}
 .bar-value{font-size:.78rem;font-weight:600;width:40px;text-align:right;flex-shrink:0}
 
 /* Recent scan list */
-.recent-list{max-width:100%;margin:0 auto;display:flex;flex-direction:column}
-.recent-item{display:flex;align-items:center;gap:6px;padding:8px 10px;border-bottom:1px solid var(--border);font-size:.82rem;user-select:text!important;cursor:text}
+.recent-list{max-width:700px;margin:0 auto}
+.recent-item{display:flex;align-items:center;justify-content:space-between;padding:10px 16px;border-bottom:1px solid var(--border);font-size:.88rem}
 .recent-item:last-child{border-bottom:none}
-.recent-time{width:120px;flex-shrink:0;color:var(--text-secondary);font-size:.78rem}
-.recent-code{width:220px;flex-shrink:0;font-family:"SF Mono",Monaco,Consolas,monospace;font-size:.76rem;color:var(--primary-dark);overflow:hidden;text-overflow:ellipsis}
-.recent-product{width:90px;flex-shrink:0;font-size:.76rem;color:#555;overflow:hidden;text-overflow:ellipsis}
-.recent-halfpart{width:160px;flex-shrink:0;font-size:.76rem;overflow:hidden;text-overflow:ellipsis;color:#333}
-.recent-qty{width:40px;flex-shrink:0;text-align:center;color:var(--primary);font-weight:700;font-size:.85rem}
-.recent-op{width:56px;flex-shrink:0;text-align:center}
-.recent-pd{width:70px;flex-shrink:0;text-align:center}
-.recent-z{width:78px;flex-shrink:0;text-align:center}
-.recent-act{width:42px;flex-shrink:0;text-align:center}
-.recent-btns{flex-shrink:0;display:flex;gap:4px;align-items:center}
+.recent-time{color:var(--text-secondary);font-size:.8rem}
+.recent-code{font-family:"SF Mono",Monaco,Consolas,monospace;font-size:.82rem;color:var(--primary-dark)}
 
 /* Mobile */
 @media(max-width:640px){
@@ -193,63 +185,14 @@ button:focus-visible,input:focus-visible,a:focus-visible{outline:2px solid var(-
 .sync-dot.error{background:#ef4444}
 .sync-text{font-size:.75rem;color:rgba(255,255,255,.85);white-space:nowrap}
 @keyframes syncPulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.5;transform:scale(1.3)}}
-/* Login Screen */
-.login-overlay{position:fixed;top:0;left:0;right:0;bottom:0;background:linear-gradient(135deg,#667eea 0%,#764ba2 100%);display:flex;align-items:center;justify-content:center;z-index:9999}
-.login-box{background:#fff;border-radius:16px;padding:40px;width:340px;box-shadow:0 20px 60px rgba(0,0,0,.3)}
-.login-box h2{text-align:center;margin:0 0 8px;font-size:1.4rem;color:#333}
-.login-box .subtitle{text-align:center;color:#888;font-size:.85rem;margin-bottom:24px}
-.login-box input{width:100%;padding:12px 14px;border:1px solid #ddd;border-radius:8px;font-size:.95rem;margin-bottom:14px;box-sizing:border-box;transition:border .2s}
-.login-box input:focus{outline:none;border-color:#667eea}
-.login-box button{width:100%;padding:12px;background:linear-gradient(135deg,#667eea,#764ba2);color:#fff;border:none;border-radius:8px;font-size:1rem;font-weight:600;cursor:pointer;transition:opacity .2s}
-.login-box button:hover{opacity:.9}
-.login-box .error-msg{color:#e74c3c;font-size:.82rem;text-align:center;margin-top:8px;display:none}
-.login-box .remember{display:flex;align-items:center;gap:6px;font-size:.82rem;color:#666;margin-bottom:16px}
-.login-box .remember input{width:auto;margin:0}
-.user-badge{display:inline-flex;align-items:center;gap:4px;padding:3px 10px;background:rgba(255,255,255,.2);border-radius:12px;font-size:.78rem;color:#fff;cursor:pointer}
-.user-badge:hover{background:rgba(255,255,255,.3)}
-.user-dropdown{position:absolute;top:100%;right:0;margin-top:6px;background:#fff;border-radius:10px;box-shadow:0 4px 20px rgba(0,0,0,.18);min-width:180px;z-index:9999;overflow:hidden;animation:dropdownFadeIn .15s ease}
-@keyframes dropdownFadeIn{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:translateY(0)}}
-.user-dropdown-header{padding:12px 16px 8px;background:#f8f9fa}
-.user-dropdown-name{font-weight:600;font-size:.9rem;color:#333}
-.user-dropdown-role{font-size:.75rem;color:#888;margin-top:2px}
-.user-dropdown-divider{height:1px;background:#eee;margin:4px 0}
-.user-dropdown-item{padding:10px 16px;font-size:.85rem;color:#333;cursor:pointer;transition:background .12s}
-.user-dropdown-item:hover{background:#f0f4ff}
 </style>
 </head>
 <body>
 
-<!-- 登录界面 -->
-<div id="loginOverlay" class="login-overlay">
-  <div class="login-box">
-    <img id="companyLogo" src="data:image/png;base64,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" style="width:140px;height:auto;margin-bottom:8px">
-    <h2>📦 半品齐套管理</h2>
-    <p class="subtitle">请使用工号登录</p>
-    <input type="text" id="loginUsername" placeholder="工号" autocomplete="off">
-    <input type="password" id="loginPassword" placeholder="密码">
-    <div class="remember"><input type="checkbox" id="loginRemember"><label for="loginRemember">记住我（7天免登录）</label></div>
-    <button onclick="doLogin()">登 录</button>
-    <div class="error-msg" id="loginError"></div>
-  </div>
-</div>
-
-<header class="header" style="display:none" id="mainApp">
+<header class="header">
   <div class="header-inner">
     <h1>📦 半品齐套管理看板</h1>
       <div class="header-actions">
-      <div id="userBadge" class="user-badge" onclick="toggleUserMenu()" title="点击切换账号">👤 <span id="userDisplayName"></span> ▾</div>
-      <div id="userDropdown" class="user-dropdown" style="display:none">
-        <div class="user-dropdown-header">
-          <div class="user-dropdown-name" id="dropdownUserName"></div>
-          <div class="user-dropdown-role" id="dropdownUserRole"></div>
-        </div>
-        <div class="user-dropdown-divider"></div>
-        <div class="user-dropdown-item" onclick="openChangePwdModal()"> 修改密码</div>
-        <div class="user-dropdown-item" onclick="doSwitchAccount()"> 切换账号</div>
-        <div class="user-dropdown-item" id="menuManageUsers" onclick="openUserModal()" style="display:none"> 用户管理</div>
-        <div class="user-dropdown-divider"></div>
-        <div class="user-dropdown-item" onclick="doLogout()" style="color:#e74c3c">🚪 退出登录</div>
-      </div>
       <div id="syncIndicator" class="sync-indicator" title="多人同步状态">
         <span class="sync-dot"></span>
         <span class="sync-text">同步中...</span>
@@ -275,39 +218,23 @@ button:focus-visible,input:focus-visible,a:focus-visible{outline:2px solid var(-
       <div class="card-body" id="bomDetail" style="display:none">
         <!-- Excel/CSV Upload -->
         <div style="margin-bottom:16px">
-          <div style="font-weight:600;margin-bottom:8px">📊 从 Excel/CSV 导入（增量追加，已有数据保留）</div>
+          <div style="font-weight:600;margin-bottom:8px">📊 从 Excel/CSV 导入（覆盖现有数据）</div>
           <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
             <input type="file" id="bomFileInput" accept=".xlsx,.xls,.csv" onchange="loadBOMFile(event)" style="font-size:.85rem">
-            <button class="btn btn-primary btn-sm" onclick="exportBOM()" style="background:var(--success);border:none;padding:5px 12px;border-radius:6px;font-size:.8rem;cursor:pointer"> 导出BOM</button>
-            <button class="btn btn-sm" onclick="clearAllBOM()" style="background:var(--danger);color:#fff;border:none;padding:5px 12px;border-radius:6px;font-size:.8rem;cursor:pointer">🗑️ 清除BOM</button>
             <span style="font-size:.78rem;color:var(--text-secondary)">列顺序：成品料号 | 半品料号 | 接头规格 | 线长 | 用量</span>
-          </div>
-          <div id="bomLoadStatus" style="font-size:.8rem;color:var(--text-secondary);margin-top:6px"></div>
-        </div>
-        <!-- Batch Paste -->
-        <div style="border-top:1px solid var(--border);padding-top:16px;margin-top:4px">
-          <div style="font-weight:600;margin-bottom:8px">📋 批量粘贴（从表格复制后直接粘贴）</div>
-          <textarea id="bomPasteArea" placeholder="格式：成品料号丨半品料号丨接头规格丨线长&#10;例：&#10;8180900969-P1A1&#10;8180900969-P1A1丨8180900969-P1A1-P2B2丨M8x20&#10;每行一条，支持Tab/丨/|分隔" style="width:100%;min-height:120px;padding:10px;border:1px solid var(--border);border-radius:6px;font-size:.82rem;font-family:monospace;resize:vertical"></textarea>
-          <div style="display:flex;gap:8px;align-items:center;margin-top:8px">
-            <button class="btn btn-primary btn-sm" onclick="loadBOMFromPaste()">📥 导入粘贴数据</button>
-            <span id="bomPasteStatus" style="font-size:.8rem;color:var(--text-secondary)"></span>
           </div>
         </div>
         <!-- Manual Entry -->
         <div style="border-top:1px solid var(--border);padding-top:16px">
-          <div style="font-weight:600;margin-bottom:8px">✍️ 手动新增/变更 BOM 条目</div>
+          <div style="font-weight:600;margin-bottom:8px">✍️ 手动新增 BOM 条目</div>
           <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center">
-            <input type="text" id="manualCP" placeholder="成品料号" style="width:130px;padding:8px 10px;border:1px solid var(--border);border-radius:6px;font-size:.85rem">
-            <input type="text" id="manualBP" placeholder="半品料号" style="width:150px;padding:8px 10px;border:1px solid var(--border);border-radius:6px;font-size:.85rem">
-            <button class="btn btn-sm" onclick="searchBOMEntry()" style="background:#1a73e8;color:#fff;border:none;padding:5px 10px;border-radius:6px;font-size:.8rem;cursor:pointer">🔍 查询</button>
+            <input type="text" id="manualCP" placeholder="成品料号" style="width:140px;padding:8px 10px;border:1px solid var(--border);border-radius:6px;font-size:.85rem">
+            <input type="text" id="manualBP" placeholder="半品料号" style="width:160px;padding:8px 10px;border:1px solid var(--border);border-radius:6px;font-size:.85rem">
             <input type="text" id="manualJ" placeholder="接头规格" style="width:100px;padding:8px 10px;border:1px solid var(--border);border-radius:6px;font-size:.85rem">
-            <input type="number" id="manualL" placeholder="线长" value="0" style="width:70px;padding:8px 10px;border:1px solid var(--border);border-radius:6px;font-size:.85rem">
-            <input type="number" id="manualY" placeholder="用量" value="1" style="width:60px;padding:8px 10px;border:1px solid var(--border);border-radius:6px;font-size:.85rem">
-            <button class="btn btn-primary btn-sm" id="manualSubmitBtn" onclick="addBOMManual()">➕ 添加</button>
-            <button class="btn btn-sm" id="manualDeleteBtn" onclick="deleteBOMEntry()" style="display:none;background:var(--danger);color:#fff;border:none;padding:5px 10px;border-radius:6px;font-size:.8rem;cursor:pointer">🗑️ 删除</button>
-            <button class="btn btn-sm" id="manualCancelBtn" onclick="cancelBOMEdit()" style="display:none;background:#999;color:#fff;border:none;padding:5px 10px;border-radius:6px;font-size:.8rem;cursor:pointer">✖ 取消编辑</button>
+            <input type="number" id="manualL" placeholder="线长" value="0" style="width:80px;padding:8px 10px;border:1px solid var(--border);border-radius:6px;font-size:.85rem">
+            <input type="number" id="manualY" placeholder="用量" value="1" style="width:70px;padding:8px 10px;border:1px solid var(--border);border-radius:6px;font-size:.85rem">
+            <button class="btn btn-primary btn-sm" onclick="addBOMManual()">➕ 添加</button>
           </div>
-          <div id="manualEditHint" style="font-size:.78rem;color:var(--text-secondary);margin-top:4px"></div>
         </div>
       </div>
     </div>
@@ -359,8 +286,10 @@ button:focus-visible,input:focus-visible,a:focus-visible{outline:2px solid var(-
             <button onclick="openPalletCamera()" title="手机摄像头扫栈板号" style="position:absolute;right:4px;top:50%;transform:translateY(-50%);width:30px;height:30px;border:none;background:var(--primary);color:#fff;border-radius:8px;cursor:pointer;font-size:1rem;display:flex;align-items:center;justify-content:center;box-shadow:0 1px 4px rgba(26,115,232,.3)">📷</button>
           </div>
           <span id="palletDisplay" style="font-size:.85rem;color:var(--text-secondary);font-weight:500">未设置栈板号</span>
-          <button class="btn btn-primary btn-sm" onclick="saveWorkOrder()">✅ 确认</button>
-          <span id="setupStatus" style="font-size:.82rem;color:var(--text-secondary)">请先填写工单和栈板号</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:12px;margin-top:12px;padding-top:12px;border-top:1px solid var(--border)">
+          <button class="btn btn-primary btn-sm" onclick="saveWorkOrder()" style="padding:8px 20px;font-size:.9rem">✅ 确认工单和栈板号</button>
+          <span style="font-size:.8rem;color:var(--text-secondary)">请填写工单信息并设置栈板号后点击确认</span>
         </div>
       </div>
     </div>
@@ -390,19 +319,14 @@ button:focus-visible,input:focus-visible,a:focus-visible{outline:2px solid var(-
       <div class="card-body">
         <!-- Search and filter controls -->
         <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;align-items:center">
-          <input type="text" id="scanSearchInput" placeholder="搜索唯一码、料号、工单号、栈板号或批次..." oninput="filterScanRecords()" style="flex:1;min-width:150px;padding:8px 12px;border:1px solid var(--border);border-radius:6px;font-size:.9rem">
-          <input type="date" id="scanDateFilter" onchange="filterScanRecords()" style="padding:8px 12px;border:1px solid var(--border);border-radius:6px;font-size:.9rem">
-          <select id="scanActionFilter" onchange="filterScanRecords()" style="padding:8px 12px;border:1px solid var(--border);border-radius:6px;font-size:.9rem;background:#fff">
-            <option value="">全部动作</option>
-            <option value="入库">📥 入库</option>
-            <option value="出库">📤 出库</option>
-          </select>
+          <input type="text" id="scanSearchInput" placeholder="搜索唯一码、料号、工单号、栈板号或批次..." style="flex:1;min-width:150px;padding:8px 12px;border:1px solid var(--border);border-radius:6px;font-size:.9rem">
+          <input type="date" id="scanDateFilter" style="padding:8px 12px;border:1px solid var(--border);border-radius:6px;font-size:.9rem">
           <button class="btn btn-primary btn-sm" onclick="filterScanRecords()">🔍 查询</button>
           <button class="btn btn-outline btn-sm" onclick="clearScanFilter()">🔄 显示全部</button>
           <button class="btn btn-sm" style="background:var(--danger);color:#fff" onclick="deleteByDate()">🗑️ 删除该日期</button>
         </div>
         <div id="scanRecordCount" style="font-size:.8rem;color:var(--text-secondary);margin-bottom:8px">共 0 条记录</div>
-        <div class="recent-list" id="recentList" style="max-height:400px">
+        <div class="recent-list" id="recentList" style="max-height:400px;overflow-y:auto">
           <div style="padding:20px;text-align:center;color:var(--text-secondary)">暂无扫码记录</div>
         </div>
       </div>
@@ -425,8 +349,6 @@ button:focus-visible,input:focus-visible,a:focus-visible{outline:2px solid var(-
       </div>
       <div class="card-body">
         <div class="search-bar">
-          <input type="text" id="woFilter" placeholder="筛选工单号..." oninput="filterTable()" style="padding:8px 12px;border:1px solid var(--border);border-radius:6px;font-size:.85rem;min-width:150px">
-          <input type="text" id="lineSeqFilter" placeholder="筛选线序料号..." oninput="filterTable()" style="padding:8px 12px;border:1px solid var(--border);border-radius:6px;font-size:.85rem;min-width:180px">
           <input type="text" id="searchInput" placeholder="搜索成品料号..." oninput="filterTable()">
           <button class="btn btn-outline btn-sm" onclick="sortTable()">🔄 按可配套数排序</button>
           <button class="btn btn-outline btn-sm" onclick="expandAll()">📂 全部展开</button>
@@ -438,14 +360,11 @@ button:focus-visible,input:focus-visible,a:focus-visible{outline:2px solid var(-
             <thead>
               <tr>
                 <th>成品料号</th>
-                <th>线序料号款数</th>
-                <th>缺料半品款数</th>
-                <th>工单号</th>
-                <th>工单数量</th>
-                <th>齐套数量</th>
-                <th>齐套率</th>
-                <th>最大缺口</th>
+                <th>半品数</th>
+                <th>可配套数</th>
                 <th>齐套状态</th>
+                <th>缺料半品</th>
+                <th>最大缺口</th>
               </tr>
             </thead>
             <tbody id="dashBody"></tbody>
@@ -506,290 +425,14 @@ function recomputeInventory() {
 }
 
 let bomData = INIT_DATA.bom;
-let bomCleared = false; // 用户手动清除BOM后，同步不再恢复
 let productList = Object.keys(INIT_DATA.bom);
 
 // 半品总数（用于KPI显示）
 const SEMI_TOTAL_COUNT = 277;
 
-// ====== 用户认证系统 ======
-let currentUser = null; // {username, name, role}
-let users = []; // [{username, passwordHash, name, role}]
-
-// SHA-256 哈希（密码存储用）
-async function sha256(text) {
-  const encoder = new TextEncoder();
-  const data = encoder.encode(text);
-  const hashBuffer = await crypto.subtle.digest('SHA-256', data);
-  const hashArray = Array.from(new Uint8Array(hashBuffer));
-  return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
-}
-
-// 初始化默认管理员（首次使用时自动创建）
-async function initDefaultUsers() {
-  if (users.length === 0) {
-    const hash = await sha256('admin123');
-    users.push({ username: 'admin', passwordHash: hash, name: '管理员', role: 'admin', updatedAt: Date.now() });
-    saveUsers();
-  }
-}
-
-// 登录
-async function doLogin() {
-  const username = document.getElementById('loginUsername').value.trim();
-  const password = document.getElementById('loginPassword').value;
-  const remember = document.getElementById('loginRemember').checked;
-  const errorEl = document.getElementById('loginError');
-  
-  if (!username || !password) {
-    errorEl.textContent = '请输入工号和密码';
-    errorEl.style.display = 'block';
-    return;
-  }
-  
-  const hash = await sha256(password);
-  const user = users.find(u => u.username === username && u.passwordHash === hash);
-  
-  if (!user) {
-    errorEl.textContent = '工号或密码错误';
-    errorEl.style.display = 'block';
-    return;
-  }
-  
-  currentUser = { username: user.username, name: user.name || user.username, role: user.role };
-  
-  // 记住登录状态
-  if (remember) {
-    localStorage.setItem('currentUser', JSON.stringify(currentUser));
-    localStorage.setItem('loginExpiry', Date.now() + 7 * 24 * 60 * 60 * 1000); // 7天
-  } else {
-    sessionStorage.setItem('currentUser', JSON.stringify(currentUser));
-  }
-  
-  // 显示主界面
-  document.getElementById('loginOverlay').style.display = 'none';
-  document.getElementById('mainApp').style.display = '';
-  document.getElementById('userDisplayName').textContent = currentUser.name;
-  errorEl.style.display = 'none';
-}
-
-// 检查是否已登录
-function checkAuth() {
-  // 先检查 sessionStorage
-  let stored = sessionStorage.getItem('currentUser');
-  // 再检查 localStorage（记住我）
-  if (!stored) {
-    const expiry = localStorage.getItem('loginExpiry');
-    if (expiry && Date.now() < parseInt(expiry)) {
-      stored = localStorage.getItem('currentUser');
-    } else {
-      localStorage.removeItem('currentUser');
-      localStorage.removeItem('loginExpiry');
-    }
-  }
-  
-  if (stored) {
-    try {
-      currentUser = JSON.parse(stored);
-      document.getElementById('loginOverlay').style.display = 'none';
-      document.getElementById('mainApp').style.display = '';
-      document.getElementById('userDisplayName').textContent = currentUser.name;
-      return true;
-    } catch(e) {}
-  }
-  return false;
-}
-
-// 退出登录
-function openChangePwdModal() {
-  document.getElementById('changePwdModal').style.display = 'flex';
-  document.getElementById('oldPwdInput').value = '';
-  document.getElementById('newPwdInput').value = '';
-  document.getElementById('confirmPwdInput').value = '';
-  closeUserDropdown();
-}
-
-function closeChangePwdModal() {
-  document.getElementById('changePwdModal').style.display = 'none';
-}
-
-async function doChangePwd() {
-  const oldPwd = document.getElementById('oldPwdInput').value.trim();
-  const newPwd = document.getElementById('newPwdInput').value.trim();
-  const confirmPwd = document.getElementById('confirmPwdInput').value.trim();
-  
-  if (!oldPwd || !newPwd) { showToast('请填写完整', 'error'); return; }
-  if (newPwd !== confirmPwd) { showToast('两次密码不一致', 'error'); return; }
-  if (newPwd.length < 4) { showToast('密码至少4位', 'error'); return; }
-  
-  const user = users.find(u => u.username === currentUser.username);
-  if (!user) { showToast('用户不存在', 'error'); return; }
-  if (user.passwordHash !== await sha256(oldPwd)) { showToast('当前密码错误', 'error'); return; }
-  
-  user.passwordHash = await sha256(newPwd);
-  saveUsers();
-  closeChangePwdModal();
-  showToast('密码修改成功', 'success');
-}
-
-function doLogout() {
-  closeUserDropdown();
-  currentUser = null;
-  sessionStorage.removeItem('currentUser');
-  localStorage.removeItem('currentUser');
-  localStorage.removeItem('loginExpiry');
-  document.getElementById('loginOverlay').style.display = '';
-  document.getElementById('mainApp').style.display = 'none';
-  document.getElementById('loginUsername').value = '';
-  document.getElementById('loginPassword').value = '';
-  document.getElementById('loginError').style.display = 'none';
-}
-
-// 用户下拉菜单
-function toggleUserMenu() {
-  const dd = document.getElementById('userDropdown');
-  if (dd.style.display === 'none') {
-    // 填充用户信息
-    document.getElementById('dropdownUserName').textContent = `${currentUser.name}（${currentUser.username}）`;
-    document.getElementById('dropdownUserRole').textContent = currentUser.role === 'admin' ? '管理员' : '操作员';
-    // 管理员才显示用户管理
-    document.getElementById('menuManageUsers').style.display = currentUser.role === 'admin' ? '' : 'none';
-    dd.style.display = 'block';
-    // 点击其他地方自动关闭
-    setTimeout(() => {
-      document.addEventListener('click', closeUserMenuOnOutside, { once: true });
-    }, 10);
-  } else {
-    dd.style.display = 'none';
-  }
-}
-function closeUserMenuOnOutside(e) {
-  const dd = document.getElementById('userDropdown');
-  const badge = document.getElementById('userBadge');
-  if (!dd.contains(e.target) && !badge.contains(e.target)) {
-    dd.style.display = 'none';
-  } else {
-    setTimeout(() => {
-      document.addEventListener('click', closeUserMenuOnOutside, { once: true });
-    }, 10);
-  }
-}
-function closeUserDropdown() {
-  document.getElementById('userDropdown').style.display = 'none';
-}
-// 切换账号：退出后重新显示登录框，保留用户名
-function doSwitchAccount() {
-  closeUserDropdown();
-  const prevUser = currentUser ? currentUser.username : '';
-  currentUser = null;
-  sessionStorage.removeItem('currentUser');
-  localStorage.removeItem('currentUser');
-  localStorage.removeItem('loginExpiry');
-  document.getElementById('mainApp').style.display = 'none';
-  document.getElementById('loginOverlay').style.display = '';
-  document.getElementById('loginUsername').value = prevUser;
-  document.getElementById('loginPassword').value = '';
-  document.getElementById('loginError').style.display = 'none';
-  document.getElementById('loginPassword').focus();
-}
-
-// 用户管理弹窗
-function openUserModal() {
-  if (!currentUser || currentUser.role !== 'admin') {
-    alert('只有管理员可以管理用户');
-    return;
-  }
-  renderUserList();
-  document.getElementById('userModal').style.display = 'flex';
-}
-
-function closeUserModal() {
-  document.getElementById('userModal').style.display = 'none';
-}
-
-function renderUserList() {
-  const el = document.getElementById('userListArea');
-  if (users.length === 0) {
-    el.innerHTML = '<p style="color:#888;text-align:center">暂无用户</p>';
-    return;
-  }
-  el.innerHTML = users.map(u => `
-    <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 12px;background:#f8f9fa;border-radius:6px;margin-bottom:6px">
-      <div>
-        <strong>${u.name || u.username}</strong>
-        <span style="color:#888;font-size:.8rem;margin-left:6px">${u.username}</span>
-        <span style="font-size:.75rem;padding:2px 6px;border-radius:4px;margin-left:6px;background:${u.role === 'admin' ? '#e8f4fd;color:#1976d2' : '#f0f0f0;color:#666'}">${u.role === 'admin' ? '管理员' : '操作员'}</span>
-      </div>
-      <div>
-        <button onclick="resetUserPassword('${u.username}')" style="padding:4px 8px;font-size:.75rem;border:1px solid #ddd;border-radius:4px;background:#fff;cursor:pointer;margin-right:4px">重置密码</button>
-        ${u.username !== 'admin' ? `<button onclick="deleteUser('${u.username}')" style="padding:4px 8px;font-size:.75rem;border:1px solid #e74c3c;border-radius:4px;background:#fff;color:#e74c3c;cursor:pointer">删除</button>` : ''}
-      </div>
-    </div>
-  `).join('');
-}
-
-async function addUser() {
-  const username = document.getElementById('newUserUsername').value.trim();
-  const name = document.getElementById('newUserName').value.trim();
-  const password = document.getElementById('newUserPassword').value;
-  const role = document.getElementById('newUserRole').value;
-  
-  if (!username || !password) {
-    alert('工号和密码不能为空');
-    return;
-  }
-  if (users.some(u => u.username === username)) {
-    alert('该工号已存在');
-    return;
-  }
-  
-  const passwordHash = await sha256(password);
-  users.push({ username, passwordHash, name: name || username, role, updatedAt: Date.now() });
-  saveUsers();
-  renderUserList();
-  document.getElementById('newUserUsername').value = '';
-  document.getElementById('newUserName').value = '';
-  document.getElementById('newUserPassword').value = '';
-  showToast(`用户 ${name || username} 已添加`, 'success');
-}
-
-async function resetUserPassword(username) {
-  const newPwd = prompt(`请输入 ${username} 的新密码：`);
-  if (!newPwd) return;
-  const user = users.find(u => u.username === username);
-  if (user) {
-    user.passwordHash = await sha256(newPwd);
-    user.updatedAt = Date.now();
-    saveUsers();
-    showToast('密码已重置', 'success');
-  }
-}
-
-function deleteUser(username) {
-  if (username === 'admin') { alert('不能删除管理员'); return; }
-  if (!confirm(`确定删除用户 ${username}？`)) return;
-  users = users.filter(u => u.username !== username);
-  saveUsers();
-  renderUserList();
-  showToast('用户已删除', 'info');
-}
-
-function saveUsers() {
-  localStorage.setItem('appUsers', JSON.stringify(users));
-  // 同步到远程
-  if (typeof syncCycle === 'function') syncCycle();
-}
-
-function loadUsers() {
-  const raw = localStorage.getItem('appUsers');
-  if (raw) {
-    try { users = JSON.parse(raw); } catch(e) { users = []; }
-  }
-}
-
 // ====== LOCAL STORAGE 持久化 ======
 const STORAGE_KEY = 'semiKitDashboard';
-const DATA_VERSION = 'v5'; // v5: 切换数据文件+版本升级，彻底隔离旧标签页数据
+const DATA_VERSION = 'v4'; // 数据版本号，用于检测旧数据自动清理（v4: 修复清除数据后复活bug）
 
 function saveData() {
   try {
@@ -797,9 +440,6 @@ function saveData() {
       _version: DATA_VERSION,
       scanRecords: scanRecords,
       inventory: inventory,
-      bomData: bomData,
-      bomCleared: bomCleared,
-      productList: productList,
       currentWorkOrder: currentWorkOrder,
       importedWorkOrders: importedWorkOrders,
       currentAction: currentAction,
@@ -832,22 +472,6 @@ function loadData() {
     location.replace(location.href.split('#')[0]);
     return false;
   }
-  // 仅清空BOM数据：URL带#clearbom
-  if (location.hash === '#clearbom') {
-    try {
-      const raw = localStorage.getItem(STORAGE_KEY);
-      if (raw) {
-        const data = JSON.parse(raw);
-        data.bomData = {};
-        data.productList = [];
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
-        console.log('[清空BOM] 已清除所有BOM数据');
-      }
-    } catch(e) {}
-    location.hash = '';
-    location.replace(location.href.split('#')[0]);
-    return false;
-  }
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) return false;
@@ -868,24 +492,8 @@ function loadData() {
     }
     // 不从 localStorage 恢复 inventory，改为从初始库存+扫码记录重新计算
     recomputeInventory();
-    // 恢复BOM数据（用户导入/粘贴的，不再丢失）
-    if (data.bomData && typeof data.bomData === 'object') {
-      bomData = data.bomData;
-    }
-    if (data.bomCleared) {
-      bomCleared = true;
-    }
-    // 清理异常BOM条目（含+或*的公式字符串）
-    cleanBomData();
-    if (data.productList && Array.isArray(data.productList)) {
-      productList = data.productList;
-    }
-    // 半品料号排重（必须在productList恢复之后）
-    dedupBomData();
     if (data.currentWorkOrder) {
       currentWorkOrder = data.currentWorkOrder;
-      // 从扫码记录重新计算已归数量，不依赖保存的旧值
-      recalcComponentCounts();
     }
     if (data.importedWorkOrders && Array.isArray(data.importedWorkOrders)) {
       importedWorkOrders = data.importedWorkOrders;
@@ -908,61 +516,13 @@ function loadData() {
   }
 }
 
-// 清理异常BOM数据（半品料号含+或*的公式字符串）
-function cleanBomData() {
-  let cleaned = 0;
-  for (const cp of Object.keys(bomData)) {
-    const before = bomData[cp].length;
-    bomData[cp] = bomData[cp].filter(p => !/[+*]/.test(p.p));
-    cleaned += before - bomData[cp].length;
-    if (bomData[cp].length === 0) {
-      delete bomData[cp];
-      const idx = productList.indexOf(cp);
-      if (idx >= 0) productList.splice(idx, 1);
-    }
-  }
-  if (cleaned > 0) {
-    console.log(`[BOM清理] 移除了 ${cleaned} 条异常BOM条目`);
-    saveData();
-  }
-}
-
-// BOM半品料号排重（同成品下同半品料号只保留第一个）
-function dedupBomData() {
-  let removed = 0;
-  for (const cp of Object.keys(bomData)) {
-    const seen = new Set();
-    const filtered = bomData[cp].filter(item => {
-      if (seen.has(item.p)) { removed++; return false; }
-      seen.add(item.p);
-      return true;
-    });
-    bomData[cp] = filtered;
-  }
-  // 排重productList（防止同成品出现两行）
-  const uniquePL = [];
-  const plSeen = new Set();
-  productList.forEach(cp => {
-    if (!plSeen.has(cp)) { plSeen.add(cp); uniquePL.push(cp); }
-  });
-  if (uniquePL.length < productList.length) {
-    removed += productList.length - uniquePL.length;
-    productList.length = 0;
-    productList.push(...uniquePL);
-  }
-  if (removed > 0) {
-    console.log(`[BOM排重] 移除 ${removed} 条重复`);
-    saveData();
-  }
-}
-
 // ====== GITHUB SYNC 多人同步 ======
 const SYNC_CONFIG = {
   token: 'ghp_' + 'J5CPrdGL6M' + 'l93AP3G2Yd' + 'OSWXUeEZfu' + '1Q6GGu',
   owner: 'Mirror20260901',
   repo: 'semi-kit-dashboard',
-  path: 'shared-v2.json',
-  pollInterval: 30000,
+  path: 'shared-data.json',
+  pollInterval: 5000,
   apiBase: 'https://api.github.com'
 };
 
@@ -1041,54 +601,6 @@ function mergeRemoteData(remote) {
   let changed = false;
   // inventory 不再通过远程合并，改为各设备从 scanRecords 重新计算（防止污染数据覆盖正确值）
 
-  // ===== 合并远程 BOM 数据（取并集，确保多设备导入的BOM不丢失）=====
-  if (!bomCleared && remote.bomData && typeof remote.bomData === 'object') {
-    for (const cp of Object.keys(remote.bomData)) {
-      if (!bomData[cp]) {
-        bomData[cp] = remote.bomData[cp];
-        changed = true;
-      } else {
-        // 合并半品条目（去重：同成品下同半品料号只保留一个）
-        const existing = bomData[cp];
-        const localParts = new Set(existing.map(e => e.p));
-        for (const remoteItem of remote.bomData[cp]) {
-          if (!localParts.has(remoteItem.p)) {
-            existing.push(remoteItem);
-            localParts.add(remoteItem.p);
-            changed = true;
-          }
-        }
-      }
-    }
-  }
-  if (!bomCleared && remote.productList && Array.isArray(remote.productList)) {
-    for (const cp of remote.productList) {
-      if (!productList.includes(cp)) {
-        productList.push(cp);
-        changed = true;
-      }
-    }
-  }
-
-  // ===== 合并远程用户数据（按时间戳取最新）=====
-  if (remote.users && Array.isArray(remote.users)) {
-    for (const ru of remote.users) {
-      const existing = users.find(u => u.username === ru.username);
-      if (!existing) {
-        users.push(ru);
-        changed = true;
-      } else if ((ru.updatedAt || 0) > (existing.updatedAt || 0)) {
-        // 远程版本更新（如密码已修改），以远程为准
-        existing.passwordHash = ru.passwordHash;
-        existing.name = ru.name || existing.name;
-        existing.role = ru.role || existing.role;
-        existing.updatedAt = ru.updatedAt;
-        changed = true;
-      }
-    }
-    if (changed) saveUsers();
-  }
-
   // 【自动修复】检测远程数据是否被旧代码污染（无 _version 或版本不匹配）
   const remoteIsStale = !remote._version || remote._version !== DATA_VERSION;
 
@@ -1155,12 +667,20 @@ function mergeRemoteData(remote) {
       }
     }
   }
-  // componentCounts 不再从远程合并，改为从扫码记录重新计算（确保已归数量=实际扫码数量）
+  if (remote.currentWorkOrder && remote.currentWorkOrder.componentCounts && currentWorkOrder.number) {
+    const rc = remote.currentWorkOrder.componentCounts;
+    for (const key of Object.keys(rc)) {
+      const rv = rc[key] || 0;
+      const lv = currentWorkOrder.componentCounts[key] || 0;
+      if (rv > lv) {
+        currentWorkOrder.componentCounts[key] = rv;
+        changed = true;
+      }
+    }
+  }
 
   // 合并 scanRecords 后重新计算 inventory
   if (changed) recomputeInventory();
-  // 合并后从扫码记录重新计算已归数量
-  if (changed && currentWorkOrder.number) recalcComponentCounts();
   return changed;
 }
 
@@ -1196,9 +716,7 @@ async function syncCycle() {
     const dataToPush = {
       _version: DATA_VERSION,
       scanRecords: pushRecords,
-      bomData: bomData,
-      productList: productList,
-      users: users,
+      // inventory 不在远程同步，各设备从 INITIAL_INVENTORY + scanRecords 重新计算
       importedWorkOrders: importedWorkOrders,
       currentWorkOrder: {
         number: currentWorkOrder.number,
@@ -1210,14 +728,10 @@ async function syncCycle() {
       deletedRecords: mergedDeleted,
       updatedAt: new Date().toISOString()
     };
-    // 只在有实际变化时才推送，避免无变化时因时间戳不同导致反复触发 Pages 重建
-    if (hadChanges) {
-      await pushSharedData(dataToPush);
-    }
+    await pushSharedData(dataToPush);
     lastSyncTime = new Date();
     updateSyncStatus('synced', '已同步');
     if (hadChanges) {
-      dedupBomData();
       saveData();
       refreshAllUI();
     }
@@ -1268,22 +782,6 @@ if (restored) {
   }, 100);
 }
 
-// 初始化用户认证
-loadUsers();
-(async () => {
-  await initDefaultUsers();
-  // 检查是否已登录
-  checkAuth();
-})();
-
-// 登录框 Enter 键支持
-document.getElementById('loginPassword').addEventListener('keydown', e => {
-  if (e.key === 'Enter') doLogin();
-});
-document.getElementById('loginUsername').addEventListener('keydown', e => {
-  if (e.key === 'Enter') document.getElementById('loginPassword').focus();
-});
-
 // 启动多人同步
 setTimeout(() => {
   startSync();
@@ -1324,35 +822,25 @@ scanInput.addEventListener('keydown', function(e) {
 function processScan(code) {
   if (!code) return;
   
-  // 0. 检查登录状态
-  if (!currentUser) {
-    scanStatus.textContent = '⚠️ 请先登录后再扫码！';
-    scanStatus.className = 'scan-status err';
-    showToast('请先登录', 'error');
-    return;
-  }
-  
-  // 1. 先检查栈板号（出库不需要）
-  if (currentAction === '入库') {
-    const palletPrefixVal = document.getElementById('palletPrefix').value;
-    const palletSeqVal = document.getElementById('palletSeq').value;
-    if (!palletPrefixVal || !palletSeqVal) {
-      scanInput.className = 'error';
-      scanStatus.textContent = '⚠️ 请先设置栈板号（选择前缀+输入序号）再扫码！';
-      scanStatus.className = 'scan-status err';
-      playSound('error');
-      setTimeout(() => { scanInput.className = ''; scanInput.value = ''; if(!document.getSelection().toString())scanInput.focus(); }, 2000);
-      return;
-    }
-  }
-
-  // 2. 再检查工单（出库不需要）
-  if (currentAction === '入库' && !currentWorkOrder.number) {
+  // 必须先设置工单才能扫码
+  if (!currentWorkOrder.number) {
     scanInput.className = 'error';
     scanStatus.textContent = '⚠️ 请先在上方设置工单号和数量后再扫码！';
     scanStatus.className = 'scan-status err';
     playSound('error');
-    setTimeout(() => { scanInput.className = ''; scanInput.value = ''; if(!document.getSelection().toString())scanInput.focus(); }, 2000);
+    setTimeout(() => { scanInput.className = ''; scanInput.value = ''; scanInput.focus(); }, 2000);
+    return;
+  }
+
+  // 必须先设置栈板号才能扫码
+  const palletPrefixVal = document.getElementById('palletPrefix').value;
+  const palletSeqVal = document.getElementById('palletSeq').value;
+  if (!palletPrefixVal || !palletSeqVal) {
+    scanInput.className = 'error';
+    scanStatus.textContent = '⚠️ 请先设置栈板号（选择前缀+输入序号）再扫码！';
+    scanStatus.className = 'scan-status err';
+    playSound('error');
+    setTimeout(() => { scanInput.className = ''; scanInput.value = ''; scanInput.focus(); }, 2000);
     return;
   }
 
@@ -1369,15 +857,6 @@ function processScan(code) {
   if (isPipeFormat) {
     // ===== 管道符格式：101396002｜8180900969-P1A1-P2B2｜00035｜00100｜260905｜00001 =====
     const parts = code.split(/[｜|]/).map(s => s.trim());
-    // 管道符格式必须至少4段（工单号｜半品料号｜线长｜数量），不足则视为不完整扫码直接拒绝
-    if (parts.length < 4) {
-      scanInput.className = 'error';
-      scanStatus.textContent = '❌ 扫码内容不完整，请重新扫码！';
-      scanStatus.className = 'scan-status err';
-      playSound('error');
-      setTimeout(() => { scanInput.className = ''; scanInput.value = ''; if(!document.getSelection().toString())scanInput.focus(); }, 2000);
-      return;
-    }
     workOrder = parts[0] || '';
     halfPart = parts[1] || '';
     // parts[2] = 线长（暂不使用）
@@ -1395,7 +874,7 @@ function processScan(code) {
       scanStatus.textContent = '❌ 无法识别半品料号';
       scanStatus.className = 'scan-status err';
       playSound('error');
-      setTimeout(() => { scanInput.className = ''; scanInput.value = ''; if(!document.getSelection().toString())scanInput.focus(); }, 1500);
+      setTimeout(() => { scanInput.className = ''; scanInput.value = ''; scanInput.focus(); }, 1500);
       return;
     }
     
@@ -1415,7 +894,7 @@ function processScan(code) {
       scanStatus.textContent = '❌ 无法识别料号线序';
       scanStatus.className = 'scan-status err';
       playSound('error');
-      setTimeout(() => { scanInput.className = ''; scanInput.value = ''; if(!document.getSelection().toString())scanInput.focus(); }, 1500);
+      setTimeout(() => { scanInput.className = ''; scanInput.value = ''; scanInput.focus(); }, 1500);
       return;
     }
     
@@ -1435,7 +914,7 @@ function processScan(code) {
       setTimeout(() => {
         scanInput.className = '';
         scanInput.value = '';
-        if(!document.getSelection().toString())scanInput.focus();
+        scanInput.focus();
       }, 1500);
       return;
     }
@@ -1443,18 +922,8 @@ function processScan(code) {
     scanQty = 1;
   }
   
-  // 兜底检查：半品料号为空说明扫码内容不完整或格式无法识别，拒绝创建记录
-  if (!halfPart) {
-    scanInput.className = 'error';
-    scanStatus.textContent = '❌ 无法识别半品料号，请确认扫码内容完整后重试！';
-    scanStatus.className = 'scan-status err';
-    playSound('error');
-    setTimeout(() => { scanInput.className = ''; scanInput.value = ''; if(!document.getSelection().toString())scanInput.focus(); }, 2000);
-    return;
-  }
-  
-  // ===== 通用检查：BOM验证 + 超限报警（仅入库检查）=====
-  if (halfPart && currentAction === '入库') {
+  // ===== 通用检查：BOM验证 + 超限报警（新旧格式共用）=====
+  if (halfPart) {
     // 从半品料号提取成品料号（-P之前的部分）
     const pIdx = halfPart.indexOf('-P');
     const productFromHalfPart = pIdx > 0 ? halfPart.substring(0, pIdx) : '';
@@ -1497,12 +966,12 @@ function processScan(code) {
       }
     }
     
-    // BOM匹配：每个成品料号对应独立工单，切换成品料号需重新录入工单
+    // BOM匹配：一个工单可对应多个成品料号，允许匹配任意成品的半品
     let bomMatched = false;
     let matchedProduct = ''; // 匹配到的成品料号，用于超限检查
 
     if (currentWorkOrder.product) {
-      // 只匹配当前工单关联的成品料号
+      // 先尝试匹配当前已识别的成品
       const woBomList = bomData[currentWorkOrder.product] || [];
       if (woBomList.some(c => c.p === halfPart)) {
         bomMatched = true;
@@ -1512,22 +981,20 @@ function processScan(code) {
         bomMatched = true;
         matchedProduct = currentWorkOrder.product;
       }
-      // 不匹配当前工单：检查是否属于其他成品料号
+      // 当前成品没匹配到，再尝试全局BOM中其他成品的半品
       if (!bomMatched) {
-        let otherProduct = '';
         for (const cp in bomData) {
           if (cp === currentWorkOrder.product) continue;
-          if (bomData[cp].some(c => c.p === halfPart)) { otherProduct = cp; break; }
-          if (productFromHalfPart && bomData[cp].some(c => c.p === productFromHalfPart)) { otherProduct = cp; break; }
-        }
-        if (otherProduct) {
-          // 该码属于其他成品料号，需要重新录入工单
-          scanInput.className = 'error';
-          scanStatus.innerHTML = '🚨 <b>成品料号不匹配！</b><br>当前工单关联成品：<b>' + currentWorkOrder.product + '</b><br>该二维码属于成品：<b>' + otherProduct + '</b><br>请先重新录入新工单号再扫码';
-          scanStatus.className = 'scan-status err';
-          playSound('error');
-          setTimeout(() => { scanInput.className = ''; scanInput.value = ''; if(!document.getSelection().toString())scanInput.focus(); }, 4000);
-          return;
+          if (bomData[cp].some(c => c.p === halfPart)) {
+            bomMatched = true;
+            matchedProduct = cp;
+            break;
+          }
+          if (productFromHalfPart && bomData[cp].some(c => c.p === productFromHalfPart)) {
+            bomMatched = true;
+            matchedProduct = cp;
+            break;
+          }
         }
       }
     } else {
@@ -1551,38 +1018,23 @@ function processScan(code) {
       scanStatus.textContent = '❌ 半品料号 ' + halfPart + ' 不在当前工单BOM中！';
       scanStatus.className = 'scan-status err';
       playSound('error');
-      setTimeout(() => { scanInput.className = ''; scanInput.value = ''; if(!document.getSelection().toString())scanInput.focus(); }, 2500);
+      setTimeout(() => { scanInput.className = ''; scanInput.value = ''; scanInput.focus(); }, 2500);
       return;
     }
     
-    // 超限检查：只在入库时检查
-    if (currentAction === '入库') {
-      const compLimit = currentWorkOrder.qty;
-      const currentCompCount = currentWorkOrder.componentCounts[halfPart] || 0;
-      
-      if (currentCompCount + scanQty > compLimit) {
-        scanInput.className = 'error';
-        scanInput.style.animation = 'shake 0.5s ease-in-out';
-        setTimeout(() => { scanInput.style.animation = ''; }, 500);
-        scanStatus.innerHTML = '<span style="font-size:1.2rem;font-weight:bold;color:var(--danger)">🚨 超工单报警！</span><br>' + halfPart + ' 已扫 <b>' + currentCompCount + '</b>/' + compLimit + '，本条码 ' + scanQty + '，<b>不允许再扫入！</b>';
-        scanStatus.className = 'scan-status err';
-        playSound('overlimit');
-        showToast('🚨 ' + halfPart + ' 已超工单数量！禁止扫入！', 'error');
-        setTimeout(() => { scanInput.className = ''; scanInput.value = ''; if(!document.getSelection().toString())scanInput.focus(); }, 4000);
-        return;
-      }
-    }
-  }
-  
-  // 出库校验：没入过库的码不允许出库
-  if (currentAction === '出库') {
-    const hasInbound = scanRecords.some(r => r.c === code && r.a === '入库');
-    if (!hasInbound) {
+    // 超限检查：限制 = 工单数量（按条码上的数量累计计数）
+    const compLimit = currentWorkOrder.qty;
+    const currentCompCount = currentWorkOrder.componentCounts[halfPart] || 0;
+    
+    if (currentCompCount + scanQty > compLimit) {
       scanInput.className = 'error';
-      scanStatus.textContent = '❌ 该二维码未入库，不允许出库！';
+      scanInput.style.animation = 'shake 0.5s ease-in-out';
+      setTimeout(() => { scanInput.style.animation = ''; }, 500);
+      scanStatus.innerHTML = '<span style="font-size:1.2rem;font-weight:bold;color:var(--danger)">🚨 超工单报警！</span><br>' + halfPart + ' 已扫 <b>' + currentCompCount + '</b>/' + compLimit + '，本条码 ' + scanQty + '，<b>不允许再扫入！</b>';
       scanStatus.className = 'scan-status err';
-      playSound('error');
-      setTimeout(() => { scanInput.className = ''; scanInput.value = ''; if(!document.getSelection().toString())scanInput.focus(); }, 2500);
+      playSound('overlimit');
+      showToast('🚨 ' + halfPart + ' 已超工单数量！禁止扫入！', 'error');
+      setTimeout(() => { scanInput.className = ''; scanInput.value = ''; scanInput.focus(); }, 4000);
       return;
     }
   }
@@ -1602,7 +1054,7 @@ function processScan(code) {
     t: timeStr,
     c: code,
     x: halfPart || '',
-    r: currentUser ? currentUser.username : '',
+    r: '',
     d: '',
     w: workOrder || '',
     a: currentAction,
@@ -1652,7 +1104,7 @@ function processScan(code) {
   setTimeout(() => {
     scanInput.className = '';
     scanInput.value = '';
-    if(!document.getSelection().toString())scanInput.focus();
+    scanInput.focus();
   }, 1500);
 }
 
@@ -1746,24 +1198,14 @@ function showToast(msg, type) {
 }
 
 // ====== RECENT LIST ======
-let filteredScanRecords = null; // null=未筛选显示全部, []=筛选后无结果, [...]=筛选结果
+let filteredScanRecords = []; // 当前过滤后的记录（用于显示）
 
 function renderRecentList() {
   const el = document.getElementById('recentList');
   const countEl = document.getElementById('scanRecordCount');
-  const records = (filteredScanRecords !== null) ? filteredScanRecords : scanRecords.filter(r => r.c);
+  const records = filteredScanRecords.length > 0 ? filteredScanRecords : scanRecords.filter(r => r.c);
   
-  // 计算入库/出库总数量
-  let totalIn = 0, totalOut = 0;
-  records.forEach(r => {
-    const q = (r.q && r.q > 0) ? r.q : 1;
-    if (r.a === '入库') totalIn += q;
-    else if (r.a === '出库') totalOut += q;
-  });
-  
-  countEl.innerHTML = `共 ${records.length} 条记录` + (filteredScanRecords !== null ? '（已筛选）' : '') +
-    ` <span style="color:var(--success);font-weight:600;margin-left:8px">入库 ${totalIn}</span>` +
-    ` <span style="color:var(--danger);font-weight:600;margin-left:4px">出库 ${totalOut}</span>`;
+  countEl.textContent = `共 ${records.length} 条记录` + (filteredScanRecords.length > 0 ? '（已筛选）' : '');
   
   if (records.length === 0) {
     el.innerHTML = '<div style="padding:20px;text-align:center;color:var(--text-secondary)">暂无扫码记录</div>';
@@ -1772,40 +1214,26 @@ function renderRecentList() {
   
   el.innerHTML = records.map((r, idx) => {
     const realIdx = scanRecords.indexOf(r);
-    const displayCode = r.c.length > 30 ? r.c.substring(0, 30) + '…' : r.c;
-    const palletStr = r.z ? `<span class="recent-z"><span style="background:#e8f4fd;color:#1a73e8;padding:2px 6px;border-radius:4px;font-size:.72rem;font-weight:500">${r.z}</span></span>` : '<span class="recent-z" style="color:#ccc">-</span>';
-    const pdStr = r.pd ? `<span class="recent-pd"><span style="background:#fff8e1;color:#e65100;padding:2px 6px;border-radius:4px;font-size:.72rem;font-weight:500">${r.pd}</span></span>` : '<span class="recent-pd" style="color:#ccc">-</span>';
-    const operatorUser = users.find(u => u.username === r.r);
-    const operatorStr = r.r ? `<span class="recent-op"><span style="background:#f3e5f5;color:#7b1fa2;padding:2px 6px;border-radius:4px;font-size:.72rem;font-weight:500">${operatorUser ? operatorUser.name : r.r}</span></span>` : '<span class="recent-op" style="color:#ccc">-</span>';
-    // 提取成品料号：半品料号中-P之前的部分
-    let productCode = '-';
-    if (r.x) {
-      const pIdx = r.x.indexOf('-P');
-      if (pIdx > 0) productCode = r.x.substring(0, pIdx);
-    }
+    const qtyStr = r.q ? `<span style="color:var(--primary);font-weight:600">×${r.q}</span>` : '';
+    const displayCode = r.c.length > 40 ? r.c.substring(0, 40) + '...' : r.c;
+    const palletStr = r.z ? `<span style="background:#e8f4fd;color:#1a73e8;padding:1px 6px;border-radius:4px;font-size:.72rem;font-weight:500">${r.z}</span>` : '';
+    const pdStr = r.pd ? `<span style="background:#fff8e1;color:#e65100;padding:1px 6px;border-radius:4px;font-size:.72rem;font-weight:500">📦${r.pd}</span>` : '';
     return `
-    <div class="recent-item">
-      <span class="recent-time" title="${r.t}">${r.t}</span>
-      <span class="recent-code" title="${r.c.replace(/"/g, '&quot;')}">${displayCode}</span>
-      <span class="recent-product" title="${productCode}">${productCode}</span>
-      <span class="recent-halfpart" title="${r.x || ''}">${r.x || '-'}</span>
-      <span class="recent-qty">${r.q || ''}</span>
-      ${operatorStr}
-      ${pdStr}
-      ${palletStr}
-      <span class="recent-act"><span class="badge ${r.a === '入库' ? 'badge-green' : 'badge-red'}" style="font-size:.76rem">${r.a}</span></span>
-      <span class="recent-btns">
-
-        <button class="btn btn-sm" style="padding:3px 6px;background:var(--danger);color:#fff;font-size:.7rem;border:none;border-radius:4px;cursor:pointer" onclick="deleteSingleRecord(${realIdx})" title="删除此记录">🗑</button>
-      </span>
-    </div>`}).join('');
+    <div class="recent-item" style="display:flex;align-items:center;gap:8px">
+      <span class="recent-time" style="min-width:120px">${r.t}</span>
+      <span class="recent-code" style="flex:1;font-size:.75rem;word-break:break-all" title="${r.c.replace(/"/g, '&quot;')}">${displayCode}</span>
+      <span style="min-width:80px">${r.x || '-'} ${qtyStr}</span>
+      ${pdStr}${palletStr}
+      <span class="badge ${r.a === '入库' ? 'badge-green' : 'badge-red'}" style="min-width:45px;text-align:center">${r.a}</span>
+      <button class="btn btn-sm" style="padding:4px 8px;background:var(--danger);color:#fff;font-size:.75rem" onclick="deleteSingleRecord(${realIdx})" title="删除此记录">🗑️</button>
+    </div>
+  `}).join('');
 }
 
 // ====== FILTER SCAN RECORDS ======
 function filterScanRecords() {
   const keyword = document.getElementById('scanSearchInput').value.trim().toLowerCase();
   const dateFilter = document.getElementById('scanDateFilter').value;
-  const actionFilter = document.getElementById('scanActionFilter').value;
   
   filteredScanRecords = scanRecords.filter(r => {
     let match = true;
@@ -1823,9 +1251,6 @@ function filterScanRecords() {
       const recordDate = r.t.split(' ')[0];
       match = match && recordDate === dateFilter;
     }
-    if (actionFilter) {
-      match = match && r.a === actionFilter;
-    }
     return match && r.c;
   });
   
@@ -1835,31 +1260,11 @@ function filterScanRecords() {
 function clearScanFilter() {
   document.getElementById('scanSearchInput').value = '';
   document.getElementById('scanDateFilter').value = '';
-  document.getElementById('scanActionFilter').value = '';
-  filteredScanRecords = null;
+  filteredScanRecords = [];
   renderRecentList();
 }
 
 // ====== DELETE SCAN RECORD ======
-function copyScanRecord(index) {
-  const r = scanRecords[index];
-  if (!r) return;
-  const pIdx = (r.x || '').indexOf('-P');
-  const prodCode = pIdx > 0 ? (r.x || '').substring(0, pIdx) : '';
-  const fields = [r.t, r.c, prodCode, r.x, r.r, r.wo_no||'', r.wo_qty||'', r.q||'', r.w, r.pd||'', r.a, r.z||''];
-  const text = fields.join('\t');
-  navigator.clipboard.writeText(text).then(() => {
-    showToast('已复制到剪贴板，可直接粘贴到Excel', 'success');
-  }).catch(() => {
-    // fallback
-    const ta = document.createElement('textarea');
-    ta.value = text; document.body.appendChild(ta);
-    ta.select(); document.execCommand('copy');
-    document.body.removeChild(ta);
-    showToast('已复制到剪贴板', 'success');
-  });
-}
-
 function deleteSingleRecord(index) {
   if (index < 0 || index >= scanRecords.length) return;
   
@@ -1888,7 +1293,7 @@ function deleteSingleRecord(index) {
   }
   
   // Clear filter and refresh
-  filteredScanRecords = null;
+  filteredScanRecords = [];
   saveData();
   renderRecentList();
   updateWorkOrderDisplay();
@@ -1935,7 +1340,7 @@ function deleteByDate() {
   }
   
   // Clear filter and refresh
-  filteredScanRecords = null;
+  filteredScanRecords = [];
   document.getElementById('scanDateFilter').value = '';
   saveData();
   renderRecentList();
@@ -1946,13 +1351,14 @@ function deleteByDate() {
 
 // ====== CSV EXPORT ======
 function exportScanCSV() {
-  const records = (filteredScanRecords && filteredScanRecords.length > 0) ? filteredScanRecords : scanRecords.filter(r => r.c);
-  if (records.length === 0) { showToast('暂无数据可导出', 'info'); return; }
-  let csv = '\uFEFF时间,唯一码,成品料号,线序料号,操作人,工单号,工单数量,入库数量,库位,批次,动作,栈板号\n';
-  records.forEach(r => {
-    const pIdx = (r.x || '').indexOf('-P');
-    const prodCode = pIdx > 0 ? (r.x || '').substring(0, pIdx) : '';
-    csv += `"${r.t}","${r.c}","${prodCode}","${r.x}","${r.r}","${r.wo_no || ''}","${r.wo_qty || ''}","${r.q || ''}","${r.w}","${r.pd || ''}","${r.a}","${r.z || ''}"\n`.replace(/"undefined"/g, '""');
+  // 获取当前筛选条件下的记录
+  const recordsToExport = filteredScanRecords.length > 0 ? filteredScanRecords : scanRecords;
+  
+  if (recordsToExport.length === 0) { showToast('暂无数据可导出', 'info'); return; }
+  
+  let csv = '\uFEFF时间,唯一码,线序料号,操作人,工单号,工单数量,库位,批次,动作,栈板号\n';
+  recordsToExport.forEach(r => {
+    csv += `"${r.t}","${r.c}","${r.x}","${r.r}","${r.wo_no || ''}","${r.wo_qty || ''}","${r.w}","${r.pd || ''}","${r.a}","${r.z || ''}"\n`.replace(/"undefined"/g, '""');
   });
   // Clean up undefined
   csv = csv.replace(/undefined/g, '');
@@ -1961,10 +1367,15 @@ function exportScanCSV() {
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
-  a.download = '扫码记录_' + new Date().toISOString().slice(0,10) + '.csv';
+  const suffix = filteredScanRecords.length > 0 ? '_筛选' : '';
+  a.download = '扫码记录' + suffix + '_' + new Date().toISOString().slice(0,10) + '.csv';
   a.click();
   URL.revokeObjectURL(url);
-  showToast('CSV 已导出', 'success');
+  
+  const msg = filteredScanRecords.length > 0 
+    ? `CSV 已导出（筛选条件：${filteredScanRecords.length}条记录）` 
+    : 'CSV 已导出（全部记录）';
+  showToast(msg, 'success');
 }
 
 // ====== BOM IMPORT (Excel + CSV) ======
@@ -2016,8 +1427,10 @@ function parseCSVText(text) {
 }
 
 function loadBOMFromRows(rows) {
+  bomData = {};
+  productList = [];
   let headerSkipped = false;
-  let added = 0, skipped = 0;
+  let count = 0;
   
   rows.forEach(row => {
     if (!row || row.length === 0) return;
@@ -2031,77 +1444,31 @@ function loadBOMFromRows(rows) {
     const cp = String(row[0] || '').trim();
     const bp = String(row[1] || '').trim();
     if (!cp || !bp) return;
-    // 跳过异常料号（含+或*的公式字符串，不是真正的半品料号）
-    if (/[+*]/.test(bp)) { skipped++; return; }
-    
-    const j = String(row[2] || '').trim();
-    const l = parseInt(row[3]) || 0;
-    const y = parseInt(row[4]) || 1;
     
     if (!bomData[cp]) bomData[cp] = [];
-    // 半品料号排重：同成品下相同半品料号只保留一个（后面的覆盖前面的）
-    const dupIdx = bomData[cp].findIndex(e => e.p === bp);
-    if (dupIdx >= 0) {
-      bomData[cp][dupIdx] = { p: bp, j: j, l: l, y: y };
-      skipped++;
+    
+    // 检查同一成品料号下是否已存在该半品料号，存在则覆盖更新
+    const existingIndex = bomData[cp].findIndex(item => item.p === bp);
+    const newItem = {
+      p: bp,
+      j: String(row[2] || '').trim(),
+      l: parseInt(row[3]) || 0,
+      y: parseInt(row[4]) || 1
+    };
+    
+    if (existingIndex >= 0) {
+      bomData[cp][existingIndex] = newItem;
     } else {
-      bomData[cp].push({ p: bp, j: j, l: l, y: y });
-      if (!productList.includes(cp)) productList.push(cp);
-      added++;
+      bomData[cp].push(newItem);
     }
+    
+    if (!productList.includes(cp)) productList.push(cp);
     if (!(bp in inventory)) inventory[bp] = 0;
+    count++;
   });
   
-  if (added === 0) {
-    showToast('没有新增数据，所有条目已存在', 'info');
-  } else {
-    bomCleared = false;
-    showToast(`已追加 ${added} 条BOM，跳过 ${skipped} 条重复`, 'success');
-  }
-  document.getElementById('bomLoadStatus').textContent = '✅ 已加载 ' + productList.length + ' 个成品';
-  refreshDashboard();
-}
-
-function loadBOMFromPaste() {
-  const text = document.getElementById('bomPasteArea').value.trim();
-  if (!text) { showToast('请先粘贴数据', 'info'); return; }
-  const lines = text.split(/\r?\n/).filter(l => l.trim());
-  let added = 0, skipped = 0;
-  lines.forEach(line => {
-    // 支持 Tab、全角丨、半角| 分隔
-    const parts = line.split(/[\t丨|]/).map(s => s.trim());
-    if (parts.length >= 2 && parts[0] && parts[1]) {
-      const cp = String(parts[0] || '').trim();
-      const bp = String(parts[1] || '').trim();
-      const j = String(parts[2] || '').trim();
-      const l = parseInt(parts[3]) || 0;
-      const y = parseInt(parts[4]) || 1;
-      // 跳过表头
-      if (/料号|成品|编号|product/i.test(cp)) { skipped++; return; }
-      // 跳过异常料号（含+或*的公式字符串）
-      if (/[+*]/.test(bp)) { skipped++; return; }
-      if (!bomData[cp]) bomData[cp] = [];
-      // 半品料号排重：同成品下相同半品料号只保留一个
-      const dupIdx = bomData[cp].findIndex(e => e.p === bp);
-      if (dupIdx >= 0) {
-        bomData[cp][dupIdx] = { p: bp, j: j, l: l, y: y };
-        skipped++;
-      } else {
-        bomData[cp].push({ p: bp, j: j, l: l, y: y });
-        if (!productList.includes(cp)) productList.push(cp);
-        added++;
-      }
-      if (!(bp in inventory)) inventory[bp] = 0;
-    }
-  });
-  if (added === 0) {
-    showToast('没有新增数据，所有条目已存在', 'info');
-  } else {
-    bomCleared = false;
-    showToast(`已追加 ${added} 条BOM，跳过 ${skipped} 条重复`, 'success');
-  }
-  document.getElementById('bomLoadStatus').textContent = '✅ 已加载 ' + productList.length + ' 个成品';
-  document.getElementById('bomPasteArea').value = '';
+  document.getElementById('bomLoadStatus').textContent = '✅ 已加载 ' + productList.length + ' 个成品，' + count + ' 条BOM';
+  showToast('BOM 数据已加载：' + productList.length + ' 个成品', 'success');
   refreshDashboard();
 }
 
@@ -2125,113 +1492,6 @@ function parseCSVLine(line) {
 }
 
 // ====== MANUAL BOM ENTRY ======
-// ====== BOM EXPORT ======
-let bomEditMode = null; // { cp, bp, idx } when editing
-
-function exportBOM() {
-  if (productList.length === 0) { showToast('暂无BOM数据可导出', 'info'); return; }
-  let csv = '\uFEFF成品料号,半品料号,接头规格,线长,用量\n';
-  productList.forEach(cp => {
-    (bomData[cp] || []).forEach(item => {
-      csv += `"${cp}","${item.p}","${item.j}","${item.l}","${item.y}"\n`;
-    });
-  });
-  const blob = new Blob([csv], {type: 'text/csv;charset=utf-8'});
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = 'BOM数据_' + new Date().toISOString().slice(0,10) + '.csv';
-  a.click();
-  URL.revokeObjectURL(url);
-  showToast('BOM 已导出', 'success');
-}
-
-function clearAllBOM() {
-  if (productList.length === 0) { showToast('BOM数据已为空', 'info'); return; }
-  if (!confirm(`确认清除全部BOM数据？\n当前共 ${productList.length} 个成品，清除后需重新导入。\n（扫码记录和库存不受影响）`)) return;
-  bomData = {};
-  productList = [];
-  bomCleared = true;
-  saveData();
-  refreshDashboard();
-  document.getElementById('bomLoadStatus').textContent = 'BOM已清空';
-  showToast('BOM数据已全部清除', 'success');
-}
-
-// ====== BOM SEARCH (for manual edit) ======
-function searchBOMEntry() {
-  const bp = document.getElementById('manualBP').value.trim();
-  if (!bp) { showToast('请先输入半品料号', 'info'); return; }
-  
-  // Search across all products
-  for (const cp in bomData) {
-    const idx = bomData[cp].findIndex(e => e.p === bp);
-    if (idx >= 0) {
-      const item = bomData[cp][idx];
-      document.getElementById('manualCP').value = cp;
-      document.getElementById('manualJ').value = item.j || '';
-      document.getElementById('manualL').value = item.l || 0;
-      document.getElementById('manualY').value = item.y || 1;
-      // Enter edit mode
-      bomEditMode = { cp, bp, idx };
-      document.getElementById('manualSubmitBtn').textContent = '💾 保存修改';
-      document.getElementById('manualSubmitBtn').style.background = 'var(--warning)';
-      document.getElementById('manualDeleteBtn').style.display = 'inline-block';
-      document.getElementById('manualCancelBtn').style.display = 'inline-block';
-      document.getElementById('manualEditHint').innerHTML = '📝 编辑模式：正在修改 <b>' + cp + ' → ' + bp + '</b> 的BOM信息';
-      showToast('已找到：' + cp + ' → ' + bp + '，可修改后保存', 'success');
-      return;
-    }
-  }
-  showToast('未找到该半品料号的BOM记录，将作为新增条目', 'info');
-  bomEditMode = null;
-}
-
-function deleteBOMEntry() {
-  if (!bomEditMode || !bomEditMode.cp || !bomEditMode.bp) {
-    showToast('请先查询要删除的条目', 'error');
-    return;
-  }
-  if (!confirm(`确认删除 ${bomEditMode.cp} → ${bomEditMode.bp} 的BOM条目？`)) return;
-  const cp = bomEditMode.cp;
-  const bp = bomEditMode.bp;
-  const idx = bomEditMode.idx;
-  if (bomData[cp] && bomData[cp][idx]) {
-    bomData[cp].splice(idx, 1);
-    if (bomData[cp].length === 0) {
-      delete bomData[cp];
-      const pi = productList.indexOf(cp);
-      if (pi >= 0) productList.splice(pi, 1);
-    }
-  }
-  bomEditMode = null;
-  document.getElementById('manualSubmitBtn').textContent = '➕ 添加';
-  document.getElementById('manualSubmitBtn').style.background = '';
-  document.getElementById('manualDeleteBtn').style.display = 'none';
-  document.getElementById('manualCancelBtn').style.display = 'none';
-  document.getElementById('manualEditHint').textContent = '';
-  document.getElementById('manualBP').value = '';
-  document.getElementById('manualJ').value = '';
-  saveData();
-  refreshDashboard();
-  showToast('BOM条目已删除', 'success');
-}
-
-function cancelBOMEdit() {
-  bomEditMode = null;
-  document.getElementById('manualSubmitBtn').textContent = '➕ 添加';
-  document.getElementById('manualSubmitBtn').style.background = '';
-  document.getElementById('manualDeleteBtn').style.display = 'none';
-  document.getElementById('manualCancelBtn').style.display = 'none';
-  document.getElementById('manualEditHint').innerHTML = '';
-  // Clear fields
-  document.getElementById('manualCP').value = '';
-  document.getElementById('manualBP').value = '';
-  document.getElementById('manualJ').value = '';
-  document.getElementById('manualL').value = '0';
-  document.getElementById('manualY').value = '1';
-}
-
 function addBOMManual() {
   const cp = document.getElementById('manualCP').value.trim();
   const bp = document.getElementById('manualBP').value.trim();
@@ -2244,40 +1504,21 @@ function addBOMManual() {
     return;
   }
   
-  // Edit mode: update existing record
-  if (bomEditMode) {
-    const { cp: oldCp, bp: oldBp, idx } = bomEditMode;
-    if (bomData[oldCp] && bomData[oldCp][idx]) {
-      bomData[oldCp][idx] = { p: bp, j: j, l: l, y: y };
-      // If product changed, move to new product
-      if (cp !== oldCp) {
-        bomData[oldCp].splice(idx, 1);
-        if (bomData[oldCp].length === 0) {
-          delete bomData[oldCp];
-          productList = productList.filter(p => p !== oldCp);
-        }
-        if (!bomData[cp]) {
-          bomData[cp] = [];
-          if (!productList.includes(cp)) productList.push(cp);
-        }
-        bomData[cp].push({ p: bp, j: j, l: l, y: y });
-      }
-      if (!(bp in inventory)) inventory[bp] = 0;
-      bomCleared = false;
-      cancelBOMEdit();
-      refreshDashboard();
-      saveData();
-      showToast('✅ BOM已更新：' + cp + ' → ' + bp, 'success');
-      return;
-    }
-  }
-  
-  // Add mode
   if (!bomData[cp]) {
     bomData[cp] = [];
     productList.push(cp);
   }
-  bomData[cp].push({p: bp, j: j, l: l, y: y});
+  
+  // 检查同一成品料号下是否已存在该半品料号，存在则覆盖更新
+  const existingIndex = bomData[cp].findIndex(item => item.p === bp);
+  const newItem = {p: bp, j: j, l: l, y: y};
+  
+  if (existingIndex >= 0) {
+    bomData[cp][existingIndex] = newItem;
+  } else {
+    bomData[cp].push(newItem);
+  }
+  
   if (!(bp in inventory)) inventory[bp] = 0;
   
   // 清空输入
@@ -2286,27 +1527,12 @@ function addBOMManual() {
   document.getElementById('manualL').value = '0';
   document.getElementById('manualY').value = '1';
   
-  bomCleared = false;
   refreshDashboard();
-  saveData();
   showToast('已添加：' + cp + ' → ' + bp, 'success');
 }
 
 // ====== WORK ORDER MANAGEMENT ======
 let currentWorkOrder = { number: '', product: '', qty: 0, targetQty: 0, componentCounts: {} };
-
-// 从扫码记录重新计算各半品的已归数量（入库）
-function recalcComponentCounts() {
-  currentWorkOrder.componentCounts = {};
-  if (!currentWorkOrder.number) return;
-  scanRecords.forEach(r => {
-    if (r.a === '入库' && r.w === currentWorkOrder.number) {
-      const hp = r.x || '';
-      const q = (r.q && r.q > 0) ? r.q : 1;
-      if (hp) currentWorkOrder.componentCounts[hp] = (currentWorkOrder.componentCounts[hp] || 0) + q;
-    }
-  });
-}
 
 // ====== PALLET NUMBER MANAGEMENT ======
 function updatePalletDisplay() {
@@ -2337,16 +1563,28 @@ function getCurrentPallet() {
 function saveWorkOrder() {
   const num = document.getElementById('woNumber').value.trim();
   const qty = parseInt(document.getElementById('woTargetQty').value) || 0;
+  const palletPrefix = document.getElementById('palletPrefix').value;
+  const palletSeq = document.getElementById('palletSeq').value;
+  const palletNo = palletPrefix + '-' + String(palletSeq).padStart(4, '0');
 
+  // 检查工单信息
   if (!num || qty <= 0) {
     alert('请输入工单号和工单数量');
     return;
   }
 
+  // 检查栈板号
+  if (!palletPrefix || !palletSeq) {
+    alert('请设置栈板号（选择前缀并填写序号）');
+    return;
+  }
+
   // 成品料号将在首次扫码时从条码自动识别
   currentWorkOrder = { number: num, product: '', qty: qty, targetQty: 0, componentCounts: {} };
+  currentPallet = palletNo;
   updateWorkOrderDisplay();
-  showToast('工单已设置：' + num + '，数量：' + qty + '，请开始扫码', 'success');
+  updatePalletDisplay();
+  showToast('工单和栈板号已设置：' + num + '，数量：' + qty + '，栈板号：' + palletNo + '，请开始扫码', 'success');
 }
 
 function clearWorkOrder() {
@@ -2449,8 +1687,6 @@ function selectWorkOrder(index) {
   if (index < 0 || index >= importedWorkOrders.length) return;
   const order = importedWorkOrders[index];
   currentWorkOrder = { number: order.number, product: order.product || '', qty: order.qty, targetQty: 0, componentCounts: {} };
-  // 从扫码记录重新计算已归数量
-  recalcComponentCounts();
   document.getElementById('woNumber').value = order.number;
   document.getElementById('woTargetQty').value = order.qty;
   updateWorkOrderDisplay();
@@ -2598,41 +1834,16 @@ function recalculate() {
     
     if (parts.length === 0) { kitQty = 0; minStock = 0; }
     if (kitQty === Infinity) kitQty = 0;
-
-    
-    // Extract work order numbers and quantity for this product from scan records
-    let woNo = '';
-    let woQty = 0;
-    scanRecords.forEach(r => {
-      if (r.x) {
-        const pIdx = r.x.indexOf('-P');
-        if (pIdx > 0) {
-          const prodCode = r.x.substring(0, pIdx);
-          if (prodCode === cp) {
-            if (r.wo_no && !woNo) woNo = String(r.wo_no).trim();
-            if (r.wo_qty && !woQty) woQty = parseInt(r.wo_qty);
-          }
-        }
-      }
-    });
-    
-    // 最大缺口 = 工单数量 - 数量最小的线序料号的数量
-    const maxGap = (woQty > 0 && parts.length > 0) ? Math.max(0, woQty - minStock) : 0;
-
-    // 齐套率 = 完全齐套的套数 ÷ 工单总数量 × 100%
-    const kitRate = woQty > 0 ? ((kitQty / woQty) * 100).toFixed(1) : '0.0';
+    const maxGap = parts.length > 0 ? maxStock - minStock : 0;
     
     return {
       cp,
-      woNumbers: woNo || '-',
-      woQty: woQty || '-',
       partCount: parts.length,
       kitQty,
       status: kitQty > 0 ? '可配套' : (shortageParts.length > 0 ? '缺料' : '待备料'),
       shortageCount: shortageParts.length,
       shortageParts,
-      maxGap,
-      kitRate
+      maxGap
     };
   });
 }
@@ -2642,30 +1853,17 @@ function refreshDashboard() {
   recalculate();
   const data = window._dashData || [];
   
-  // Populate work order filter dropdown
-  const woFilter = document.getElementById('woFilter');
-  const currentWoValue = woFilter.value;
-  const woSet = new Set();
-  data.forEach(d => {
-    if (d.woNumbers && d.woNumbers !== '-') {
-      d.woNumbers.split(', ').forEach(wo => woSet.add(wo));
-    }
-  });
-  const sortedWos = Array.from(woSet).sort();
-  woFilter.innerHTML = '<option value="">全部工单</option>' + 
-    sortedWos.map(wo => `<option value="${wo}" ${wo === currentWoValue ? 'selected' : ''}>${wo}</option>`).join('');
+  // KPIs
+  const total = data.length;
+  const kitOk = data.filter(d => d.kitQty > 0).length;
+  const kitRate = total > 0 ? ((kitOk / total) * 100).toFixed(1) : 0;
   
-  // Populate line sequence part filter dropdown
-  const lineSeqFilter = document.getElementById('lineSeqFilter');
-  const currentLineSeqValue = lineSeqFilter.value;
-  const lineSeqSet = new Set();
-  data.forEach(d => {
-    (bomData[d.cp] || []).forEach(item => lineSeqSet.add(item.p));
-  });
-  const sortedLineSeqs = Array.from(lineSeqSet).sort();
-  lineSeqFilter.innerHTML = '<option value="">全部线序料号</option>' +
-    sortedLineSeqs.map(ls => `<option value="${ls}" ${ls === currentLineSeqValue ? 'selected' : ''}>${ls}</option>`).join('');
-
+  document.getElementById('kpiTotal').textContent = total;
+  document.getElementById('kpiKit').textContent = kitOk;
+  // 计算库存总数量
+  const totalInventory = Object.values(inventory).reduce((sum, qty) => sum + qty, 0);
+  document.getElementById('kpiSemiTotal').textContent = totalInventory;
+  
   // Table
   renderTable(data);
   
@@ -2676,32 +1874,11 @@ function refreshDashboard() {
 function renderTable(data) {
   const tbody = document.getElementById('dashBody');
   const search = (document.getElementById('searchInput').value || '').toLowerCase();
-  const woFilter = (document.getElementById('woFilter').value || '').trim().toLowerCase();
-  const lineSeqFilter = (document.getElementById('lineSeqFilter').value || '').trim().toLowerCase();
   
   let filtered = data;
   if (search) {
-    filtered = filtered.filter(d => d.cp.toLowerCase().includes(search));
+    filtered = data.filter(d => d.cp.toLowerCase().includes(search));
   }
-  if (woFilter) {
-    filtered = filtered.filter(d => d.woNumbers && d.woNumbers.toLowerCase().includes(woFilter));
-  }
-  if (lineSeqFilter) {
-    filtered = filtered.filter(d => {
-      const parts = bomData[d.cp] || [];
-      return parts.some(p => p.p.toLowerCase().includes(lineSeqFilter));
-    });
-  }
-  
-  // Update KPIs based on filtered data (总成品数用全部数据)
-  const total = data.length;
-  const kitOk = filtered.filter(d => d.kitQty > 0).length;
-  // 当前库存 = 所有有过扫码记录的半品库存总和（不再只统计BOM内的）
-  const totalInventory = Object.values(inventory).reduce((sum, v) => sum + (v || 0), 0);
-  
-  document.getElementById('kpiTotal').textContent = total;
-  document.getElementById('kpiKit').textContent = kitOk;
-  document.getElementById('kpiSemiTotal').textContent = totalInventory;
   
   let html = '';
   filtered.forEach((d, idx) => {
@@ -2711,40 +1888,29 @@ function renderTable(data) {
     html += `<tr class="${hasDetail ? 'expand-row' : ''}" ${hasDetail ? 'onclick="toggleDetail(this)"' : ''}>
       <td><strong>${d.cp}</strong></td>
       <td>${d.partCount}</td>
-      <td style="text-align:center;font-weight:600;color:${d.shortageCount > 0 ? 'var(--danger)' : 'var(--success)'}">${d.shortageCount}</td>
-      <td>${d.woNumbers || '-'}</td>
-      <td>${d.woQty || '-'}</td>
       <td><strong style="font-size:1.1rem;color:${d.kitQty > 0 ? 'var(--success)' : 'var(--danger)'}">${d.kitQty}</strong></td>
-      <td style="text-align:center;font-weight:600;color:${parseFloat(d.kitRate) >= 100 ? 'var(--success)' : parseFloat(d.kitRate) >= 50 ? '#e67e22' : 'var(--danger)'}">${d.kitRate}%</td>
-      <td>${d.maxGap > 0 ? d.maxGap : '-'}</td>
       <td><span class="badge ${statusBadge}">${d.status}</span></td>
+      <td>${d.shortageCount > 0 ? '<span style="color:var(--danger)">' + d.shortageCount + ' 种</span>' : '-'}</td>
+      <td>${d.maxGap > 0 ? d.maxGap : '-'}</td>
     </tr>`;
     
     if (hasDetail) {
       const parts = bomData[d.cp] || [];
-      html += `<tr class="detail-row"><td colspan="9">
+      html += `<tr class="detail-row"><td colspan="6">
         <table style="width:100%;font-size:.84rem">
-          <tr style="background:#e8f0fe"><th style="padding:6px 10px">半品料号</th><th style="padding:6px 10px">接头规格</th><th style="padding:6px 10px">库存</th><th style="padding:6px 10px">缺料数量</th><th style="padding:6px 10px">状态</th></tr>
+          <tr style="background:#e8f0fe"><th style="padding:6px 10px">半品料号</th><th style="padding:6px 10px">接头规格</th><th style="padding:6px 10px">库存</th><th style="padding:6px 10px">状态</th></tr>
       `;
       parts.forEach(p => {
         const stock = inventory[p.p] || 0;
-        const woQtyNum = parseInt(d.woQty) || 0;
-        let st, cls, shortage;
-        if (woQtyNum > 0) {
-          if (stock > woQtyNum) { st = '充足'; cls = 'badge-green'; }
-          else if (stock === woQtyNum) { st = '满足'; cls = 'badge-green'; }
-          else { st = '缺料'; cls = 'badge-red'; }
-          shortage = Math.max(0, woQtyNum - stock);
-        } else {
-          if (stock > 0) { st = '有库存'; cls = 'badge-green'; }
-          else { st = '缺料'; cls = 'badge-red'; }
-          shortage = 0;
-        }
+        const need = p.y || 1;
+        let st, cls;
+        if (stock >= need) { st = '充足'; cls = 'badge-green'; }
+        else if (stock > 0) { st = '低库存'; cls = 'badge-yellow'; }
+        else { st = '缺料'; cls = 'badge-red'; }
         html += `<tr>
           <td style="padding:6px 10px;font-family:monospace;font-size:.8rem">${p.p}</td>
           <td style="padding:6px 10px">${p.j || '-'}</td>
-          <td style="padding:6px 10px;text-align:center;font-weight:600;${stock < woQtyNum && woQtyNum > 0 ? 'color:var(--danger)' : ''}">${stock}</td>
-          <td style="padding:6px 10px;text-align:center;font-weight:600;color:${shortage > 0 ? 'var(--danger)' : 'var(--success)'}">${shortage}</td>
+          <td style="padding:6px 10px;text-align:center;font-weight:600;${stock < need ? 'color:var(--danger)' : ''}">${stock}</td>
           <td style="padding:6px 10px"><span class="badge ${cls}">${st}</span></td>
         </tr>`;
       });
@@ -2752,7 +1918,7 @@ function renderTable(data) {
     }
   });
   
-  tbody.innerHTML = html || '<tr><td colspan="9" style="text-align:center;padding:40px;color:var(--text-secondary)">暂无数据，请先加载库存 CSV</td></tr>';
+  tbody.innerHTML = html || '<tr><td colspan="6" style="text-align:center;padding:40px;color:var(--text-secondary)">暂无数据，请先加载库存 CSV</td></tr>';
 }
 
 function toggleDetail(row) {
@@ -2844,22 +2010,20 @@ function exportToExcel() {
   
   // Sheet 3: 成品齐套看板
   const dashData = [];
-  dashData.push(['成品料号', '线序料号款数', '缺料半品款数', '工单号', '工单数量', '齐套数量', '齐套率', '最大缺口', '齐套状态']);
+  dashData.push(['成品料号', '半品数', '可配套数', '齐套状态', '缺料半品', '缺口数量']);
   data.forEach(d => {
-    dashData.push([d.cp, d.partCount, d.shortageCount, d.woNumbers || '-', d.woQty, d.kitQty, d.kitRate + '%', d.maxGap, d.status]);
+    dashData.push([d.cp, d.partCount, d.kitQty, d.status, d.shortageCount, d.maxGap]);
   });
   const ws3 = XLSX.utils.aoa_to_sheet(dashData);
   XLSX.utils.book_append_sheet(wb, ws3, '成品齐套看板');
   
   // Sheet 4: 扫码区
   const scanData = [];
-  scanData.push(['时间', '唯一码', '成品料号', '线序料号', '操作人', '工单号', '工单数量', '入库数量', '库位', '批次', '动作', '栈板号']);
+  scanData.push(['时间', '唯一码', '线序料号', '操作人', '工单号', '工单数量', '库位', '批次', '动作', '栈板号']);
   scanRecords.forEach(r => {
     const code = r.c;
     const partNum = code.substring(3, 21);
-    const pIdx = (r.x || '').indexOf('-P');
-    const prodCode = pIdx > 0 ? (r.x || '').substring(0, pIdx) : '';
-    scanData.push([r.t, code, prodCode, partNum, r.r, r.wo_no || '', r.wo_qty || '', r.q || '', r.w, r.pd || '', r.a, r.z || '']);
+    scanData.push([r.t, code, partNum, r.r, r.wo_no || '', r.wo_qty || '', r.w, r.pd || '', r.a, r.z || '']);
   });
   const ws4 = XLSX.utils.aoa_to_sheet(scanData);
   XLSX.utils.book_append_sheet(wb, ws4, '扫码区');
@@ -2894,7 +2058,7 @@ async function clearAllData() {
   currentWorkOrder = { number: '', product: '', qty: 0, targetQty: 0, componentCounts: {} };
   importedWorkOrders = [];
   currentAction = '入库';
-  filteredScanRecords = null;
+  filteredScanRecords = [];
   
   // 清空 UI 输入
   document.getElementById('woNumber').value = '';
@@ -2932,21 +2096,11 @@ document.getElementById('scanSearchInput').addEventListener('keydown', function(
   }
 });
 
-// Auto-focus scan input - exclude all form elements, cards, and record list area
+// Auto-focus scan input - exclude all form elements and cards
 document.addEventListener('click', function(e) {
   if (document.getElementById('tab-scan').classList.contains('active') && 
-      !e.target.closest('input, button, select, textarea, .card-header, label, a, [onclick], .recent-list, .recent-item')) {
+      !e.target.closest('input, button, select, textarea, .card-header, label, a, [onclick]')) {
     document.getElementById('scanInput').focus();
-  }
-});
-
-// Allow text selection in record list (override any default behavior)
-document.getElementById('recentList').addEventListener('selectstart', function(e) {
-  e.stopPropagation();
-});
-document.getElementById('recentList').addEventListener('mousedown', function(e) {
-  if (e.target.closest('.recent-item')) {
-    e.stopPropagation();
   }
 });
 
@@ -3138,37 +2292,6 @@ function onScanFailure(error) {
   </div>
   <div class="camera-container">
     <div id="reader"></div>
-  </div>
-</div>
-
-<!-- 修改密码弹窗 -->
-<div id="changePwdModal" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.5);z-index:9998;align-items:center;justify-content:center">
-  <div style="background:#fff;border-radius:12px;padding:24px;width:380px">
-    <h3 style="margin:0 0 16px">🔑 修改密码</h3>
-    <input type="password" id="oldPwdInput" placeholder="当前密码" style="width:100%;padding:8px 10px;border:1px solid #ddd;border-radius:6px;margin-bottom:8px;box-sizing:border-box">
-    <input type="password" id="newPwdInput" placeholder="新密码" style="width:100%;padding:8px 10px;border:1px solid #ddd;border-radius:6px;margin-bottom:8px;box-sizing:border-box">
-    <input type="password" id="confirmPwdInput" placeholder="确认新密码" style="width:100%;padding:8px 10px;border:1px solid #ddd;border-radius:6px;margin-bottom:12px;box-sizing:border-box">
-    <button onclick="doChangePwd()" style="width:100%;padding:8px;background:var(--primary);color:#fff;border:none;border-radius:6px;cursor:pointer;font-size:.9rem;margin-bottom:8px">确认修改</button>
-    <button onclick="closeChangePwdModal()" style="width:100%;padding:8px;background:#eee;border:none;border-radius:6px;cursor:pointer;font-size:.9rem">取消</button>
-  </div>
-</div>
-
-<!-- 用户管理弹窗 -->
-<div id="userModal" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.5);z-index:9998;display:none;align-items:center;justify-content:center">
-  <div style="background:#fff;border-radius:12px;padding:24px;width:420px;max-height:80vh;overflow-y:auto">
-    <h3 style="margin:0 0 16px">👥 用户管理</h3>
-    <div id="userListArea" style="margin-bottom:16px"></div>
-    <hr style="border:none;border-top:1px solid #eee;margin:16px 0">
-    <h4 style="margin:0 0 10px;font-size:.9rem">添加用户</h4>
-    <input type="text" id="newUserUsername" placeholder="工号" style="width:100%;padding:8px 10px;border:1px solid #ddd;border-radius:6px;margin-bottom:8px;box-sizing:border-box">
-    <input type="text" id="newUserName" placeholder="姓名（选填）" style="width:100%;padding:8px 10px;border:1px solid #ddd;border-radius:6px;margin-bottom:8px;box-sizing:border-box">
-    <input type="password" id="newUserPassword" placeholder="初始密码" style="width:100%;padding:8px 10px;border:1px solid #ddd;border-radius:6px;margin-bottom:8px;box-sizing:border-box">
-    <select id="newUserRole" style="width:100%;padding:8px 10px;border:1px solid #ddd;border-radius:6px;margin-bottom:12px;box-sizing:border-box">
-      <option value="operator">操作员</option>
-      <option value="admin">管理员</option>
-    </select>
-    <button onclick="addUser()" style="width:100%;padding:8px;background:var(--primary);color:#fff;border:none;border-radius:6px;cursor:pointer;font-size:.9rem">添加</button>
-    <button onclick="closeUserModal()" style="width:100%;padding:8px;background:#eee;border:none;border-radius:6px;cursor:pointer;margin-top:8px;font-size:.9rem">关闭</button>
   </div>
 </div>
 
