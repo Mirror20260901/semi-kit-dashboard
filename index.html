@@ -1,11 +1,11 @@
-﻿<!DOCTYPE html>
-<html lang="zh-CN">
-<head>
-<meta charset="UTF-8">
-<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
-<meta http-equiv="Pragma" content="no-cache">
-<meta http-equiv="Expires" content="0">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<!DOCTYPE html>
+<html lang="zh-CN" data-page-node-id="BTKRMq1pv8Cf46VaBaBICW">
+<head data-page-node-id="R6oGa1WIwHB0WxZmG5r2qG">
+<meta charset="UTF-8" data-page-node-id="6wBtBt32xIEOGwVBwF30o4">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" data-page-node-id="3CEZsEJtffvbSnwBZ42pEU">
+<meta http-equiv="Pragma" content="no-cache" data-page-node-id="lG759sGDIcs9k2QMz9TO6W">
+<meta http-equiv="Expires" content="0" data-page-node-id="TnVpNZLE71nYjwg8hF4xnU">
+<meta name="viewport" content="width=device-width, initial-scale=1.0" data-page-node-id="UNhJEGvjeFApYQKIDZORHL">
 <title>半品齐套管理看板</title>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
@@ -217,254 +217,254 @@ button:focus-visible,input:focus-visible,a:focus-visible{outline:2px solid var(-
 .user-dropdown-item:hover{background:#f0f4ff}
 </style>
 </head>
-<body>
+<body data-page-node-id="o5aOnLfcEgiMyjAoMFS6E4">
 
 <!-- 登录界面 -->
-<div id="loginOverlay" class="login-overlay">
-  <div class="login-box">
-    <img id="companyLogo" src="data:image/png;base64,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" style="width:140px;height:auto;margin-bottom:8px">
-    <h2>📦 半品齐套管理</h2>
-    <p class="subtitle">请使用工号登录</p>
-    <input type="text" id="loginUsername" placeholder="工号" autocomplete="off">
-    <input type="password" id="loginPassword" placeholder="密码">
-    <div class="remember"><input type="checkbox" id="loginRemember"><label for="loginRemember">记住我（7天免登录）</label></div>
-    <button onclick="doLogin()">登 录</button>
-    <div class="error-msg" id="loginError"></div>
+<div id="loginOverlay" class="login-overlay" data-page-node-id="rm0jcenMLX74iuUw7qMeVG">
+  <div class="login-box" data-page-node-id="8Hv3aAKAFeghvSwQuimhQz">
+    <img id="companyLogo" src="data:image/png;base64,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" style="width:140px;height:auto;margin-bottom:8px" data-page-node-id="RttR0zqBYPvLZTx17d1tW7">
+    <h2 data-page-node-id="YuXEODBr2XWo1Gcx5tk4R1">📦 半品齐套管理</h2>
+    <p class="subtitle" data-page-node-id="5M6ioyvgDUWps4CyIzaoKI">请使用工号登录</p>
+    <input type="text" id="loginUsername" placeholder="工号" autocomplete="off" data-page-node-id="ojEFJNf9HNCOv2mqFprBNU">
+    <input type="password" id="loginPassword" placeholder="密码" data-page-node-id="V9m4pbMVC4wqOXlR9r7pmW">
+    <div class="remember" data-page-node-id="BxbDFMuSILEPnjP0Fe2Z1C"><input type="checkbox" id="loginRemember" data-page-node-id="DL1boJKsteAgoIimaRAlA0"><label for="loginRemember" data-page-node-id="Y8K6tAhaGNQPjYIdVwsX7z">记住我（7天免登录）</label></div>
+    <button onclick="doLogin()" data-page-node-id="506u837dGgcTgvZcks2Ucg">登 录</button>
+    <div class="error-msg" id="loginError" data-page-node-id="QDMpCpHOiQUTW9ZtLHB6Dd"></div>
   </div>
 </div>
 
-<header class="header" style="display:none" id="mainApp">
-  <div class="header-inner">
-    <h1>📦 半品齐套管理看板</h1>
-      <div class="header-actions">
-      <div id="userBadge" class="user-badge" onclick="toggleUserMenu()" title="点击切换账号">👤 <span id="userDisplayName"></span> ▾</div>
-      <div id="userDropdown" class="user-dropdown" style="display:none">
-        <div class="user-dropdown-header">
-          <div class="user-dropdown-name" id="dropdownUserName"></div>
-          <div class="user-dropdown-role" id="dropdownUserRole"></div>
+<header class="header" style="display:none" id="mainApp" data-page-node-id="w2bC6oUKXvfZnqQe9ocIDf">
+  <div class="header-inner" data-page-node-id="IXaPSD8kL42qccwAzUSUND">
+    <h1 data-page-node-id="G0AH8Y31bQjfFugWLFOs99">📦 半品齐套管理看板</h1>
+      <div class="header-actions" data-page-node-id="1qbC03S9W7NteoqdxFPX7U">
+      <div id="userBadge" class="user-badge" onclick="toggleUserMenu()" title="点击切换账号" data-page-node-id="FDvVzzxltBju0BQyI48nKM">👤 <span id="userDisplayName" data-page-node-id="5gDhj3ChI3qbdfXbqOEBQM"></span> ▾</div>
+      <div id="userDropdown" class="user-dropdown" style="display:none" data-page-node-id="AWCCX2cfc35JAYirONxchU">
+        <div class="user-dropdown-header" data-page-node-id="SH0TvkZCWhheaccAhYCPJa">
+          <div class="user-dropdown-name" id="dropdownUserName" data-page-node-id="wtyuUBukRdkbBGfEXTXgSP"></div>
+          <div class="user-dropdown-role" id="dropdownUserRole" data-page-node-id="voaSYzLiB7UE58LlxVOnHe"></div>
         </div>
-        <div class="user-dropdown-divider"></div>
-        <div class="user-dropdown-item" onclick="openChangePwdModal()"> 修改密码</div>
-        <div class="user-dropdown-item" onclick="doSwitchAccount()"> 切换账号</div>
-        <div class="user-dropdown-item" id="menuManageUsers" onclick="openUserModal()" style="display:none"> 用户管理</div>
-        <div class="user-dropdown-divider"></div>
-        <div class="user-dropdown-item" onclick="doLogout()" style="color:#e74c3c">🚪 退出登录</div>
+        <div class="user-dropdown-divider" data-page-node-id="1UPrWz5DO9hWa1lYFB3dQP"></div>
+        <div class="user-dropdown-item" onclick="openChangePwdModal()" data-page-node-id="8k3TLRtSRfCGQuOlwvhMjv"> 修改密码</div>
+        <div class="user-dropdown-item" onclick="doSwitchAccount()" data-page-node-id="CsoVdZ99pIuutnR0La2p8b"> 切换账号</div>
+        <div class="user-dropdown-item" id="menuManageUsers" onclick="openUserModal()" style="display:none" data-page-node-id="gGFvwjBF2TZicrF7svaJ5Q"> 用户管理</div>
+        <div class="user-dropdown-divider" data-page-node-id="O1whh3LgAZOqiEo4R1si8n"></div>
+        <div class="user-dropdown-item" onclick="doLogout()" style="color:#e74c3c" data-page-node-id="tDTU81Uz8jEbgamEHS3yM9">🚪 退出登录</div>
       </div>
-      <div id="syncIndicator" class="sync-indicator" title="多人同步状态">
-        <span class="sync-dot"></span>
-        <span class="sync-text">同步中...</span>
+      <div id="syncIndicator" class="sync-indicator" title="多人同步状态" data-page-node-id="A0ZnXT1Ghi9OQbnasUPlOR">
+        <span class="sync-dot" data-page-node-id="hcLoJtSqBJxjtoC9V6O7zR"></span>
+        <span class="sync-text" data-page-node-id="dEndz7AVI1clShC3p5F6wN">同步中...</span>
       </div>
-      <div class="tabs">
-        <button class="tab-btn active" onclick="switchTab('scan')">扫码录入</button>
-        <button class="tab-btn" onclick="switchTab('dashboard')">齐套看板</button>
+      <div class="tabs" data-page-node-id="xksZngO17T1LDN08chH0dh">
+        <button class="tab-btn active" onclick="switchTab('scan')" data-page-node-id="3M8dOKmLdtIGdsVCkzhvsz">扫码录入</button>
+        <button class="tab-btn" onclick="switchTab('dashboard')" data-page-node-id="O5T99BAZyO0Hh2J2FU0xfE">齐套看板</button>
       </div>
 
     </div>
   </div>
 </header>
 
-<main>
+<main data-page-node-id="JcwLK2ZbZR8FXycH6rGx2u">
   <!-- Tab 1: Scan -->
-  <div id="tab-scan" class="tab-panel active">
+  <div id="tab-scan" class="tab-panel active" data-page-node-id="W3zZUS9IbIt4wVNzoiiv72">
     <!-- BOM Load Section -->
-    <div class="card" style="margin-bottom:20px">
-      <div class="card-header" style="cursor:pointer" onclick="document.getElementById('bomDetail').style.display=document.getElementById('bomDetail').style.display==='none'?'block':'none'">
-        <h2>📂 BOM 数据管理</h2>
-        <span style="font-size:.8rem;color:var(--text-secondary)" id="bomLoadStatus">点击展开 ▼</span>
+    <div class="card" style="margin-bottom:20px" data-page-node-id="hzjLU2BM30CDfDpFy0nRge">
+      <div class="card-header" style="cursor:pointer" onclick="document.getElementById('bomDetail').style.display=document.getElementById('bomDetail').style.display==='none'?'block':'none'" data-page-node-id="kYcwOlWfqzzCDxag3j6SS9">
+        <h2 data-page-node-id="YAs4ONe9Qg03oqphqq4ct2">📂 BOM 数据管理</h2>
+        <span style="font-size:.8rem;color:var(--text-secondary)" id="bomLoadStatus" data-page-node-id="eiEEkaimxyji1OfF1EFNHU">点击展开 ▼</span>
       </div>
-      <div class="card-body" id="bomDetail" style="display:none">
+      <div class="card-body" id="bomDetail" style="display:none" data-page-node-id="6KPV5Eci3K5yheEDaP6YTb">
         <!-- Excel/CSV Upload -->
-        <div style="margin-bottom:16px">
-          <div style="font-weight:600;margin-bottom:8px">📊 从 Excel/CSV 导入（增量追加，已有数据保留）</div>
-          <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
-            <input type="file" id="bomFileInput" accept=".xlsx,.xls,.csv" onchange="loadBOMFile(event)" style="font-size:.85rem">
-            <button class="btn btn-primary btn-sm" onclick="exportBOM()" style="background:var(--success);border:none;padding:5px 12px;border-radius:6px;font-size:.8rem;cursor:pointer"> 导出BOM</button>
-            <button class="btn btn-sm" onclick="clearAllBOM()" style="background:var(--danger);color:#fff;border:none;padding:5px 12px;border-radius:6px;font-size:.8rem;cursor:pointer">🗑️ 清除BOM</button>
-            <span style="font-size:.78rem;color:var(--text-secondary)">列顺序：成品料号 | 半品料号 | 接头规格 | 线长 | 用量</span>
+        <div style="margin-bottom:16px" data-page-node-id="FrXDSuUIfgGk1tERfNHeqo">
+          <div style="font-weight:600;margin-bottom:8px" data-page-node-id="aC787WdmpFOUrv89V8rMUX">📊 从 Excel/CSV 导入（增量追加，已有数据保留）</div>
+          <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap" data-page-node-id="T6sxjFP5B80r03eb2VqEia">
+            <input type="file" id="bomFileInput" accept=".xlsx,.xls,.csv" onchange="loadBOMFile(event)" style="font-size:.85rem" data-page-node-id="Mpux7WCPVLDwC9kRCdvumW">
+            <button class="btn btn-primary btn-sm" onclick="exportBOM()" style="background:var(--success);border:none;padding:5px 12px;border-radius:6px;font-size:.8rem;cursor:pointer" data-page-node-id="BWovJXOo8ykmLFYGTNrZRb"> 导出BOM</button>
+            <button class="btn btn-sm" onclick="clearAllBOM()" style="background:var(--danger);color:#fff;border:none;padding:5px 12px;border-radius:6px;font-size:.8rem;cursor:pointer" data-page-node-id="KiIAYSFfs7i4An7dj93Yb2">🗑️ 清除BOM</button>
+            <span style="font-size:.78rem;color:var(--text-secondary)" data-page-node-id="3ayG0e8yclkDH3dlBjSshY">列顺序：成品料号 | 半品料号 | 接头规格 | 线长 | 用量</span>
           </div>
-          <div id="bomLoadStatus" style="font-size:.8rem;color:var(--text-secondary);margin-top:6px"></div>
+          <div id="bomLoadStatus" style="font-size:.8rem;color:var(--text-secondary);margin-top:6px" data-page-node-id="jpmW3COl728X3vq2nqYTeK"></div>
         </div>
         <!-- Batch Paste -->
-        <div style="border-top:1px solid var(--border);padding-top:16px;margin-top:4px">
-          <div style="font-weight:600;margin-bottom:8px">📋 批量粘贴（从表格复制后直接粘贴）</div>
+        <div style="border-top:1px solid var(--border);padding-top:16px;margin-top:4px" data-page-node-id="DiqHuESpd6SeXKZ05YtQxO">
+          <div style="font-weight:600;margin-bottom:8px" data-page-node-id="KeiKRJLdPHcXMsOfgPOVOq">📋 批量粘贴（从表格复制后直接粘贴）</div>
           <textarea id="bomPasteArea" placeholder="格式：成品料号丨半品料号丨接头规格丨线长&#10;例：&#10;8180900969-P1A1&#10;8180900969-P1A1丨8180900969-P1A1-P2B2丨M8x20&#10;每行一条，支持Tab/丨/|分隔" style="width:100%;min-height:120px;padding:10px;border:1px solid var(--border);border-radius:6px;font-size:.82rem;font-family:monospace;resize:vertical"></textarea>
-          <div style="display:flex;gap:8px;align-items:center;margin-top:8px">
-            <button class="btn btn-primary btn-sm" onclick="loadBOMFromPaste()">📥 导入粘贴数据</button>
-            <span id="bomPasteStatus" style="font-size:.8rem;color:var(--text-secondary)"></span>
+          <div style="display:flex;gap:8px;align-items:center;margin-top:8px" data-page-node-id="BzwWbZVtPomHEBu0craCfS">
+            <button class="btn btn-primary btn-sm" onclick="loadBOMFromPaste()" data-page-node-id="LSGbJaPxMgS4rZTsWaQgzW">📥 导入粘贴数据</button>
+            <span id="bomPasteStatus" style="font-size:.8rem;color:var(--text-secondary)" data-page-node-id="WUgTJanBSm5CwWNTMd8UHA"></span>
           </div>
         </div>
         <!-- Manual Entry -->
-        <div style="border-top:1px solid var(--border);padding-top:16px">
-          <div style="font-weight:600;margin-bottom:8px">✍️ 手动新增/变更 BOM 条目</div>
-          <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center">
-            <input type="text" id="manualCP" placeholder="成品料号" style="width:130px;padding:8px 10px;border:1px solid var(--border);border-radius:6px;font-size:.85rem">
-            <input type="text" id="manualBP" placeholder="半品料号" style="width:150px;padding:8px 10px;border:1px solid var(--border);border-radius:6px;font-size:.85rem">
-            <button class="btn btn-sm" onclick="searchBOMEntry()" style="background:#1a73e8;color:#fff;border:none;padding:5px 10px;border-radius:6px;font-size:.8rem;cursor:pointer">🔍 查询</button>
-            <input type="text" id="manualJ" placeholder="接头规格" style="width:100px;padding:8px 10px;border:1px solid var(--border);border-radius:6px;font-size:.85rem">
-            <input type="number" id="manualL" placeholder="线长" value="0" style="width:70px;padding:8px 10px;border:1px solid var(--border);border-radius:6px;font-size:.85rem">
-            <input type="number" id="manualY" placeholder="用量" value="1" style="width:60px;padding:8px 10px;border:1px solid var(--border);border-radius:6px;font-size:.85rem">
-            <button class="btn btn-primary btn-sm" id="manualSubmitBtn" onclick="addBOMManual()">➕ 添加</button>
-            <button class="btn btn-sm" id="manualDeleteBtn" onclick="deleteBOMEntry()" style="display:none;background:var(--danger);color:#fff;border:none;padding:5px 10px;border-radius:6px;font-size:.8rem;cursor:pointer">🗑️ 删除</button>
-            <button class="btn btn-sm" id="manualCancelBtn" onclick="cancelBOMEdit()" style="display:none;background:#999;color:#fff;border:none;padding:5px 10px;border-radius:6px;font-size:.8rem;cursor:pointer">✖ 取消编辑</button>
+        <div style="border-top:1px solid var(--border);padding-top:16px" data-page-node-id="1mxLqiR78m4wGswh8eU1ZN">
+          <div style="font-weight:600;margin-bottom:8px" data-page-node-id="vK9VouOAfcJy8wBflbj7F6">✍️ 手动新增/变更 BOM 条目</div>
+          <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center" data-page-node-id="hVeuzAc06k3kQp9LHKoarl">
+            <input type="text" id="manualCP" placeholder="成品料号" style="width:130px;padding:8px 10px;border:1px solid var(--border);border-radius:6px;font-size:.85rem" data-page-node-id="TXg0QIAEGDQp3TPGqXfl6C">
+            <input type="text" id="manualBP" placeholder="半品料号" style="width:150px;padding:8px 10px;border:1px solid var(--border);border-radius:6px;font-size:.85rem" data-page-node-id="FVtsDz6KGpkgeS07lQWcNR">
+            <button class="btn btn-sm" onclick="searchBOMEntry()" style="background:#1a73e8;color:#fff;border:none;padding:5px 10px;border-radius:6px;font-size:.8rem;cursor:pointer" data-page-node-id="Mwio4W18WYzHSdWINP6ylR">🔍 查询</button>
+            <input type="text" id="manualJ" placeholder="接头规格" style="width:100px;padding:8px 10px;border:1px solid var(--border);border-radius:6px;font-size:.85rem" data-page-node-id="vYbGMMaIF1GA3ELm0Ut6De">
+            <input type="number" id="manualL" placeholder="线长" value="0" style="width:70px;padding:8px 10px;border:1px solid var(--border);border-radius:6px;font-size:.85rem" data-page-node-id="pEsQ3jkkY73GQ8cCvRc2xZ">
+            <input type="number" id="manualY" placeholder="用量" value="1" style="width:60px;padding:8px 10px;border:1px solid var(--border);border-radius:6px;font-size:.85rem" data-page-node-id="AFjXvi67d10HbYkstnJ1HA">
+            <button class="btn btn-primary btn-sm" id="manualSubmitBtn" onclick="addBOMManual()" data-page-node-id="hGTwZ5Ou92GTb0LoEiRRJQ">➕ 添加</button>
+            <button class="btn btn-sm" id="manualDeleteBtn" onclick="deleteBOMEntry()" style="display:none;background:var(--danger);color:#fff;border:none;padding:5px 10px;border-radius:6px;font-size:.8rem;cursor:pointer" data-page-node-id="sp2corHD6IftAMX7FTBr8m">🗑️ 删除</button>
+            <button class="btn btn-sm" id="manualCancelBtn" onclick="cancelBOMEdit()" style="display:none;background:#999;color:#fff;border:none;padding:5px 10px;border-radius:6px;font-size:.8rem;cursor:pointer" data-page-node-id="wFv1BLqygUh4ho3SDuWi4Z">✖ 取消编辑</button>
           </div>
-          <div id="manualEditHint" style="font-size:.78rem;color:var(--text-secondary);margin-top:4px"></div>
+          <div id="manualEditHint" style="font-size:.78rem;color:var(--text-secondary);margin-top:4px" data-page-node-id="g7OzjNBbksMZoTcU49YTEi"></div>
         </div>
       </div>
     </div>
 
     <!-- Work Order Settings -->
-    <div class="card" style="margin-bottom:20px">
-      <div class="card-body" style="padding:14px 20px">
-        <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
-          <span style="font-weight:600;font-size:.9rem">📋 工单设置</span>
-          <input type="text" id="woNumber" placeholder="工单号" style="width:140px;padding:8px 10px;border:1px solid var(--border);border-radius:6px;font-size:.85rem">
-          <input type="number" id="woTargetQty" placeholder="工单数量" style="width:110px;padding:8px 10px;border:1px solid var(--border);border-radius:6px;font-size:.85rem">
-          <button class="btn btn-sm" onclick="toggleBatchImport()" style="background:var(--warning);color:#fff;border:none;padding:5px 12px;border-radius:6px;font-size:.8rem;cursor:pointer">📋 批量录入</button>
-          <button class="btn btn-sm" onclick="clearWorkOrder()" style="background:var(--danger);color:#fff;border:none;padding:5px 12px;border-radius:6px;font-size:.8rem;cursor:pointer">🗑️ 清除</button>
-          <span id="woStatus" style="font-size:.82rem;color:var(--text-secondary)">未设置工单</span>
+    <div class="card" style="margin-bottom:20px" data-page-node-id="xaCR3yvj5AwKkVuN3WnQeY">
+      <div class="card-body" style="padding:14px 20px" data-page-node-id="xYFINd8LQPLbHCCMiEe1Bc">
+        <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap" data-page-node-id="fI4x3aRBTFI3g6DxNyZxZP">
+          <span style="font-weight:600;font-size:.9rem" data-page-node-id="pulijgpIC0ZLBE2zHGsHMj">📋 工单设置</span>
+          <input type="text" id="woNumber" placeholder="工单号" style="width:140px;padding:8px 10px;border:1px solid var(--border);border-radius:6px;font-size:.85rem" data-page-node-id="GAkut8rjT6DwxWL0oR87GA">
+          <input type="number" id="woTargetQty" placeholder="工单数量" style="width:110px;padding:8px 10px;border:1px solid var(--border);border-radius:6px;font-size:.85rem" data-page-node-id="CYAGRdWXSXp3rUlIJi6E3M">
+          <button class="btn btn-sm" onclick="toggleBatchImport()" style="background:var(--warning);color:#fff;border:none;padding:5px 12px;border-radius:6px;font-size:.8rem;cursor:pointer" data-page-node-id="gY0UdlTLVo8HmMmD2CEGjl">📋 批量录入</button>
+          <button class="btn btn-sm" onclick="clearWorkOrder()" style="background:var(--danger);color:#fff;border:none;padding:5px 12px;border-radius:6px;font-size:.8rem;cursor:pointer" data-page-node-id="yLf68O3zarvD1Zo6FHHMZE">🗑️ 清除</button>
+          <span id="woStatus" style="font-size:.82rem;color:var(--text-secondary)" data-page-node-id="h7PyulUF9HXXMiSA5KWAxi">未设置工单</span>
         </div>
         <!-- Batch Import Panel -->
-        <div id="batchImportPanel" style="display:none;margin-top:12px;padding:12px;background:#f8f9fa;border-radius:8px;border:1px solid var(--border)">
-          <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
-            <span style="font-weight:600;font-size:.85rem">📋 批量录入工单</span>
-            <span style="font-size:.75rem;color:var(--text-secondary)">从Excel粘贴：工单号 | 数量（每行一个工单）</span>
+        <div id="batchImportPanel" style="display:none;margin-top:12px;padding:12px;background:#f8f9fa;border-radius:8px;border:1px solid var(--border)" data-page-node-id="EYkRpMmZFuIKU891ffYrZc">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px" data-page-node-id="XyIq5p55qfiV0YvmgJ6yIr">
+            <span style="font-weight:600;font-size:.85rem" data-page-node-id="EGv7WB5vjCH2ZRhwUSzms6">📋 批量录入工单</span>
+            <span style="font-size:.75rem;color:var(--text-secondary)" data-page-node-id="kZqkdZDRFXJdRchOJX1zCx">从Excel粘贴：工单号 | 数量（每行一个工单）</span>
           </div>
           <textarea id="batchImportText" placeholder="101396001&#9;100&#10;101396002&#9;50&#10;..." style="width:100%;min-height:120px;padding:10px;border:1px solid var(--border);border-radius:6px;font-size:.82rem;font-family:monospace;resize:vertical" oninput="previewBatchImport()"></textarea>
-          <div style="display:flex;align-items:center;gap:12px;margin-top:8px">
-            <button class="btn btn-primary btn-sm" onclick="confirmBatchImport()">✅ 确认导入</button>
-            <button class="btn btn-sm" onclick="toggleBatchImport()" style="background:#999;color:#fff;border:none;padding:5px 12px;border-radius:6px;font-size:.8rem;cursor:pointer">取消</button>
-            <span id="batchPreview" style="font-size:.8rem;color:var(--text-secondary)"></span>
+          <div style="display:flex;align-items:center;gap:12px;margin-top:8px" data-page-node-id="B0AnOA1gQkepPZyi036tcV">
+            <button class="btn btn-primary btn-sm" onclick="confirmBatchImport()" data-page-node-id="TM3KEYcB9kvnAIiOiC4ZFG">✅ 确认导入</button>
+            <button class="btn btn-sm" onclick="toggleBatchImport()" style="background:#999;color:#fff;border:none;padding:5px 12px;border-radius:6px;font-size:.8rem;cursor:pointer" data-page-node-id="99WeNKmtH2XELWFjK5YDTH">取消</button>
+            <span id="batchPreview" style="font-size:.8rem;color:var(--text-secondary)" data-page-node-id="Xw9pNL0SOYNCScj2pIBymK"></span>
           </div>
         </div>
         <!-- Imported Work Orders List -->
-        <div id="workOrderList" style="display:none;margin-top:12px;padding:10px;background:#e8f4fd;border-radius:8px;border:1px solid #b3d7ff">
-          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
-            <span style="font-weight:600;font-size:.85rem;color:#1a73e8">📦 已导入工单列表</span>
-            <span id="workOrderCount" style="font-size:.78rem;color:var(--text-secondary)"></span>
+        <div id="workOrderList" style="display:none;margin-top:12px;padding:10px;background:#e8f4fd;border-radius:8px;border:1px solid #b3d7ff" data-page-node-id="sPSIuyzzMON1z397saKyNO">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px" data-page-node-id="aml5XYog1j9HAidrCyluzR">
+            <span style="font-weight:600;font-size:.85rem;color:#1a73e8" data-page-node-id="3E0qedvDsiqrFuIZsWV0E3">📦 已导入工单列表</span>
+            <span id="workOrderCount" style="font-size:.78rem;color:var(--text-secondary)" data-page-node-id="6CyR0IKs8KxbxPrAqsJPrV"></span>
           </div>
-          <div id="workOrderListContent" style="max-height:200px;overflow-y:auto"></div>
+          <div id="workOrderListContent" style="max-height:200px;overflow-y:auto" data-page-node-id="OMNadHPREg3F6GMrwWU9iM"></div>
         </div>
-        <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-top:10px;padding-top:10px;border-top:1px dashed var(--border)">
-          <span style="font-weight:600;font-size:.9rem">🏷️ 栈板号</span>
-          <select id="palletPrefix" onchange="updatePalletDisplay()" style="padding:8px 10px;border:1px solid var(--border);border-radius:6px;font-size:.85rem;background:#fff;cursor:pointer">
-            <option value="">选择前缀</option>
-            <option value="5B3F">5B3F</option>
-            <option value="2B3F">2B3F</option>
-            <option value="2B4F">2B4F</option>
+        <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-top:10px;padding-top:10px;border-top:1px dashed var(--border)" data-page-node-id="m1WRnq0EbUiIBpRru03Wbv">
+          <span style="font-weight:600;font-size:.9rem" data-page-node-id="rbHEE1p4hXxi030MOpTTcS">🏷️ 栈板号</span>
+          <select id="palletPrefix" onchange="updatePalletDisplay()" style="padding:8px 10px;border:1px solid var(--border);border-radius:6px;font-size:.85rem;background:#fff;cursor:pointer" data-page-node-id="p6qozIiIo0ZcQGhH5lmjLW">
+            <option value="" data-page-node-id="b10atF46UkSZM0eFwcacNX">选择前缀</option>
+            <option value="5B3F" data-page-node-id="8ewNyNSUkl1OIXxFf26zFE">5B3F</option>
+            <option value="2B3F" data-page-node-id="QPeFHEwMluVysKxRmm29jH">2B3F</option>
+            <option value="2B4F" data-page-node-id="0MtD536fZbgEyxpx3bXOi0">2B4F</option>
           </select>
-          <span style="color:var(--text-secondary);font-size:.9rem">-</span>
-          <input type="number" id="palletSeq" min="1" max="1000" placeholder="0001" oninput="updatePalletDisplay()" style="width:100px;padding:8px 10px;border:1px solid var(--border);border-radius:6px;font-size:.85rem">
-          <div style="position:relative;display:inline-block">
-            <input type="text" id="palletScanInput" placeholder="扫码枪或📷扫码" style="width:180px;padding:8px 40px 8px 10px;border:2px solid var(--primary);border-radius:6px;font-size:.85rem;background:#f0f8ff" onkeydown="handlePalletScan(event)">
-            <button onclick="openPalletCamera()" title="手机摄像头扫栈板号" style="position:absolute;right:4px;top:50%;transform:translateY(-50%);width:30px;height:30px;border:none;background:var(--primary);color:#fff;border-radius:8px;cursor:pointer;font-size:1rem;display:flex;align-items:center;justify-content:center;box-shadow:0 1px 4px rgba(26,115,232,.3)">📷</button>
+          <span style="color:var(--text-secondary);font-size:.9rem" data-page-node-id="EKRbxOYcU4F0xMZrg3vTd2">-</span>
+          <input type="number" id="palletSeq" min="1" max="1000" placeholder="0001" oninput="updatePalletDisplay()" style="width:100px;padding:8px 10px;border:1px solid var(--border);border-radius:6px;font-size:.85rem" data-page-node-id="5AfDheH14szx21XfBL1K0Q">
+          <div style="position:relative;display:inline-block" data-page-node-id="a5SrAaA2p6b7BrguyFx75F">
+            <input type="text" id="palletScanInput" placeholder="扫码枪或📷扫码" style="width:180px;padding:8px 40px 8px 10px;border:2px solid var(--primary);border-radius:6px;font-size:.85rem;background:#f0f8ff" onkeydown="handlePalletScan(event)" data-page-node-id="BY1qX797NFPXX8t07i9Z0E">
+            <button onclick="openPalletCamera()" title="手机摄像头扫栈板号" style="position:absolute;right:4px;top:50%;transform:translateY(-50%);width:30px;height:30px;border:none;background:var(--primary);color:#fff;border-radius:8px;cursor:pointer;font-size:1rem;display:flex;align-items:center;justify-content:center;box-shadow:0 1px 4px rgba(26,115,232,.3)" data-page-node-id="mqGxwTiqytOHMFo1f9O1zh">📷</button>
           </div>
-          <span id="palletDisplay" style="font-size:.85rem;color:var(--text-secondary);font-weight:500">未设置栈板号</span>
-          <button class="btn btn-primary btn-sm" onclick="saveWorkOrder()">✅ 确认</button>
-          <span id="setupStatus" style="font-size:.82rem;color:var(--text-secondary)">请先填写工单和栈板号</span>
+          <span id="palletDisplay" style="font-size:.85rem;color:var(--text-secondary);font-weight:500" data-page-node-id="FeEEv634JO9BtPw6FktTSJ">未设置栈板号</span>
+          <button class="btn btn-primary btn-sm" onclick="saveWorkOrder()" data-page-node-id="JPLTPyfDvDEpmn9uji4Oei">✅ 确认</button>
+          <span id="setupStatus" style="font-size:.82rem;color:var(--text-secondary)" data-page-node-id="bewhCD4HdPAyTpB8pgoLHP">请先填写工单和栈板号</span>
         </div>
       </div>
     </div>
 
     <!-- Scan Area -->
-    <div class="card" style="margin-bottom:20px">
-      <div class="card-body scan-input-area">
-        <div class="action-select">
-          <button class="action-btn active-in" id="btnIn" onclick="setAction('入库')">📥 入库</button>
-          <button class="action-btn" id="btnOut" onclick="setAction('出库')">📤 出库</button>
+    <div class="card" style="margin-bottom:20px" data-page-node-id="P5KIHoAuoTPMV3Ft0qr9N5">
+      <div class="card-body scan-input-area" data-page-node-id="tpNqFRaaRyC9wbwlIuTPUo">
+        <div class="action-select" data-page-node-id="MeBqEENDddRuM83xgLsd8N">
+          <button class="action-btn active-in" id="btnIn" onclick="setAction('入库')" data-page-node-id="aH1KMsDAJS6vzL2Utpa95l">📥 入库</button>
+          <button class="action-btn" id="btnOut" onclick="setAction('出库')" data-page-node-id="f2lgZn5myJJwiZqlZFhUrb">📤 出库</button>
         </div>
-        <div class="scan-input-wrap">
-          <input type="text" id="scanInput" placeholder="请扫描唯一码（扫码枪或点📷相机扫码）" autofocus autocomplete="off">
-          <button id="cameraBtn" onclick="openCamera()" title="手机摄像头扫码">📷</button>
+        <div class="scan-input-wrap" data-page-node-id="NBSwPNPwqiyqJ76w6cmcFe">
+          <input type="text" id="scanInput" placeholder="请扫描唯一码（扫码枪或点📷相机扫码）" autofocus autocomplete="off" data-page-node-id="fODoTgRIx8mW8v9mAFqE1I">
+          <button id="cameraBtn" onclick="openCamera()" title="手机摄像头扫码" data-page-node-id="85FDfhGKaDt9RcA57N1243">📷</button>
         </div>
-        <div class="scan-status" id="scanStatus"></div>
+        <div class="scan-status" id="scanStatus" data-page-node-id="NcG6Vd744aQsBLBUxpVvrw"></div>
       </div>
     </div>
 
     <!-- Scan Records -->
-    <div class="card">
-      <div class="card-header">
-        <h2>📋 扫码记录</h2>
-        <button class="btn btn-outline btn-sm" onclick="exportScanCSV()">💾 导出 CSV</button>
-        <button class="btn btn-outline btn-sm" style="color:var(--danger);border-color:var(--danger);margin-left:6px" onclick="clearAllData()">🗑️ 清除所有数据</button>
+    <div class="card" data-page-node-id="x1jAvJcF4MD5CD0TVH8osa">
+      <div class="card-header" data-page-node-id="YKXRziojKA8MqkZKXZrMtf">
+        <h2 data-page-node-id="lILBNedJo6t3z9IU6nyhMF">📋 扫码记录</h2>
+        <button class="btn btn-outline btn-sm" onclick="exportScanCSV()" data-page-node-id="VJNljTzdVoRvGfGKKaikMl">💾 导出 CSV</button>
+        <button class="btn btn-outline btn-sm" style="color:var(--danger);border-color:var(--danger);margin-left:6px" onclick="clearAllData()" data-page-node-id="CdiJ8gad6GLsoBFXXpgoMn">🗑️ 清除所有数据</button>
       </div>
-      <div class="card-body">
+      <div class="card-body" data-page-node-id="jVLKDNkmyv7waOcM3EMBb4">
         <!-- Search and filter controls -->
-        <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;align-items:center">
-          <input type="text" id="scanSearchInput" placeholder="搜索唯一码、料号、工单号、栈板号或批次..." oninput="filterScanRecords()" style="flex:1;min-width:150px;padding:8px 12px;border:1px solid var(--border);border-radius:6px;font-size:.9rem">
-          <input type="date" id="scanDateFilter" onchange="filterScanRecords()" style="padding:8px 12px;border:1px solid var(--border);border-radius:6px;font-size:.9rem">
-          <select id="scanActionFilter" onchange="filterScanRecords()" style="padding:8px 12px;border:1px solid var(--border);border-radius:6px;font-size:.9rem;background:#fff">
-            <option value="">全部动作</option>
-            <option value="入库">📥 入库</option>
-            <option value="出库">📤 出库</option>
+        <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;align-items:center" data-page-node-id="NYtkwXUaJAne8y1NepDhKP">
+          <input type="text" id="scanSearchInput" placeholder="搜索唯一码、料号、工单号、栈板号或批次..." oninput="filterScanRecords()" style="flex:1;min-width:150px;padding:8px 12px;border:1px solid var(--border);border-radius:6px;font-size:.9rem" data-page-node-id="kpJvy7fnqnpEm4szC5aedi">
+          <input type="date" id="scanDateFilter" onchange="filterScanRecords()" style="padding:8px 12px;border:1px solid var(--border);border-radius:6px;font-size:.9rem" data-page-node-id="aJBOKR23idB1jevHsU1wH6">
+          <select id="scanActionFilter" onchange="filterScanRecords()" style="padding:8px 12px;border:1px solid var(--border);border-radius:6px;font-size:.9rem;background:#fff" data-page-node-id="1eCcDg3NAa0k0yvJFroRPV">
+            <option value="" data-page-node-id="HhppVMa7H6HwTMtw0ycWYE">全部动作</option>
+            <option value="入库" data-page-node-id="0oPbuBOMJresnA6eMIfsF8">📥 入库</option>
+            <option value="出库" data-page-node-id="7TungcFumJmkJJLKS1oqbQ">📤 出库</option>
           </select>
-          <button class="btn btn-primary btn-sm" onclick="filterScanRecords()">🔍 查询</button>
-          <button class="btn btn-outline btn-sm" onclick="clearScanFilter()">🔄 显示全部</button>
-          <button class="btn btn-sm" style="background:var(--danger);color:#fff" onclick="deleteByDate()">🗑️ 删除该日期</button>
+          <button class="btn btn-primary btn-sm" onclick="filterScanRecords()" data-page-node-id="4nBmeVz7m8iDwlM2XQo0DR">🔍 查询</button>
+          <button class="btn btn-outline btn-sm" onclick="clearScanFilter()" data-page-node-id="Mq3DB4WcR4a05267dIbgkp">🔄 显示全部</button>
+          <button class="btn btn-sm" style="background:var(--danger);color:#fff" onclick="deleteByDate()" data-page-node-id="ylUPUiKPywP2sPQhobeIcT">🗑️ 删除该日期</button>
         </div>
-        <div id="scanRecordCount" style="font-size:.8rem;color:var(--text-secondary);margin-bottom:8px">共 0 条记录</div>
-        <div class="recent-list" id="recentList" style="max-height:400px">
-          <div style="padding:20px;text-align:center;color:var(--text-secondary)">暂无扫码记录</div>
+        <div id="scanRecordCount" style="font-size:.8rem;color:var(--text-secondary);margin-bottom:8px" data-page-node-id="eCZ6eGRE2t2KsfD1Ec5rg2">共 0 条记录</div>
+        <div class="recent-list" id="recentList" style="max-height:400px" data-page-node-id="8rms7fzoWLoaqyum0eXoRx">
+          <div style="padding:20px;text-align:center;color:var(--text-secondary)" data-page-node-id="cAEvz7nR9f8Fic622N0Obb">暂无扫码记录</div>
         </div>
       </div>
     </div>
   </div>
 
   <!-- Tab 2: Dashboard -->
-  <div id="tab-dashboard" class="tab-panel">
+  <div id="tab-dashboard" class="tab-panel" data-page-node-id="0rXoGvwzklWN5zfqhHArUf">
     <!-- KPI Cards -->
-    <div class="kpi-grid" id="kpiGrid">
-      <div class="kpi-card"><div class="kpi-label">总成品数</div><div class="kpi-value" id="kpiTotal">57</div></div>
-      <div class="kpi-card success"><div class="kpi-label">可齐套成品数</div><div class="kpi-value" id="kpiKit">0</div></div>
-      <div class="kpi-card"><div class="kpi-label">当前库存</div><div class="kpi-value" id="kpiSemiTotal">0</div></div>
+    <div class="kpi-grid" id="kpiGrid" data-page-node-id="zYccLp6WErxt2zSlUit3Zo">
+      <div class="kpi-card" data-page-node-id="KBsOs5C2yEM5bFPuXaDRNf"><div class="kpi-label" data-page-node-id="8pVbIP4fKSO7pXtd2sUH15">总成品数</div><div class="kpi-value" id="kpiTotal" data-page-node-id="YD12ZMOPsLDF5EvHYkAtCz">57</div></div>
+      <div class="kpi-card success" data-page-node-id="a5e3aRaLIQUfjqBKEXc1BU"><div class="kpi-label" data-page-node-id="Q9IZy370pOj2WJGhnafYvo">可齐套成品数</div><div class="kpi-value" id="kpiKit" data-page-node-id="ZfFlQcwLYNyaQAYwjZYHpu">0</div></div>
+      <div class="kpi-card" data-page-node-id="7MnyXGcmrgIIH0cnW7kZBU"><div class="kpi-label" data-page-node-id="t9scAakfI9LWsO9p9G5RR0">当前库存</div><div class="kpi-value" id="kpiSemiTotal" data-page-node-id="twUpfSUiV2dtD6Jxk4eG1m">0</div></div>
     </div>
 
     <!-- Detail Table -->
-    <div class="card">
-      <div class="card-header">
-        <h2>📊 成品齐套明细</h2>
+    <div class="card" data-page-node-id="KlszMxKApwV2sQFvK3asjs">
+      <div class="card-header" data-page-node-id="mlLr6oSIPEY7tUDxNBVnP4">
+        <h2 data-page-node-id="s4kcM5kruDmEMVqU0LKc7p">📊 成品齐套明细</h2>
       </div>
-      <div class="card-body">
-        <div class="search-bar">
-          <input type="text" id="woFilter" placeholder="筛选工单号..." oninput="filterTable()" style="padding:8px 12px;border:1px solid var(--border);border-radius:6px;font-size:.85rem;min-width:150px">
-          <input type="text" id="lineSeqFilter" placeholder="筛选线序料号..." oninput="filterTable()" style="padding:8px 12px;border:1px solid var(--border);border-radius:6px;font-size:.85rem;min-width:180px">
-          <input type="text" id="searchInput" placeholder="搜索成品料号..." oninput="filterTable()">
-          <button class="btn btn-outline btn-sm" onclick="sortTable()">🔄 按可配套数排序</button>
-          <button class="btn btn-outline btn-sm" onclick="expandAll()">📂 全部展开</button>
-          <button class="btn btn-outline btn-sm" onclick="collapseAll()">📁 全部收起</button>
-          <button class="btn btn-primary btn-sm" onclick="exportToExcel()">📥 导出Excel</button>
+      <div class="card-body" data-page-node-id="Z7r0SAqptYrhg10d039Fxf">
+        <div class="search-bar" data-page-node-id="1JXFae4PtgFJF7mX4DTmH0">
+          <input type="text" id="woFilter" placeholder="筛选工单号..." oninput="filterTable()" style="padding:8px 12px;border:1px solid var(--border);border-radius:6px;font-size:.85rem;min-width:150px" data-page-node-id="1tao9YvekhMld70gaCwesm">
+          <input type="text" id="lineSeqFilter" placeholder="筛选线序料号..." oninput="filterTable()" style="padding:8px 12px;border:1px solid var(--border);border-radius:6px;font-size:.85rem;min-width:180px" data-page-node-id="fMizfnctSoXunEA132Vam4">
+          <input type="text" id="searchInput" placeholder="搜索成品料号..." oninput="filterTable()" data-page-node-id="qaunAzRCI1dGdJcMKIWTZW">
+          <button class="btn btn-outline btn-sm" onclick="sortTable()" data-page-node-id="GszL7J6FsHmmoeB6wRnUdI">🔄 按可配套数排序</button>
+          <button class="btn btn-outline btn-sm" onclick="expandAll()" data-page-node-id="109VB3uXHbdbqeFKjZkQzT">📂 全部展开</button>
+          <button class="btn btn-outline btn-sm" onclick="collapseAll()" data-page-node-id="S59lnaIRgcicWEFqMkhQRt">📁 全部收起</button>
+          <button class="btn btn-primary btn-sm" onclick="exportToExcel()" data-page-node-id="K8AAzYkwetqUUWT0XlRl2S">📥 导出Excel</button>
         </div>
-        <div class="table-wrap">
-          <table id="dashTable">
-            <thead>
-              <tr>
-                <th>成品料号</th>
-                <th>线序料号款数</th>
-                <th>缺料半品款数</th>
-                <th>工单号</th>
-                <th>工单数量</th>
-                <th>齐套数量</th>
-                <th>齐套率</th>
-                <th>最大缺口</th>
-                <th>齐套状态</th>
+        <div class="table-wrap" data-page-node-id="R9UHuKDbWBt4cZtCrAg8ly">
+          <table id="dashTable" data-page-node-id="klCMQ5OvugVJgDwWtHEFXu">
+            <thead data-page-node-id="Ph2M5z789lPKQpRwCmzCIA">
+              <tr data-page-node-id="KLOliAdOKIbxTONPnApuKd">
+                <th data-page-node-id="fv6jFsQut23YdfRuPdxYq2">成品料号</th>
+                <th data-page-node-id="jCqBhppXzlth4KC4PLK0h8">线序料号款数</th>
+                <th data-page-node-id="xxZi2coxeQXAEVitevBw6I">缺料半品款数</th>
+                <th data-page-node-id="N9mXpn94xMf2zE2vcjdY7f">工单号</th>
+                <th data-page-node-id="rB6PydyiUstO32DgxOLatt">工单数量</th>
+                <th data-page-node-id="94NsXpVnoSN5pIB3BwdC8U">齐套数量</th>
+                <th data-page-node-id="0CFkcIDMuDpPQlitgQIDbD">齐套率</th>
+                <th data-page-node-id="tVUzevAN0iZYoMkOLgP9iw">最大缺口</th>
+                <th data-page-node-id="ZquwtrTzi8f2NjFMokzUQ0">齐套状态</th>
               </tr>
             </thead>
-            <tbody id="dashBody"></tbody>
+            <tbody id="dashBody" data-page-node-id="EXyg7FoVafcjOMNyFIITHi"></tbody>
           </table>
         </div>
       </div>
     </div>
 
     <!-- Charts -->
-    <div class="chart-grid">
-      <div class="chart-card">
-        <h2>📊 可配套数分布</h2>
-        <div class="bar-chart" id="chartKit"></div>
+    <div class="chart-grid" data-page-node-id="AQrcC2Wiu9NXWNBdx3FHhu">
+      <div class="chart-card" data-page-node-id="kgiD594PVxFhT8ozMSJKSK">
+        <h2 data-page-node-id="yUlcrVOQrv1j5jE8HeYvRI">📊 可配套数分布</h2>
+        <div class="bar-chart" id="chartKit" data-page-node-id="hg08sf6Y6kKV9Uk7bnrcc9"></div>
       </div>
     </div>
   </div>
 </main>
 
-<div class="toast" id="toast"></div>
+<div class="toast" id="toast" data-page-node-id="DHnaqfadpSwsCGih57gmRO"></div>
 
 <script>
 // ====== EMBEDDED DATA ======
@@ -517,7 +517,7 @@ let currentUser = null; // {username, name, role}
 let users = []; // [{username, passwordHash, name, role}]
 
 // SHA-256 哈希（密码存储用）
-function sha256(text) {
+async function sha256(text) {
   const encoder = new TextEncoder();
   const data = encoder.encode(text);
   const hashBuffer = await crypto.subtle.digest('SHA-256', data);
@@ -535,7 +535,7 @@ async function initDefaultUsers() {
 }
 
 // 登录
-function doLogin() {
+async function doLogin() {
   const username = document.getElementById('loginUsername').value.trim();
   const password = document.getElementById('loginPassword').value;
   const remember = document.getElementById('loginRemember').checked;
@@ -622,7 +622,7 @@ function closeChangePwdModal() {
   document.getElementById('changePwdModal').style.display = 'none';
 }
 
-function doChangePwd() {
+async function doChangePwd() {
   const oldPwd = document.getElementById('oldPwdInput').value.trim();
   const newPwd = document.getElementById('newPwdInput').value.trim();
   const confirmPwd = document.getElementById('confirmPwdInput').value.trim();
@@ -989,7 +989,7 @@ function updateSyncStatus(status, text) {
   txt.textContent = text || '';
 }
 
-function fetchSharedData() {
+async function fetchSharedData() {
   const url = SYNC_CONFIG.apiBase + '/repos/' + SYNC_CONFIG.owner + '/' + SYNC_CONFIG.repo + '/contents/' + SYNC_CONFIG.path + '?t=' + Date.now();
   const resp = await fetch(url, {
     headers: { 'Authorization': 'token ' + SYNC_CONFIG.token }
@@ -1002,7 +1002,7 @@ function fetchSharedData() {
   return JSON.parse(content);
 }
 
-function pushSharedData(data) {
+async function pushSharedData(data) {
   const jsonStr = JSON.stringify(data);
   const encoded = encodeBase64(jsonStr);
   const body = {
@@ -1166,7 +1166,7 @@ function mergeRemoteData(remote) {
   return changed;
 }
 
-function syncCycle() {
+async function syncCycle() {
   if (isSyncing || !syncEnabled) return;
   isSyncing = true;
   updateSyncStatus('syncing', '同步中...');
@@ -3161,44 +3161,44 @@ function onScanFailure(error) {
 </script>
 
 <!-- Camera Modal -->
-<div id="cameraModal" onclick="if(event.target===this)closeCamera()">
-  <div class="camera-top-bar">
-    <button class="camera-close-btn" onclick="closeCamera()">✕</button>
-    <span class="camera-status" id="cameraStatus">正在启动摄像头...</span>
+<div id="cameraModal" onclick="if(event.target===this)closeCamera()" data-page-node-id="QYkIk5da484wsbekjNODYW">
+  <div class="camera-top-bar" data-page-node-id="ct1cfaNZzk7CkYlxPn7MVS">
+    <button class="camera-close-btn" onclick="closeCamera()" data-page-node-id="TgFmwC0x2CXedHs67vUBCh">✕</button>
+    <span class="camera-status" id="cameraStatus" data-page-node-id="6OZzbN5unSfrDqdGwdWd7b">正在启动摄像头...</span>
   </div>
-  <div class="camera-container">
-    <div id="reader"></div>
+  <div class="camera-container" data-page-node-id="lGnceEEKimK7EvHFYQ6SuG">
+    <div id="reader" data-page-node-id="D9a96O5pC7GCYgtUNHBxfO"></div>
   </div>
 </div>
 
 <!-- 修改密码弹窗 -->
-<div id="changePwdModal" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.5);z-index:9998;align-items:center;justify-content:center">
-  <div style="background:#fff;border-radius:12px;padding:24px;width:380px">
-    <h3 style="margin:0 0 16px">🔑 修改密码</h3>
-    <input type="password" id="oldPwdInput" placeholder="当前密码" style="width:100%;padding:8px 10px;border:1px solid #ddd;border-radius:6px;margin-bottom:8px;box-sizing:border-box">
-    <input type="password" id="newPwdInput" placeholder="新密码" style="width:100%;padding:8px 10px;border:1px solid #ddd;border-radius:6px;margin-bottom:8px;box-sizing:border-box">
-    <input type="password" id="confirmPwdInput" placeholder="确认新密码" style="width:100%;padding:8px 10px;border:1px solid #ddd;border-radius:6px;margin-bottom:12px;box-sizing:border-box">
-    <button onclick="doChangePwd()" style="width:100%;padding:8px;background:var(--primary);color:#fff;border:none;border-radius:6px;cursor:pointer;font-size:.9rem;margin-bottom:8px">确认修改</button>
-    <button onclick="closeChangePwdModal()" style="width:100%;padding:8px;background:#eee;border:none;border-radius:6px;cursor:pointer;font-size:.9rem">取消</button>
+<div id="changePwdModal" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.5);z-index:9998;align-items:center;justify-content:center" data-page-node-id="hgb8rbkuf9oAqofwTGhZeo">
+  <div style="background:#fff;border-radius:12px;padding:24px;width:380px" data-page-node-id="TiwImL1b5cnYpHgrAP5M31">
+    <h3 style="margin:0 0 16px" data-page-node-id="DWtpKTOQD8kydfVrHRbKy0">🔑 修改密码</h3>
+    <input type="password" id="oldPwdInput" placeholder="当前密码" style="width:100%;padding:8px 10px;border:1px solid #ddd;border-radius:6px;margin-bottom:8px;box-sizing:border-box" data-page-node-id="ELObATYY4SWTeLyvJwguRU">
+    <input type="password" id="newPwdInput" placeholder="新密码" style="width:100%;padding:8px 10px;border:1px solid #ddd;border-radius:6px;margin-bottom:8px;box-sizing:border-box" data-page-node-id="gO7xN4JAqDWDt2HjvhLzeQ">
+    <input type="password" id="confirmPwdInput" placeholder="确认新密码" style="width:100%;padding:8px 10px;border:1px solid #ddd;border-radius:6px;margin-bottom:12px;box-sizing:border-box" data-page-node-id="KEA01LZtzaHb6WgVXK1Drk">
+    <button onclick="doChangePwd()" style="width:100%;padding:8px;background:var(--primary);color:#fff;border:none;border-radius:6px;cursor:pointer;font-size:.9rem;margin-bottom:8px" data-page-node-id="anuBOzQx09QU8fbQTRPIbW">确认修改</button>
+    <button onclick="closeChangePwdModal()" style="width:100%;padding:8px;background:#eee;border:none;border-radius:6px;cursor:pointer;font-size:.9rem" data-page-node-id="shDeXXSOORnlK2Wv3TDrvQ">取消</button>
   </div>
 </div>
 
 <!-- 用户管理弹窗 -->
-<div id="userModal" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.5);z-index:9998;display:none;align-items:center;justify-content:center">
-  <div style="background:#fff;border-radius:12px;padding:24px;width:420px;max-height:80vh;overflow-y:auto">
-    <h3 style="margin:0 0 16px">👥 用户管理</h3>
-    <div id="userListArea" style="margin-bottom:16px"></div>
-    <hr style="border:none;border-top:1px solid #eee;margin:16px 0">
-    <h4 style="margin:0 0 10px;font-size:.9rem">添加用户</h4>
-    <input type="text" id="newUserUsername" placeholder="工号" style="width:100%;padding:8px 10px;border:1px solid #ddd;border-radius:6px;margin-bottom:8px;box-sizing:border-box">
-    <input type="text" id="newUserName" placeholder="姓名（选填）" style="width:100%;padding:8px 10px;border:1px solid #ddd;border-radius:6px;margin-bottom:8px;box-sizing:border-box">
-    <input type="password" id="newUserPassword" placeholder="初始密码" style="width:100%;padding:8px 10px;border:1px solid #ddd;border-radius:6px;margin-bottom:8px;box-sizing:border-box">
-    <select id="newUserRole" style="width:100%;padding:8px 10px;border:1px solid #ddd;border-radius:6px;margin-bottom:12px;box-sizing:border-box">
-      <option value="operator">操作员</option>
-      <option value="admin">管理员</option>
+<div id="userModal" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.5);z-index:9998;display:none;align-items:center;justify-content:center" data-page-node-id="S8pDckWQraIHLBlaX9YwBn">
+  <div style="background:#fff;border-radius:12px;padding:24px;width:420px;max-height:80vh;overflow-y:auto" data-page-node-id="Q7jAVJH80OxyGJjMjVEgeY">
+    <h3 style="margin:0 0 16px" data-page-node-id="62cYANd0z7vI1knT5WyPYD">👥 用户管理</h3>
+    <div id="userListArea" style="margin-bottom:16px" data-page-node-id="GxA76bgGAnYsC1uMIGXAfp"></div>
+    <hr style="border:none;border-top:1px solid #eee;margin:16px 0" data-page-node-id="kTeqz10DQgoBTq9harxt6m">
+    <h4 style="margin:0 0 10px;font-size:.9rem" data-page-node-id="NQvsVi6dfrB7MBvLTLfxot">添加用户</h4>
+    <input type="text" id="newUserUsername" placeholder="工号" style="width:100%;padding:8px 10px;border:1px solid #ddd;border-radius:6px;margin-bottom:8px;box-sizing:border-box" data-page-node-id="JgCH9APcxMkWHbjHOJVALx">
+    <input type="text" id="newUserName" placeholder="姓名（选填）" style="width:100%;padding:8px 10px;border:1px solid #ddd;border-radius:6px;margin-bottom:8px;box-sizing:border-box" data-page-node-id="e12WbuoY9rznCOeFfhaD8p">
+    <input type="password" id="newUserPassword" placeholder="初始密码" style="width:100%;padding:8px 10px;border:1px solid #ddd;border-radius:6px;margin-bottom:8px;box-sizing:border-box" data-page-node-id="2jVSqul4T4mHKLkORdbL3j">
+    <select id="newUserRole" style="width:100%;padding:8px 10px;border:1px solid #ddd;border-radius:6px;margin-bottom:12px;box-sizing:border-box" data-page-node-id="OeI3uKEAUmFpeUL7a1dKDV">
+      <option value="operator" data-page-node-id="5IyEJcfJr9OBVao7FxSjhp">操作员</option>
+      <option value="admin" data-page-node-id="Pl26GjVPgg8wckS6LWoitx">管理员</option>
     </select>
-    <button onclick="addUser()" style="width:100%;padding:8px;background:var(--primary);color:#fff;border:none;border-radius:6px;cursor:pointer;font-size:.9rem">添加</button>
-    <button onclick="closeUserModal()" style="width:100%;padding:8px;background:#eee;border:none;border-radius:6px;cursor:pointer;margin-top:8px;font-size:.9rem">关闭</button>
+    <button onclick="addUser()" style="width:100%;padding:8px;background:var(--primary);color:#fff;border:none;border-radius:6px;cursor:pointer;font-size:.9rem" data-page-node-id="YIcjw9iHTWRu2FrzDrgTTv">添加</button>
+    <button onclick="closeUserModal()" style="width:100%;padding:8px;background:#eee;border:none;border-radius:6px;cursor:pointer;margin-top:8px;font-size:.9rem" data-page-node-id="0KvhDDBIf81gMP1QPJgQjr">关闭</button>
   </div>
 </div>
 
