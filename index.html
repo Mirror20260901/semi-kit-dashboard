@@ -377,6 +377,7 @@ button:focus-visible,input:focus-visible,a:focus-visible{outline:2px solid var(-
           <button id="cameraBtn" onclick="openCamera()" title="手机摄像头扫码" data-page-node-id="85FDfhGKaDt9RcA57N1243">📷</button>
         </div>
         <div class="scan-status" id="scanStatus" data-page-node-id="NcG6Vd744aQsBLBUxpVvrw"></div>
+        <div id="rawScanBox" style="display:none;margin-top:8px;padding:8px 10px;background:#f6f8fb;border:1px solid #dbe2ee;border-radius:8px;font-family:Consolas,'Courier New',monospace;font-size:13px;color:#2c3e50;white-space:pre-wrap;word-break:break-all;max-height:130px;overflow-y:auto;text-align:left;line-height:1.5;"></div>
       </div>
     </div>
 
@@ -1382,8 +1383,24 @@ document.addEventListener('click', function(e) {
 const _recentScans = []; // [{halfPart, time}]
 const SCAN_DEDUP_WINDOW = 2000; // 2秒内相同半品料号视为重复
 
+// 显示扫码枪实际收到的原始内容（识别失败时用于诊断；成功扫码时隐藏）
+function showRawScan(code) {
+  const box = document.getElementById('rawScanBox');
+  if (!box) return;
+  const raw = String(code || '');
+  const esc = raw.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  const shown = esc.length > 300 ? esc.slice(0, 300) + ' …（共' + raw.length + '字符）' : esc;
+  box.textContent = '🔍 收到的原始内容（' + raw.length + '字符）：\n' + shown;
+  box.style.display = 'block';
+}
+function hideRawScan() {
+  const box = document.getElementById('rawScanBox');
+  if (box) { box.style.display = 'none'; box.textContent = ''; }
+}
+
 function processScan(code) {
   if (!code) return;
+  hideRawScan();
   
   // 0.5 防重复：提取半品料号，检查2秒内是否已扫过
   const _hp = code.includes('|') || code.includes('｜') ? code.split(/[｜|]/)[1]?.trim() : '';
@@ -1449,6 +1466,7 @@ function processScan(code) {
       scanInput.className = 'error';
       scanStatus.textContent = '❌ 扫码内容不完整，请重新扫码！';
       scanStatus.className = 'scan-status err';
+      showRawScan(code);
       playSound('error');
       setTimeout(() => { scanInput.className = ''; scanInput.value = ''; if(!document.getSelection().toString())scanInput.focus(); }, 2000);
       return;
@@ -1469,6 +1487,7 @@ function processScan(code) {
       scanInput.className = 'error';
       scanStatus.textContent = '❌ 无法识别半品料号';
       scanStatus.className = 'scan-status err';
+      showRawScan(code);
       playSound('error');
       setTimeout(() => { scanInput.className = ''; scanInput.value = ''; if(!document.getSelection().toString())scanInput.focus(); }, 1500);
       return;
@@ -1489,6 +1508,7 @@ function processScan(code) {
       scanInput.className = 'error';
       scanStatus.textContent = '❌ 无法识别料号线序';
       scanStatus.className = 'scan-status err';
+      showRawScan(code);
       playSound('error');
       setTimeout(() => { scanInput.className = ''; scanInput.value = ''; if(!document.getSelection().toString())scanInput.focus(); }, 1500);
       return;
@@ -1501,6 +1521,7 @@ function processScan(code) {
       scanInput.className = 'error';
       scanStatus.textContent = '❌ ' + errMsg;
       scanStatus.className = 'scan-status err';
+      showRawScan(code);
       scanStatus.style.fontWeight = 'bold';
       scanStatus.style.fontSize = '1.1rem';
       playSound('error');
@@ -1523,6 +1544,7 @@ function processScan(code) {
     scanInput.className = 'error';
     scanStatus.textContent = '❌ 无法识别半品料号，请确认扫码内容完整后重试！';
     scanStatus.className = 'scan-status err';
+    showRawScan(code);
     playSound('error');
     setTimeout(() => { scanInput.className = ''; scanInput.value = ''; if(!document.getSelection().toString())scanInput.focus(); }, 2000);
     return;
