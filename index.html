@@ -980,7 +980,7 @@ function updateSyncStatus(status, text) {
   txt.textContent = text || '';
 }
 
-async function fetchSharedData() {
+async async function fetchSharedData() {
   const url = SYNC_CONFIG.apiBase + '/repos/' + SYNC_CONFIG.owner + '/' + SYNC_CONFIG.repo + '/contents/' + SYNC_CONFIG.path + '?t=' + Date.now();
   const resp = await fetch(url, {
     headers: { 'Authorization': 'token ' + SYNC_CONFIG.token }
@@ -993,7 +993,7 @@ async function fetchSharedData() {
   return JSON.parse(content);
 }
 
-async function pushSharedData(data) {
+async async function pushSharedData(data) {
   const jsonStr = JSON.stringify(data);
   const encoded = encodeBase64(jsonStr);
   const body = {
@@ -1157,7 +1157,7 @@ function mergeRemoteData(remote) {
   return changed;
 }
 
-async function syncCycle() {
+async async function syncCycle() {
   if (isSyncing || !syncEnabled) return;
   isSyncing = true;
   updateSyncStatus('syncing', '同步中...');
