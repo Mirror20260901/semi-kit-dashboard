@@ -535,7 +535,7 @@ async function initDefaultUsers() {
 }
 
 // 登录
-async function doLogin() {
+async async function doLogin() {
   const username = document.getElementById('loginUsername').value.trim();
   const password = document.getElementById('loginPassword').value;
   const remember = document.getElementById('loginRemember').checked;
@@ -613,7 +613,7 @@ function closeChangePwdModal() {
   document.getElementById('changePwdModal').style.display = 'none';
 }
 
-async function doChangePwd() {
+async async function doChangePwd() {
   const oldPwd = document.getElementById('oldPwdInput').value.trim();
   const newPwd = document.getElementById('newPwdInput').value.trim();
   const confirmPwd = document.getElementById('confirmPwdInput').value.trim();
