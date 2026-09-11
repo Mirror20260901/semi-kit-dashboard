@@ -1809,12 +1809,11 @@ function filterScanRecords() {
     let match = true;
     if (keyword) {
       const searchFields = [
-        r.c || '',           // 唯一码
-        r.x || '',           // 线序料号
-        r.wo_no || '',       // 工单号（手动录入）
-        r.w || '',           // 工单号（二维码提取）
-        r.z || '',           // 栈板号
-        r.pd || ''           // 批次
+        String(r.c || ''),           // 唯一码
+        String(r.x || ''),           // 线序料号
+        String(r.wo_no || ''),       // 工单号（手动录入）
+        String(r.z || ''),           // 栈板号
+        String(r.pd || '')           // 批次
       ].map(v => v.toLowerCase());
       match = match && searchFields.some(v => v.includes(keyword));
     }
