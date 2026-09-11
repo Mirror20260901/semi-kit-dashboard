@@ -1804,19 +1804,23 @@ function filterScanRecords() {
   filteredScanRecords = scanRecords.filter(r => {
     let match = true;
     if (keyword) {
-      // 工单号精确匹配：如果关键词等于某条记录的工单号，只匹配工单号
-      const woExact = String(r.wo_no || '').toLowerCase() === keyword;
-      if (woExact) {
-        match = true; // 工单号精确匹配，直接通过
+      const woStr = String(r.wo_no || '').toLowerCase();
+      const woExact = woStr === keyword;
+      // 如果关键词是纯数字，视为工单号搜索，只做精确匹配
+      const isPureNumber = /^\d+$/.test(keyword);
+      if (isPureNumber) {
+        // 纯数字：只精确匹配工单号，不搜其他字段（避免唯一码包含该数字被误匹配）
+        match = woExact;
       } else {
-        // 其他字段模糊搜索（工单号不参与模糊搜索，避免误匹配）
+        // 非纯数字：正常模糊搜索所有字段
         const searchFields = [
           String(r.c || ''),           // 唯一码
           String(r.x || ''),           // 线序料号
+          String(r.wo_no || ''),       // 工单号（模糊）
           String(r.z || ''),           // 栈板号
           String(r.pd || '')           // 批次
         ].map(v => v.toLowerCase());
-        match = match && searchFields.some(v => v.includes(keyword));
+        match = searchFields.some(v => v.includes(keyword));
       }
     }
     if (dateFilter) {
