@@ -517,7 +517,7 @@ let currentUser = null; // {username, name, role}
 let users = []; // [{username, passwordHash, name, role}]
 
 // SHA-256 哈希（密码存储用）
-async async function sha256(text) {
+async function sha256(text) {
   const encoder = new TextEncoder();
   const data = encoder.encode(text);
   const hashBuffer = await crypto.subtle.digest('SHA-256', data);
@@ -535,7 +535,7 @@ async function initDefaultUsers() {
 }
 
 // 登录
-async async function doLogin() {
+async function doLogin() {
   const username = document.getElementById('loginUsername').value.trim();
   const password = document.getElementById('loginPassword').value;
   const remember = document.getElementById('loginRemember').checked;
@@ -622,7 +622,7 @@ function closeChangePwdModal() {
   document.getElementById('changePwdModal').style.display = 'none';
 }
 
-async async function doChangePwd() {
+async function doChangePwd() {
   const oldPwd = document.getElementById('oldPwdInput').value.trim();
   const newPwd = document.getElementById('newPwdInput').value.trim();
   const confirmPwd = document.getElementById('confirmPwdInput').value.trim();
@@ -989,7 +989,7 @@ function updateSyncStatus(status, text) {
   txt.textContent = text || '';
 }
 
-async async function fetchSharedData() {
+async function fetchSharedData() {
   const url = SYNC_CONFIG.apiBase + '/repos/' + SYNC_CONFIG.owner + '/' + SYNC_CONFIG.repo + '/contents/' + SYNC_CONFIG.path + '?t=' + Date.now();
   const resp = await fetch(url, {
     headers: { 'Authorization': 'token ' + SYNC_CONFIG.token }
@@ -1002,7 +1002,7 @@ async async function fetchSharedData() {
   return JSON.parse(content);
 }
 
-async async function pushSharedData(data) {
+async function pushSharedData(data) {
   const jsonStr = JSON.stringify(data);
   const encoded = encodeBase64(jsonStr);
   const body = {
@@ -1166,7 +1166,7 @@ function mergeRemoteData(remote) {
   return changed;
 }
 
-async async function syncCycle() {
+async function syncCycle() {
   if (isSyncing || !syncEnabled) return;
   isSyncing = true;
   updateSyncStatus('syncing', '同步中...');
