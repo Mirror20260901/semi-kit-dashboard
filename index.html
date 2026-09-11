@@ -1144,16 +1144,9 @@ function mergeRemoteData(remote) {
     }
   }
 
-  // 合并 importedWorkOrders
+  // 合并 importedWorkOrders：直接使用远程数据（推送是即时的，远程始终是最新状态）
   if (remote.importedWorkOrders && Array.isArray(remote.importedWorkOrders)) {
-    const existNums = new Set(importedWorkOrders.map(w => w.number));
-    for (const rwo of remote.importedWorkOrders) {
-      if (!existNums.has(rwo.number)) {
-        importedWorkOrders.push(rwo);
-        existNums.add(rwo.number);
-        changed = true;
-      }
-    }
+    importedWorkOrders = remote.importedWorkOrders.slice();
   }
   // componentCounts 不再从远程合并，改为从扫码记录重新计算（确保已归数量=实际扫码数量）
 
