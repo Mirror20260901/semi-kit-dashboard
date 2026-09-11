@@ -517,7 +517,7 @@ let currentUser = null; // {username, name, role}
 let users = []; // [{username, passwordHash, name, role}]
 
 // SHA-256 哈希（密码存储用）
-async function sha256(text) {
+async async function sha256(text) {
   const encoder = new TextEncoder();
   const data = encoder.encode(text);
   const hashBuffer = await crypto.subtle.digest('SHA-256', data);
