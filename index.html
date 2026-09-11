@@ -1263,6 +1263,12 @@ function triggerSync() {
 }
 // ====== END GITHUB SYNC ======
 
+// 【关键修复】currentWorkOrder / importedWorkOrders 必须在 loadData() 调用前声明，
+// 否则 loadData 内赋值时触发 TDZ（暂时性死区）ReferenceError，
+// 导致本地数据恢复中途失败 → 栈板号丢失 → 扫码枪每枪都被"请先设置栈板号"拦截。
+let currentWorkOrder = { number: '', product: '', qty: 0, targetQty: 0, componentCounts: {} };
+let importedWorkOrders = []; // 批量导入的工单列表 [{number, product, qty}]
+
 // 页面加载时恢复数据
 const restored = loadData();
 if (restored) {
@@ -2372,7 +2378,7 @@ function addBOMManual() {
 }
 
 // ====== WORK ORDER MANAGEMENT ======
-let currentWorkOrder = { number: '', product: '', qty: 0, targetQty: 0, componentCounts: {} };
+// currentWorkOrder 声明已上移至 loadData() 调用之前（修复TDZ导致本地恢复失败的问题）
 
 // 从扫码记录重新计算各半品的已归数量（入库）
 function recalcComponentCounts() {
@@ -2442,7 +2448,7 @@ function clearWorkOrder() {
 }
 
 // ====== BATCH WORK ORDER IMPORT ======
-let importedWorkOrders = []; // 批量导入的工单列表 [{number, product, qty}]
+// importedWorkOrders 声明已上移至 loadData() 调用之前（同上，修复TDZ问题）
 
 function toggleBatchImport() {
   const panel = document.getElementById('batchImportPanel');
