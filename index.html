@@ -1796,7 +1796,13 @@ function renderRecentList() {
 }
 
 // ====== FILTER SCAN RECORDS ======
+// 搜索防抖，让输入更流畅
+let _filterTimer = null;
 function filterScanRecords() {
+  clearTimeout(_filterTimer);
+  _filterTimer = setTimeout(_doFilterScanRecords, 150);
+}
+function _doFilterScanRecords() {
   const keyword = document.getElementById('scanSearchInput').value.trim().toLowerCase();
   const dateFilter = document.getElementById('scanDateFilter').value;
   const actionFilter = document.getElementById('scanActionFilter').value;
