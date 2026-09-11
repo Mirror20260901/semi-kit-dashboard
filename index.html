@@ -613,7 +613,7 @@ function closeChangePwdModal() {
   document.getElementById('changePwdModal').style.display = 'none';
 }
 
-function doChangePwd() {
+async function doChangePwd() {
   const oldPwd = document.getElementById('oldPwdInput').value.trim();
   const newPwd = document.getElementById('newPwdInput').value.trim();
   const confirmPwd = document.getElementById('confirmPwdInput').value.trim();
@@ -624,9 +624,9 @@ function doChangePwd() {
   
   const user = users.find(u => u.username === currentUser.username);
   if (!user) { showToast('用户不存在', 'error'); return; }
-  if (user.password !== oldPwd) { showToast('当前密码错误', 'error'); return; }
+  if (user.passwordHash !== await sha256(oldPwd)) { showToast('当前密码错误', 'error'); return; }
   
-  user.password = newPwd;
+  user.passwordHash = await sha256(newPwd);
   saveUsers();
   closeChangePwdModal();
   showToast('密码修改成功', 'success');
