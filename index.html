@@ -1649,13 +1649,14 @@ function processScan(code) {
   // 只有「同码同动作重复」才视为重复扫码；「同码不同动作」（入库+出库配对）属于合法工作流，必须保留
   const isDup = hasSameCodeWithSameAction && !hasOppositeActionSameCode;
   
-  // Create record
+  // Create record（精度到秒：同分钟内先入后出/先出后入配对操作，时间精度必须够，否则入出库顺序乱了导致库存=入库）
   const now = new Date();
-  const timeStr = now.getFullYear() + '-' + 
-    String(now.getMonth()+1).padStart(2,'0') + '-' + 
-    String(now.getDate()).padStart(2,'0') + ' ' + 
-    String(now.getHours()).padStart(2,'0') + ':' + 
-    String(now.getMinutes()).padStart(2,'0');
+  const timeStr = now.getFullYear() + '-' +
+    String(now.getMonth()+1).padStart(2,'0') + '-' +
+    String(now.getDate()).padStart(2,'0') + ' ' +
+    String(now.getHours()).padStart(2,'0') + ':' +
+    String(now.getMinutes()).padStart(2,'0') + ':' +
+    String(now.getSeconds()).padStart(2,'0');
   
   const record = {
     t: timeStr,
