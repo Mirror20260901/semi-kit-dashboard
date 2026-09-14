@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="zh-CN" data-page-node-id="BTKRMq1pv8Cf46VaBaBICW">
 <head data-page-node-id="R6oGa1WIwHB0WxZmG5r2qG">
 <meta charset="UTF-8" data-page-node-id="6wBtBt32xIEOGwVBwF30o4">
@@ -1223,13 +1223,32 @@ async function syncCycle() {
       deletedRecords: mergedDeleted,
       updatedAt: new Date().toISOString()
     };
+    // 【推送条件修复】此前仅在"拉取到远端有新变化"时才推送——若只有本机新增了
+    // 扫码记录而远端一直无变化，本机记录会永远滞留本地不上云，导致多台设备
+    // 库存对不上（如某台显示5694、其他台5043）。现增加判断：本地存在远端没有的
+    // 记录或墓碑时，同样触发推送。
+    let localHasNew = false;
+    if (remote && Array.isArray(remote.scanRecords)) {
+      const _remoteKeys = new Set(remote.scanRecords.map(r => recordKey(r.c, r.t)));
+      localHasNew = scanRecords.some(r => !_remoteKeys.has(recordKey(r.c, r.t)));
+    } else {
+      localHasNew = scanRecords.length > 0;
+    }
+    let tombstoneNew = false;
+    if (remote && Array.isArray(remote.deletedRecords)) {
+      const _remoteDel = new Set(remote.deletedRecords);
+      tombstoneNew = deletedRecords.some(d => !_remoteDel.has(d));
+    } else {
+      tombstoneNew = deletedRecords.length > 0;
+    }
+    const shouldPush = hadChanges || localHasNew || tombstoneNew;
     // 只在有实际变化时才推送，避免无变化时因时间戳不同导致反复触发 Pages 重建
-    if (hadChanges) {
+    if (shouldPush) {
       await pushSharedData(dataToPush);
     }
     lastSyncTime = new Date();
     updateSyncStatus('synced', '已同步');
-    if (hadChanges) {
+    if (shouldPush) {
       dedupBomData();
       saveData();
       refreshAllUI();
@@ -2817,6 +2836,9 @@ function refreshDashboard() {
 }
 
 function renderTable(data) {
+  // 【防御修复】refreshAllUI 曾以无参形式调用本函数导致 data.length 抛错，
+  // 同步后 UI 刷新中断（表现为设备间数据显示不同步）。缺省时用最新看板数据。
+  data = data || window._dashData || [];
   const tbody = document.getElementById('dashBody');
   const search = (document.getElementById('searchInput').value || '').toLowerCase();
   const woFilter = (document.getElementById('woFilter').value || '').trim().toLowerCase();
