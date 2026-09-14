@@ -1264,11 +1264,9 @@ async function doCreateUser() {
     createdBy: currentUser.id
   };
   saveData();
-  // 【关键修复】创建账号必须立即触发云端同步，否则其他设备 5 秒内用新账号登录会因云端没数据而失败
-  if (typeof triggerSync === 'function') triggerSync();
   document.getElementById('createUserForm').style.display = 'none';
   renderUserList();
-  showToast('账号 ' + uid + ' 创建成功并同步到云端', 'success');
+  showToast('账号 ' + uid + ' 创建成功', 'success');
 }
 
 let _resetPwdTarget = '';
@@ -1290,11 +1288,9 @@ async function doResetPassword() {
   users[_resetPwdTarget].isDefault = false;
   users[_resetPwdTarget].updatedAt = new Date().toISOString();
   saveData();
-  // 【关键修复】密码重置必须立即同步云端，否则其他设备 5 秒内用新密码登录会因为对不上旧 hash 而失败
-  if (typeof triggerSync === 'function') triggerSync();
   document.getElementById('resetPwdForm').style.display = 'none';
   renderUserList();
-  showToast('已重置 ' + _resetPwdTarget + ' 的密码并同步到云端', 'success');
+  showToast('已重置 ' + _resetPwdTarget + ' 的密码', 'success');
   _resetPwdTarget = '';
 }
 
@@ -1307,10 +1303,8 @@ function toggleUserEnabled(uid) {
   users[uid].enabled = !users[uid].enabled;
   users[uid].updatedAt = new Date().toISOString();
   saveData();
-  // 【关键修复】启用/停用必须立即同步，避免其他设备误以为账号仍可用
-  if (typeof triggerSync === 'function') triggerSync();
   renderUserList();
-  showToast(uid + ' 已' + (users[uid].enabled ? '启用' : '停用') + '（已同步）', 'success');
+  showToast(uid + ' 已' + (users[uid].enabled ? '启用' : '停用'), 'success');
 }
 
 function deleteUser(uid) {
@@ -1319,8 +1313,6 @@ function deleteUser(uid) {
   if (!confirm('确定删除账号 ' + uid + ' 吗？此操作不可恢复')) return;
   delete users[uid];
   saveData();
-  // 【关键修复】删除账号必须立即同步，避免其他设备仍能拿旧账号数据登录
-  if (typeof triggerSync === 'function') triggerSync();
   renderUserList();
   showToast('账号 ' + uid + ' 已删除', 'success');
 }
@@ -1642,21 +1634,16 @@ function processScan(code) {
     }
   }
   
-  // Check duplicate（核心防重逻辑：同二维码 + 同动作 不允许重复入库/出库）
-  // 但允许：① 同一码先入库后出库（合法工作流）；② 同一码先出库后入库（退货回库）
-  const hasSameCodeWithSameAction = scanRecords.some(r => r.c === code && r.a === currentAction);
-  const hasOppositeActionSameCode = scanRecords.some(r => r.c === code && r.a !== currentAction);
-  // 只有「同码同动作重复」才视为重复扫码；「同码不同动作」（入库+出库配对）属于合法工作流，必须保留
-  const isDup = hasSameCodeWithSameAction && !hasOppositeActionSameCode;
-  
-  // Create record（精度到秒：同分钟内先入后出/先出后入配对操作，时间精度必须够，否则入出库顺序乱了导致库存=入库）
+  // Check duplicate
+  const isDup = scanRecords.some(r => r.c === code && r.a === currentAction);
+
+  // Create record
   const now = new Date();
   const timeStr = now.getFullYear() + '-' +
     String(now.getMonth()+1).padStart(2,'0') + '-' +
     String(now.getDate()).padStart(2,'0') + ' ' +
     String(now.getHours()).padStart(2,'0') + ':' +
-    String(now.getMinutes()).padStart(2,'0') + ':' +
-    String(now.getSeconds()).padStart(2,'0');
+    String(now.getMinutes()).padStart(2,'0');
   
   const record = {
     t: timeStr,
@@ -1907,10 +1894,7 @@ function deleteSingleRecord(index) {
   renderRecentList();
   updateWorkOrderDisplay();
   refreshDashboard();
-  // 【关键修复】删除后立即同步到云端（不要等 triggerSync 的 2 秒延迟）
-  // 防止用户在 2 秒内刷新或关闭页面导致删除丢失，被旧远程数据覆盖回来
-  if (typeof syncCycle === 'function') syncCycle();
-  showToast('记录已删除并同步', 'success');
+  showToast('记录已删除', 'success');
 }
 
 function deleteByDate() {
@@ -1951,9 +1935,7 @@ function deleteByDate() {
   renderRecentList();
   updateWorkOrderDisplay();
   refreshDashboard();
-  // 【关键修复】删除后立即同步到云端（不要等 triggerSync 的 2 秒延迟）
-  if (typeof syncCycle === 'function') syncCycle();
-  showToast(`已删除 ${recordsToDelete.length} 条记录并同步`, 'success');
+  showToast(`已删除 ${recordsToDelete.length} 条记录`, 'success');
 }
 
 // ====== CSV EXPORT ======
