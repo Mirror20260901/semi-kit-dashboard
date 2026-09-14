@@ -493,14 +493,29 @@ const INITIAL_INVENTORY = JSON.parse(JSON.stringify(inventory));
 
 function recomputeInventory() {
   const result = JSON.parse(JSON.stringify(INITIAL_INVENTORY));
-  for (const rec of scanRecords) {
+  // 【关键修复】必须按时间“正序”推演，否则出入库会算错。
+  // scanRecords 是 unshift 插入的（最新的在数组最前），若直接按数组顺序遍历，
+  // 就变成“先出库后入库”：出库时库存为0，被 Math.max(0,...) 夹紧成0（漏洞丢失），
+  // 之后入库又把数量加上去，最终库存停留在“累计入库”而不是“入库-出库”。
+  // 这正是 0912 那批“已出库但库存仍显示入库数量”的根因。
+  // 排序：以时间 t 字符串升序（格式 YYYY-MM-DD HH:mm，可直接字典序比较）；
+  // 同时间的记录，出库排在入库之后（保持“先入后出”的合理语义）。
+  const ordered = scanRecords.slice().sort((a, b) => {
+    const ta = String(a.t || ''), tb = String(b.t || '');
+    if (ta !== tb) return ta < tb ? -1 : 1;
+    const aa = a.a === '出库' ? 1 : 0, ab = b.a === '出库' ? 1 : 0;
+    return aa - ab;
+  });
+  for (const rec of ordered) {
     const hp = rec.x || '';
     if (!hp) continue;
     const q = (rec.q && rec.q > 0) ? rec.q : 1; // 兼容旧记录（默认1）
     if (rec.a === '入库') {
       result[hp] = (result[hp] || 0) + q;
     } else if (rec.a === '出库') {
-      result[hp] = Math.max(0, (result[hp] || 0) - q);
+      // 【不夹紧】允许为负数：负数代表“出了没入过的货”，是需要人工核对的账实不符，
+      // 用 0 夹紧会把这种异常悄悄吞掉，导致库存虚高且无从追查。
+      result[hp] = (result[hp] || 0) - q;
     }
   }
   // 确保BOM里所有半品料号都注册进库存表（恢复/导入的新BOM可正常累计与展示）
@@ -1782,8 +1797,9 @@ function processScan(code) {
     
     // Update inventory（按条码上的数量累加；BOM外的半品也注册进库存表）
     if (halfPart) {
+      // 与 recomputeInventory 口径保持一致：出库不夹紧，允许为负数以暴露账实不符
       if (currentAction === '入库') inventory[halfPart] = (inventory[halfPart] || 0) + scanQty;
-      else if (currentAction === '出库') inventory[halfPart] = Math.max(0, (inventory[halfPart] || 0) - scanQty);
+      else if (currentAction === '出库') inventory[halfPart] = (inventory[halfPart] || 0) - scanQty;
     }
     
     // Update per-component work order progress（按条码上的数量累计）
@@ -3012,7 +3028,7 @@ function exportToExcel() {
           else if (r.a === '出库') outCount += q;
         }
       });
-      const status = qty === 0 ? '缺料' : (qty < 10 ? '低库存' : '正常');
+      const status = qty < 0 ? '异常(负库存)' : (qty === 0 ? '缺料' : (qty < 10 ? '低库存' : '正常'));
       inventoryData.push([cp, item.p, item.j, item.l, item.y, inCount, outCount, qty, status]);
     });
   });
