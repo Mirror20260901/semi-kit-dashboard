@@ -1150,21 +1150,18 @@ function mergeRemoteData(remote) {
   }
 
   // ===== 第三步：合并远程 scanRecords（跳过已删除和旧代码污染的记录）=====
+  // 【关键修复】墓碑只按完整 key（码||时间）精确匹配。
+  // 旧版把墓碑的"时间戳部分"单独拿出来做兜底匹配（deletedTsSet.has(tsId)），
+  // 但 t 是分钟级——同一分钟扫的多个码时间戳相同，清除这批记录后，
+  // 未来任何同分钟的正常记录都会被永久拒绝合并（表现为：恢复后记录数变少、
+  // 新扫码在其他设备上不显示）。分钟级时间戳碰撞太常见，此兜底纯属误杀，已移除。
   if (remote.scanRecords && Array.isArray(remote.scanRecords)) {
-    // 构建墓碑匹配集合（兼容旧格式）
-    const deletedTsSet = new Set();
-    deletedRecords.forEach(dk => {
-      const idx = dk.lastIndexOf('||');
-      if (idx >= 0) deletedTsSet.add(dk.substring(idx + 2));
-      deletedTsSet.add(String(dk).replace(/[\r\n|｜]/g, ''));
-    });
     const existCodes = new Set(scanRecords.map(r => recordKey(r.c, r.t)));
     let remoteChanged = false;
     for (const rr of remote.scanRecords) {
       const rid = recordKey(rr.c, rr.t);
-      const tsId = recordTimestamp(rr.t);
-      // 跳过已被删除的记录
-      if (tombstoneSet.has(rid) || deletedTsSet.has(rid) || deletedTsSet.has(tsId)) continue;
+      // 跳过已被删除的记录（仅完整 key 匹配）
+      if (tombstoneSet.has(rid)) continue;
       // 如果远程数据是旧代码污染的，跳过合并
       if (remoteIsStale) continue;
       if (!existCodes.has(rid)) {
