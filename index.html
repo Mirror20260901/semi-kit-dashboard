@@ -826,6 +826,32 @@ function loadUsers() {
 const STORAGE_KEY = 'semiKitDashboard';
 const DATA_VERSION = 'v5'; // v5: 切换数据文件+版本升级，彻底隔离旧标签页数据
 
+// 【防循环】只落盘、不触发同步的保存。
+// syncCycle 内部回写数据时使用——若此处调用 saveData()，而 saveData 又会
+// 调 syncCycle()，会形成 syncCycle → saveData → syncCycle 的递归/重复同步。
+function persistLocal() {
+  try {
+    const data = {
+      _version: DATA_VERSION,
+      scanRecords: scanRecords,
+      inventory: inventory,
+      bomData: bomData,
+      bomCleared: bomCleared,
+      productList: productList,
+      currentWorkOrder: currentWorkOrder,
+      importedWorkOrders: importedWorkOrders,
+      currentAction: currentAction,
+      deletedRecords: deletedRecords,
+      palletPrefix: (document.getElementById('palletPrefix') || {}).value || '',
+      palletSeq: (document.getElementById('palletSeq') || {}).value || '',
+      savedAt: new Date().toISOString()
+    };
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+  } catch(e) {
+    console.warn('落盘失败:', e);
+  }
+}
+
 function saveData() {
   try {
     const data = {
@@ -1004,6 +1030,12 @@ const SYNC_CONFIG = {
 let syncTimer = null;
 let remoteSha = '';
 let remoteData = null; // 【防回退】最近一次拉取的云端数据快照，供推送前做并集保护
+let lastPushAt = 0;    // 【防循环】上次推送的时间戳，用于推送节流
+const PUSH_MIN_INTERVAL = 8000; // 【防循环】同一设备最短推送间隔（毫秒）
+// 【重要】用户主动清除数据的豁免标记。
+// 防回退保护会拦截"记录数骤减"的推送，但用户主动点「清除」时记录数本来就是 0，
+// 必须允许这种推送生效，否则云端清不掉。此标记在清除/恢复后被置为一次有效。
+let allowShrinkPush = false;
 let isSyncing = false;
 let lastSyncTime = null;
 let syncEnabled = true;
@@ -1034,9 +1066,19 @@ async function fetchSharedData() {
 // ====== 防回退保护：避免"旧状态设备"把云端记录大量覆盖掉 ======
 // 场景：某设备在误清除后仍开着旧页面，其本地只有少量记录/含大量墓碑，
 // 一旦它推送，云端 600+ 条历史会被覆盖成十几条（线上真实发生过两次）。
-// 策略：推送前先对比云端与本次待推数据——
-//   若"本地要推送的记录数"明显少于"云端记录数"（说明本次推送是在削减数据），
-//   则改为推送"云端 ∪ 本地"的并集，并剔除那些会误删云端记录的墓碑，保证只增不减。
+//
+// 【v2 重要修复：消除推送死循环】
+// 上一版只在 pushSharedData 内部临时做并集，且每次都写入新的 mergedAt 时间戳。
+// 这会造成两台设备互相触发、无限推送（线上实测 6.5 分钟产生 30 次提交）：
+//   设备A推送（写 mergedAt=T1）→ 设备B拉取后本地被改成并集、与远端不一致
+//   → B 判定 hadChanges 再次推送（写 T2）→ A 再推 …… 永不停止。
+// 现在改为：把并集合并当作一次真实的本地状态变更，在 syncCycle 内完成并
+// 回写到本地 scanRecords/deletedRecords，推送后本地与云端一致，循环自然终止；
+// 同时不再写入每次都会变的 mergedAt，仅用 mergedNote 做一次性标记。
+//
+// 另一种循环来源：本地把某些记录判为"需要保留"，云端墓碑却把它们标记为已删除，
+// 于是每次拉取都过滤掉、每次推送又加回去（拉取/推送相互打架）。因此并集里的
+// 墓碑必须同步剔除这些 key，让本地与云端对同一批记录达成一致。
 function mergeBeforePush(localData, remoteSnapshot) {
   try {
     if (!remoteSnapshot || !Array.isArray(remoteSnapshot.scanRecords)) return localData;
@@ -1070,9 +1112,11 @@ function mergeBeforePush(localData, remoteSnapshot) {
     const tombAll = new Set([...(remoteSnapshot.deletedRecords || []), ...(localData.deletedRecords || [])]);
     const finalTomb = [...tombAll].filter(k => !keepKeys.has(k)).slice(-5000);
 
-    console.log('[防回退] 合并后 ' + records.length + ' 条（新增 ' + added + '），墓碑 ' + finalTomb.length);
+    console.log('[防回退] 合并后 ' + records.length + ' 条（新增 ' + added + '），墓碑 ' + finalTomb.length +
+                '（已剔除 ' + (tombAll.size - finalTomb.length) + ' 个会误删保留记录的墓碑）');
+    // 注意：只标记 mergedNote，不写 mergedAt（时间戳每次都不同，会诱发推送循环）
     return { ...localData, scanRecords: records, deletedRecords: finalTomb,
-             mergedAt: new Date().toISOString(), mergedNote: '防回退并集合并' };
+             mergedNote: '防回退并集合并' };
   } catch(e) {
     console.warn('[防回退] 合并异常，按原数据推送', e);
     return localData;
@@ -1080,12 +1124,25 @@ function mergeBeforePush(localData, remoteSnapshot) {
 }
 
 async function pushSharedData(data) {
-  // 推送前做防回退合并（需先确保 remoteSha/remoteData 可用）
+  // 【防回退 v2】合并已统一在 syncCycle 内完成并回写本地（那里能拿到完整的
+  // remote 快照，也能同步更新 scanRecords 变量与界面）。此处不再重复合并——
+  // 重复合并会与 syncCycle 的结果不一致，形成"推送内容 ≠ 本地内容"的错位，
+  // 下一轮拉取又会判定有变化，从而诱发推送循环。
+  // 仅作为兜底：若调用方直接推送了明显会削减云端的数据，做一次保护。
+  // 例外：用户主动清除/恢复（allowShrinkPush）时放行——那是合法操作。
   try {
-    if (typeof remoteData !== 'undefined' && remoteData) {
-      data = mergeBeforePush(data, remoteData);
+    const remoteRec = (typeof remoteData !== 'undefined' && remoteData
+      && Array.isArray(remoteData.scanRecords)) ? remoteData.scanRecords : null;
+    const localRecs = Array.isArray(data.scanRecords) ? data.scanRecords : [];
+    if (!allowShrinkPush && remoteRec && remoteRec.length >= 20 && localRecs.length < remoteRec.length * 0.5) {
+      console.warn('[防回退] pushSharedData 收到削减性数据（本地 ' + localRecs.length +
+                   ' < 云端 ' + remoteRec.length + '），已拦截本次推送以避免覆盖云端');
+      return { ok: false, blocked: true, reason: 'shrinking-push' };
     }
-  } catch(e) { console.warn('防回退预处理失败', e); }
+  } catch(e) { console.warn('防回退兜底检查失败', e); }
+  // 豁免标记只在一次推送内有效，推送后立即失效（防止后续误推削减数据）
+  const _wasAllowShrink = allowShrinkPush;
+  if (_wasAllowShrink) allowShrinkPush = false;
 
   const jsonStr = JSON.stringify(data);
   const encoded = encodeBase64(jsonStr);
@@ -1267,6 +1324,19 @@ async function syncCycle() {
         const rid = recordKey(r.c, r.t);
         return !remoteDeletedSet.has(rid);
       });
+      // 【防循环·关键】过滤结果必须回写本地 scanRecords。
+      // 否则本地仍保留这些"云端已删除"的记录：本轮推的是过滤后的 680 条，
+      // 下一轮 localHasNew 又因本地 687 > 远端 680 而为 true → 再次推送 →
+      // 又被过滤 …… 形成无限推送。回写后本地与云端一致，循环终止。
+      if (pushRecords.length !== scanRecords.length) {
+        console.log('[防循环] 本地有 ' + (scanRecords.length - pushRecords.length) +
+                    ' 条记录已被云端墓碑标记删除，同步移除并回写本地');
+        scanRecords = pushRecords.slice();
+        recomputeInventory();
+        if (currentWorkOrder.number) recalcComponentCounts();
+        persistLocal();
+        refreshAllUI();
+      }
     }
     // 推送前合并本地和远程的墓碑（确保墓碑只增不减）
     const mergedDeleted = [...deletedRecords];
@@ -1311,16 +1381,49 @@ async function syncCycle() {
     } else {
       tombstoneNew = deletedRecords.length > 0;
     }
-    const shouldPush = hadChanges || localHasNew || tombstoneNew;
+    // 【防回退 v2】推送前先做并集合并，并把合并结果【回写本地】。
+    // 回写是关键：否则本地与云端永远不一致，下一轮拉取又会判定 hadChanges
+    // 而再次推送，两台设备互相触发形成无限推送循环（曾实测 6.5 分钟 30 次提交）。
+    let guardMerged = false;
+    if (!allowShrinkPush) {
+      const guarded = mergeBeforePush(dataToPush, remote);
+      if (guarded !== dataToPush && guarded.mergedNote) {
+        dataToPush.scanRecords = guarded.scanRecords;
+        dataToPush.deletedRecords = guarded.deletedRecords;
+        dataToPush.mergedNote = guarded.mergedNote;
+        // 回写本地，使本地与即将推送的内容一致
+        scanRecords = guarded.scanRecords.slice();
+        deletedRecords = guarded.deletedRecords.slice();
+        recomputeInventory();
+        if (currentWorkOrder.number) recalcComponentCounts();
+        persistLocal();
+        refreshAllUI();
+        guardMerged = true;
+      }
+    } else {
+      console.log('[防回退] 检测到用户主动清除/恢复操作，本次推送跳过并集保护（放开削减）');
+    }
+    // 【推送条件收紧】mergedNote 属一次性标记，不参与"是否有变化"的判断，
+    // 否则每次推送都带标记 → 每次都被认为有新内容 → 又一轮推送。
+    let shouldPush = hadChanges || localHasNew || tombstoneNew || guardMerged;
+    // 【最后防线：推送节流】同一设备 8 秒内最多推送一次。
+    // 即便前面还有未预料到的循环源，也不会再出现"每几秒一次"的高频刷提交
+    // （线上曾出现 6.5 分钟 30 次提交，会很快耗尽 GitHub API 配额）。
+    const now = Date.now();
+    if (shouldPush && (now - lastPushAt) < PUSH_MIN_INTERVAL) {
+      console.log('[节流] 距上次推送仅 ' + ((now - lastPushAt) / 1000).toFixed(1) + ' 秒，本次跳过推送');
+      shouldPush = false;
+    }
     // 只在有实际变化时才推送，避免无变化时因时间戳不同导致反复触发 Pages 重建
     if (shouldPush) {
+      lastPushAt = now;
       await pushSharedData(dataToPush);
     }
     lastSyncTime = new Date();
     updateSyncStatus('synced', '已同步');
     if (shouldPush) {
       dedupBomData();
-      saveData();
+      persistLocal();   // 【防循环】用只落盘版本，避免 saveData→syncCycle 递归
       refreshAllUI();
     }
   } catch(e) {
@@ -3161,6 +3264,7 @@ function undoClear() {
   try { localStorage.setItem(RECYCLE_KEY, JSON.stringify(bin)); } catch(e) {}
   recomputeInventory();
   filteredScanRecords = null;
+  allowShrinkPush = true; // 用户主动恢复，允许直接推送（避免被并集保护改写）
   saveData(); // 触发同步：恢复的记录会被推上云端
   renderRecentList(); refreshDashboard(); updateWorkOrderDisplay();
   showToast('↩️ 已恢复 ' + restored + ' 条记录' + (skipped > 0 ? '（' + skipped + ' 条已存在跳过）' : ''), 'success');
@@ -3206,6 +3310,7 @@ async function clearAllData() {
     document.getElementById('scanActionFilter').value = '';
     filteredScanRecords = null;
     recomputeInventory();
+    allowShrinkPush = true;   // 用户主动筛选清除，允许推送到云端
     saveData();
     renderRecentList(); refreshDashboard(); updateWorkOrderDisplay(); updateClearBtnLabel();
     showToast('已清除 ' + targets.length + ' 条筛选记录，可用「↩️ 一键恢复」找回', 'success');
@@ -3248,6 +3353,8 @@ async function clearAllData() {
   recomputeInventory();
 
   // 写 localStorage 并立刻同步 GitHub
+  // 【重要】置豁免标记：用户主动清除必须能推上云端（否则云端清不掉）
+  allowShrinkPush = true;
   saveData();
 
   // 刷新 UI
