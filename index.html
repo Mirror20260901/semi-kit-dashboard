@@ -386,7 +386,7 @@ button:focus-visible,input:focus-visible,a:focus-visible{outline:2px solid var(-
       <div class="card-header" data-page-node-id="YKXRziojKA8MqkZKXZrMtf">
         <h2 data-page-node-id="lILBNedJo6t3z9IU6nyhMF">📋 扫码记录</h2>
         <button class="btn btn-outline btn-sm" onclick="exportScanCSV()" data-page-node-id="VJNljTzdVoRvGfGKKaikMl">💾 导出 CSV</button>
-        <button class="btn btn-outline btn-sm" style="color:var(--danger);border-color:var(--danger);margin-left:6px" onclick="clearAllData()" data-page-node-id="CdiJ8gad6GLsoBFXXpgoMn">🗑️ 清除所有数据</button>
+        <button class="btn btn-outline btn-sm" style="color:var(--success);border-color:var(--success);margin-left:6px" onclick="undoClear()" title="恢复最近一次清除的记录">↩️ 一键恢复</button><button id="clearAllBtn" class="btn btn-outline btn-sm" style="color:var(--danger);border-color:var(--danger);margin-left:6px" onclick="clearAllData()" data-page-node-id="CdiJ8gad6GLsoBFXXpgoMn">🗑️ 清除所有数据</button>
       </div>
       <div class="card-body" data-page-node-id="jVLKDNkmyv7waOcM3EMBb4">
         <!-- Search and filter controls -->
@@ -2005,6 +2005,7 @@ function _doFilterScanRecords() {
   });
   
   renderRecentList();
+  updateClearBtnLabel();
 }
 
 function clearScanFilter() {
@@ -2013,6 +2014,7 @@ function clearScanFilter() {
   document.getElementById('scanActionFilter').value = '';
   filteredScanRecords = null;
   renderRecentList();
+  updateClearBtnLabel();
 }
 
 // ====== DELETE SCAN RECORD ======
@@ -3070,31 +3072,109 @@ function exportToExcel() {
 }
 
 // ====== CLEAR ALL DATA ======
+// ====== 回收站：清除的记录存这里，支持一键恢复 ======
+const RECYCLE_KEY = 'semiKitRecycleBin';
+function pushRecycleBin(records, label) {
+  try {
+    let bin = [];
+    try { bin = JSON.parse(localStorage.getItem(RECYCLE_KEY) || '[]'); } catch(e) { bin = []; }
+    bin.push({ time: new Date().toISOString(), label: label || '清除', count: records.length, records: records });
+    if (bin.length > 10) bin = bin.slice(-10); // 最多保留最近10次清除
+    localStorage.setItem(RECYCLE_KEY, JSON.stringify(bin));
+  } catch(e) { console.warn('写入回收站失败', e); }
+}
+
+// 一键恢复：把最近一次清除的记录放回来（并从墓碑剔除，避免被同步过滤）
+function undoClear() {
+  let bin = [];
+  try { bin = JSON.parse(localStorage.getItem(RECYCLE_KEY) || '[]'); } catch(e) { bin = []; }
+  if (!bin.length) { showToast('没有可恢复的清除记录', 'info'); return; }
+  const last = bin[bin.length - 1];
+  const exist = new Set(scanRecords.map(r => recordKey(r.c, r.t)));
+  let restored = 0, skipped = 0;
+  const back = [];
+  last.records.forEach(r => {
+    const k = recordKey(r.c, r.t);
+    // 关键：从墓碑剔除，否则页面加载/同步时会被再次过滤掉
+    const di = deletedRecords.indexOf(k);
+    if (di >= 0) deletedRecords.splice(di, 1);
+    if (!exist.has(k)) { back.push(r); exist.add(k); restored++; }
+    else skipped++;
+  });
+  if (restored > 0) scanRecords.unshift(...back);
+  bin.pop(); // 弹出该批次（每点一次恢复一批）
+  try { localStorage.setItem(RECYCLE_KEY, JSON.stringify(bin)); } catch(e) {}
+  recomputeInventory();
+  filteredScanRecords = null;
+  saveData(); // 触发同步：恢复的记录会被推上云端
+  renderRecentList(); refreshDashboard(); updateWorkOrderDisplay();
+  showToast('↩️ 已恢复 ' + restored + ' 条记录' + (skipped > 0 ? '（' + skipped + ' 条已存在跳过）' : ''), 'success');
+}
+
+// 清除按钮文案：随筛选状态变化
+function updateClearBtnLabel() {
+  const btn = document.getElementById('clearAllBtn');
+  if (!btn) return;
+  const keyword = document.getElementById('scanSearchInput').value.trim();
+  const dateFilter = document.getElementById('scanDateFilter').value;
+  const actionFilter = document.getElementById('scanActionFilter').value;
+  if ((keyword || dateFilter || actionFilter) && filteredScanRecords) {
+    btn.innerHTML = '🗑️ 清除筛选记录(' + filteredScanRecords.length + ')';
+  } else {
+    btn.innerHTML = '🗑️ 清除所有数据';
+  }
+}
+
 async function clearAllData() {
-  // 【防误删加固）清除前必须输入确认词，避免误点导致数据丢失
+  // 【按筛选清除】有筛选条件时，只清除筛选出的记录；无筛选时才清全部
+  const keyword = document.getElementById('scanSearchInput').value.trim().toLowerCase();
+  const dateFilter = document.getElementById('scanDateFilter').value;
+  const actionFilter = document.getElementById('scanActionFilter').value;
+  const hasFilter = !!(keyword || dateFilter || actionFilter) && filteredScanRecords !== null;
+
+  if (hasFilter) {
+    const targets = filteredScanRecords.filter(r => r.c);
+    if (targets.length === 0) { showToast('筛选结果为空，没有可清除的记录', 'info'); return; }
+    if (!confirm('将清除筛选出的 ' + targets.length + ' 条记录（当前共 ' + scanRecords.length + ' 条）。\n\n清除后可用「↩️ 一键恢复」找回。确定清除？')) return;
+    // 存入回收站 → 打墓碑 → 移除
+    pushRecycleBin(targets, '筛选清除');
+    const tKeys = new Set(targets.map(r => recordKey(r.c, r.t)));
+    targets.forEach(r => {
+      const key = recordKey(r.c, r.t);
+      if (!deletedRecords.includes(key)) deletedRecords.push(key);
+    });
+    if (deletedRecords.length > 5000) deletedRecords = deletedRecords.slice(-5000);
+    scanRecords = scanRecords.filter(r => !tKeys.has(recordKey(r.c, r.t)));
+    // 清空筛选并刷新
+    document.getElementById('scanSearchInput').value = '';
+    document.getElementById('scanDateFilter').value = '';
+    document.getElementById('scanActionFilter').value = '';
+    filteredScanRecords = null;
+    recomputeInventory();
+    saveData();
+    renderRecentList(); refreshDashboard(); updateWorkOrderDisplay(); updateClearBtnLabel();
+    showToast('已清除 ' + targets.length + ' 条筛选记录，可用「↩️ 一键恢复」找回', 'success');
+    return;
+  }
+
+  // 【全部清除】无筛选时走全量清除（三重确认）
   if (scanRecords.length === 0) { showToast('当前没有扫码记录', 'info'); return; }
   if (!confirm('⚠️ 即将清除全部 ' + scanRecords.length + ' 条扫码记录！\n\n此操作会同步删除云端数据，影响所有设备。\n确定继续？')) return;
   if (!confirm('再次确认：清除后库存、齐套数据都会归零，且不可恢复！')) return;
-  const typed = prompt('最后一步：请输入「确认清除」四个字以继续\n\n（提示：清除前系统会自动备份当前数据，可联系管理员恢复）');
+  const typed = prompt('最后一步：请输入「确认清除」四个字以继续\n\n（提示：清除前系统会自动备份，可用「↩️ 一键恢复」找回）');
   if (typed === null) return;
   if (String(typed).trim() !== '确认清除') { showToast('输入不正确，已取消清除', 'info'); return; }
 
-  // 【自动备份】清除前先把当前全量数据写入本地备份快照，便于恢复
-  try {
-    localStorage.setItem('semiKitBackup_' + Date.now(), JSON.stringify({
-      scanRecords: scanRecords, deletedRecords: deletedRecords,
-      bomData: bomData, productList: productList,
-      backedUpAt: new Date().toISOString(), reason: 'clearAllData'
-    }));
-  } catch(e) { console.warn('备份失败', e); }
-  
+  // 【回收站备份】清除前把当前全量数据存入回收站，供一键恢复
+  pushRecycleBin(scanRecords.slice(), '全部清除');
+
   // 关键：把当前所有记录都加进墓碑（这样同步时 GitHub 也会跟着清）
   scanRecords.forEach(r => {
     const key = recordKey(r.c, r.t);
     if (!deletedRecords.includes(key)) deletedRecords.push(key);
   });
   if (deletedRecords.length > 5000) deletedRecords = deletedRecords.slice(-5000);
-  
+
   // 清空状态
   scanRecords = [];
   inventory = JSON.parse(JSON.stringify(INITIAL_INVENTORY));
@@ -3102,22 +3182,23 @@ async function clearAllData() {
   importedWorkOrders = [];
   currentAction = '入库';
   filteredScanRecords = null;
-  
+
   // 清空 UI 输入
   document.getElementById('woNumber').value = '';
   document.getElementById('woTargetQty').value = '';
   document.getElementById('palletPrefix').value = '';
   document.getElementById('palletSeq').value = '';
-  
+
   // 重新计算库存
   recomputeInventory();
-  
+
   // 写 localStorage 并立刻同步 GitHub
   saveData();
-  
+
   // 刷新 UI
   refreshAllUI();
-  showToast('已清除所有数据并同步云端', 'success');
+  updateClearBtnLabel();
+  showToast('已清除所有数据并同步云端，可用「↩️ 一键恢复」找回', 'success');
 }
 
 // ====== URL参数检测：?reset=1 强制重置 ======
@@ -3130,6 +3211,7 @@ if (new URLSearchParams(window.location.search).has('reset')) {
 recalculate();
 renderRecentList();
 refreshDashboard();
+updateClearBtnLabel();
 
 // Enter key for search input
 document.getElementById('scanSearchInput').addEventListener('keydown', function(e) {
