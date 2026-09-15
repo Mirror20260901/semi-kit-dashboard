@@ -1003,6 +1003,7 @@ const SYNC_CONFIG = {
 
 let syncTimer = null;
 let remoteSha = '';
+let remoteData = null; // 【防回退】最近一次拉取的云端数据快照，供推送前做并集保护
 let isSyncing = false;
 let lastSyncTime = null;
 let syncEnabled = true;
@@ -1025,10 +1026,67 @@ async function fetchSharedData() {
   const result = await resp.json();
   remoteSha = result.sha || '';
   const content = decodeBase64(result.content);
-  return JSON.parse(content);
+  const parsed = JSON.parse(content);
+  remoteData = parsed; // 【防回退】缓存云端快照，推送前用于并集保护判断
+  return parsed;
+}
+
+// ====== 防回退保护：避免"旧状态设备"把云端记录大量覆盖掉 ======
+// 场景：某设备在误清除后仍开着旧页面，其本地只有少量记录/含大量墓碑，
+// 一旦它推送，云端 600+ 条历史会被覆盖成十几条（线上真实发生过两次）。
+// 策略：推送前先对比云端与本次待推数据——
+//   若"本地要推送的记录数"明显少于"云端记录数"（说明本次推送是在削减数据），
+//   则改为推送"云端 ∪ 本地"的并集，并剔除那些会误删云端记录的墓碑，保证只增不减。
+function mergeBeforePush(localData, remoteSnapshot) {
+  try {
+    if (!remoteSnapshot || !Array.isArray(remoteSnapshot.scanRecords)) return localData;
+    const localRecs = Array.isArray(localData.scanRecords) ? localData.scanRecords : [];
+    const remoteRecs = remoteSnapshot.scanRecords;
+    const rk = (r) => String(r.c || '').replace(/[\r\n|｜]/g, '') + '||' + String(r.t || '').replace(/[\r\n|｜]/g, '');
+
+    // 本地墓碑集合（用于判断哪些记录是被主动删除的）
+    const localTomb = new Set(localData.deletedRecords || []);
+    // 本地"有效可见"记录 = 本地记录 - 本地墓碑
+    const localVisible = localRecs.filter(r => !localTomb.has(rk(r)));
+    const remoteVisible = remoteRecs.filter(r => !(new Set(remoteSnapshot.deletedRecords || [])).has(rk(r)));
+
+    // 触发条件：本地有效记录显著少于云端（本地<云端的一半，且差距>=20条）
+    const shrinking = localVisible.length < remoteVisible.length * 0.5 &&
+                      (remoteVisible.length - localVisible.length) >= 20;
+    if (!shrinking) return localData;
+
+    console.log('[防回退] 检测到本次推送会削减云端记录：本地可见 ' + localVisible.length +
+                ' 条 < 云端 ' + remoteVisible.length + ' 条，改为并集合并推送');
+
+    // 并集：以云端为基底，叠加本地独有记录
+    const merged = new Map();
+    remoteRecs.forEach(r => merged.set(rk(r), r));
+    let added = 0;
+    localRecs.forEach(r => { const k = rk(r); if (!merged.has(k)) { merged.set(k, r); added++; } });
+    const records = [...merged.values()].sort((a, b) => String(b.t || '').localeCompare(String(a.t || '')));
+
+    // 墓碑：云端墓碑 ∪ 本地墓碑，但必须剔除所有要保留记录的 key
+    const keepKeys = new Set(records.map(r => rk(r)));
+    const tombAll = new Set([...(remoteSnapshot.deletedRecords || []), ...(localData.deletedRecords || [])]);
+    const finalTomb = [...tombAll].filter(k => !keepKeys.has(k)).slice(-5000);
+
+    console.log('[防回退] 合并后 ' + records.length + ' 条（新增 ' + added + '），墓碑 ' + finalTomb.length);
+    return { ...localData, scanRecords: records, deletedRecords: finalTomb,
+             mergedAt: new Date().toISOString(), mergedNote: '防回退并集合并' };
+  } catch(e) {
+    console.warn('[防回退] 合并异常，按原数据推送', e);
+    return localData;
+  }
 }
 
 async function pushSharedData(data) {
+  // 推送前做防回退合并（需先确保 remoteSha/remoteData 可用）
+  try {
+    if (typeof remoteData !== 'undefined' && remoteData) {
+      data = mergeBeforePush(data, remoteData);
+    }
+  } catch(e) { console.warn('防回退预处理失败', e); }
+
   const jsonStr = JSON.stringify(data);
   const encoded = encodeBase64(jsonStr);
   const body = {
