@@ -3071,8 +3071,22 @@ function exportToExcel() {
 
 // ====== CLEAR ALL DATA ======
 async function clearAllData() {
-  if (!confirm('确认清除所有数据？此操作会同步删除云端所有扫码记录！')) return;
-  if (!confirm('再次确认：所有扫码记录、库存、工单都会被清除，且不可恢复！')) return;
+  // 【防误删加固）清除前必须输入确认词，避免误点导致数据丢失
+  if (scanRecords.length === 0) { showToast('当前没有扫码记录', 'info'); return; }
+  if (!confirm('⚠️ 即将清除全部 ' + scanRecords.length + ' 条扫码记录！\n\n此操作会同步删除云端数据，影响所有设备。\n确定继续？')) return;
+  if (!confirm('再次确认：清除后库存、齐套数据都会归零，且不可恢复！')) return;
+  const typed = prompt('最后一步：请输入「确认清除」四个字以继续\n\n（提示：清除前系统会自动备份当前数据，可联系管理员恢复）');
+  if (typed === null) return;
+  if (String(typed).trim() !== '确认清除') { showToast('输入不正确，已取消清除', 'info'); return; }
+
+  // 【自动备份】清除前先把当前全量数据写入本地备份快照，便于恢复
+  try {
+    localStorage.setItem('semiKitBackup_' + Date.now(), JSON.stringify({
+      scanRecords: scanRecords, deletedRecords: deletedRecords,
+      bomData: bomData, productList: productList,
+      backedUpAt: new Date().toISOString(), reason: 'clearAllData'
+    }));
+  } catch(e) { console.warn('备份失败', e); }
   
   // 关键：把当前所有记录都加进墓碑（这样同步时 GitHub 也会跟着清）
   scanRecords.forEach(r => {
