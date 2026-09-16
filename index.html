@@ -526,6 +526,7 @@ function recomputeInventory() {
 }
 
 let bomData = INIT_DATA.bom;
+let bomImportedAt = {}; // 【BOM覆盖导入】每个成品的BOM最后导入时间戳（ms），同步时"最新导入的BOM为准"
 let bomCleared = false; // 用户手动清除BOM后，同步不再恢复
 let productList = Object.keys(INIT_DATA.bom);
 
@@ -836,6 +837,7 @@ function persistLocal() {
       scanRecords: scanRecords,
       inventory: inventory,
       bomData: bomData,
+      bomImportedAt: bomImportedAt,
       bomCleared: bomCleared,
       productList: productList,
       currentWorkOrder: currentWorkOrder,
@@ -859,6 +861,7 @@ function saveData() {
       scanRecords: scanRecords,
       inventory: inventory,
       bomData: bomData,
+      bomImportedAt: bomImportedAt,
       bomCleared: bomCleared,
       productList: productList,
       currentWorkOrder: currentWorkOrder,
@@ -900,6 +903,7 @@ function loadData() {
       if (raw) {
         const data = JSON.parse(raw);
         data.bomData = {};
+        data.bomImportedAt = {};
         data.productList = [];
         localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
         console.log('[清空BOM] 已清除所有BOM数据');
@@ -932,6 +936,10 @@ function loadData() {
     // 恢复BOM数据（用户导入/粘贴的，不再丢失）
     if (data.bomData && typeof data.bomData === 'object') {
       bomData = data.bomData;
+    }
+    // 【BOM覆盖导入】恢复各成品的导入时间戳
+    if (data.bomImportedAt && typeof data.bomImportedAt === 'object') {
+      bomImportedAt = data.bomImportedAt;
     }
     if (data.bomCleared) {
       bomCleared = true;
@@ -1191,24 +1199,38 @@ function mergeRemoteData(remote) {
   let changed = false;
   // inventory 不再通过远程合并，改为各设备从 scanRecords 重新计算（防止污染数据覆盖正确值）
 
-  // ===== 合并远程 BOM 数据（取并集，确保多设备导入的BOM不丢失）=====
+  // ===== 合并远程 BOM 数据 =====
+  // 【BOM覆盖导入 v2】按"导入时间戳"合并：同一成品谁的导入时间新就用谁的（整体替换）。
+  // 旧版是无条件并集——A 设备重新导入修正 BOM 后，B 设备（还留着旧条目）一合并，
+  // 已删除的旧料号又会被并回来，覆盖导入形同虚设。
+  // 兼容性：旧数据没有时间戳（视为0），两边都为0时保持旧并集行为，不丢数据。
   if (!bomCleared && remote.bomData && typeof remote.bomData === 'object') {
     for (const cp of Object.keys(remote.bomData)) {
-      if (!bomData[cp]) {
-        bomData[cp] = remote.bomData[cp];
+      const rt = (remote.bomImportedAt && remote.bomImportedAt[cp]) || 0;
+      const lt = (bomImportedAt && bomImportedAt[cp]) || 0;
+      if (rt > lt) {
+        // 远端导入更新：整体替换该成品的 BOM
+        bomData[cp] = JSON.parse(JSON.stringify(remote.bomData[cp]));
+        bomImportedAt[cp] = rt;
         changed = true;
-      } else {
-        // 合并半品条目（去重：同成品下同半品料号只保留一个）
-        const existing = bomData[cp];
-        const localParts = new Set(existing.map(e => e.p));
-        for (const remoteItem of remote.bomData[cp]) {
-          if (!localParts.has(remoteItem.p)) {
-            existing.push(remoteItem);
-            localParts.add(remoteItem.p);
-            changed = true;
+      } else if (rt === 0 && lt === 0) {
+        // 两边都没有导入时间戳（旧数据）：保持原并集兼容
+        if (!bomData[cp]) {
+          bomData[cp] = remote.bomData[cp];
+          changed = true;
+        } else {
+          const existing = bomData[cp];
+          const localParts = new Set(existing.map(e => e.p));
+          for (const remoteItem of remote.bomData[cp]) {
+            if (!localParts.has(remoteItem.p)) {
+              existing.push(remoteItem);
+              localParts.add(remoteItem.p);
+              changed = true;
+            }
           }
         }
       }
+      // rt <= lt 且不全为0：本地导入更新或相同，保留本地
     }
   }
   if (!bomCleared && remote.productList && Array.isArray(remote.productList)) {
@@ -1350,6 +1372,7 @@ async function syncCycle() {
       _version: DATA_VERSION,
       scanRecords: pushRecords,
       bomData: bomData,
+      bomImportedAt: bomImportedAt,
       productList: productList,
       users: users,
       importedWorkOrders: importedWorkOrders,
@@ -2353,7 +2376,13 @@ function parseCSVText(text) {
 function loadBOMFromRows(rows) {
   let headerSkipped = false;
   let added = 0, skipped = 0;
-  
+  // 【BOM覆盖导入】先按成品料号分组，再整体替换该成品的BOM列表。
+  // 旧逻辑是"同料号覆盖、新料号追加"——Excel 里删掉的旧条目会永久残留
+  // （线上真实案例：8180911676 早期导入过 P4A3-P3/P4A4-P3B3，Excel 改正为
+  //  P4A3-P3B1/P4A4-P3B3 后重新导入，旧料号删不掉，BOM 变成 6 条）。
+  // 现在以本次导入文件为唯一事实来源：同一成品出现即整体替换。
+  const grouped = {}; // { cp: [ {p,j,l,y}, ... ] }
+  const order = [];   // 保持成品出现顺序
   rows.forEach(row => {
     if (!row || row.length === 0) return;
     // 跳过表头（第一行或包含中文"料号"的行）
@@ -2362,36 +2391,41 @@ function loadBOMFromRows(rows) {
       if (/料号|成品|编号|product/i.test(first)) { headerSkipped = true; return; }
       headerSkipped = true;
     }
-    
+
     const cp = String(row[0] || '').trim();
     const bp = String(row[1] || '').trim();
     if (!cp || !bp) return;
     // 跳过异常料号（含+或*的公式字符串，不是真正的半品料号）
     if (/[+*]/.test(bp)) { skipped++; return; }
-    
+
     const j = String(row[2] || '').trim();
     const l = parseInt(row[3]) || 0;
     const y = parseInt(row[4]) || 1;
-    
-    if (!bomData[cp]) bomData[cp] = [];
-    // 半品料号排重：同成品下相同半品料号只保留一个（后面的覆盖前面的）
-    const dupIdx = bomData[cp].findIndex(e => e.p === bp);
-    if (dupIdx >= 0) {
-      bomData[cp][dupIdx] = { p: bp, j: j, l: l, y: y };
-      skipped++;
-    } else {
-      bomData[cp].push({ p: bp, j: j, l: l, y: y });
-      if (!productList.includes(cp)) productList.push(cp);
-      added++;
-    }
-    if (!(bp in inventory)) inventory[bp] = 0;
+    if (!grouped[cp]) { grouped[cp] = []; order.push(cp); }
+    // 同一文件内同料号重复行：后者覆盖前者
+    const dupIdx = grouped[cp].findIndex(e => e.p === bp);
+    if (dupIdx >= 0) { grouped[cp][dupIdx] = { p: bp, j: j, l: l, y: y }; skipped++; }
+    else grouped[cp].push({ p: bp, j: j, l: l, y: y });
   });
-  
+
+  const importTs = Date.now();
+  order.forEach(cp => {
+    const prev = bomData[cp] ? bomData[cp].length : 0;
+    bomData[cp] = grouped[cp];
+    bomImportedAt[cp] = importTs;
+    if (!productList.includes(cp)) productList.push(cp);
+    added += grouped[cp].length;
+    if (prev === 0) { /* 新成品 */ } else { skipped += 0; }
+    // 确保库存表有键
+    grouped[cp].forEach(it => { if (!(it.p in inventory)) inventory[it.p] = 0; });
+  });
+
   if (added === 0) {
-    showToast('没有新增数据，所有条目已存在', 'info');
+    showToast('没有有效数据行', 'info');
   } else {
     bomCleared = false;
-    showToast(`已追加 ${added} 条BOM，跳过 ${skipped} 条重复`, 'success');
+    const cps = order.length;
+    showToast(`已导入 ${cps} 个成品共 ${added} 条BOM（同成品BOM以本次导入为准）`, 'success');
   }
   document.getElementById('bomLoadStatus').textContent = '✅ 已加载 ' + productList.length + ' 个成品';
   refreshDashboard();
@@ -2402,6 +2436,9 @@ function loadBOMFromPaste() {
   if (!text) { showToast('请先粘贴数据', 'info'); return; }
   const lines = text.split(/\r?\n/).filter(l => l.trim());
   let added = 0, skipped = 0;
+  // 【BOM覆盖导入】与文件导入一致：按成品分组后整体替换（旧逻辑会残留 Excel/粘贴内容里已删除的料号）
+  const grouped = {};
+  const order = [];
   lines.forEach(line => {
     // 支持 Tab、全角丨、半角| 分隔
     const parts = line.split(/[\t丨|]/).map(s => s.trim());
@@ -2415,25 +2452,27 @@ function loadBOMFromPaste() {
       if (/料号|成品|编号|product/i.test(cp)) { skipped++; return; }
       // 跳过异常料号（含+或*的公式字符串）
       if (/[+*]/.test(bp)) { skipped++; return; }
-      if (!bomData[cp]) bomData[cp] = [];
-      // 半品料号排重：同成品下相同半品料号只保留一个
-      const dupIdx = bomData[cp].findIndex(e => e.p === bp);
-      if (dupIdx >= 0) {
-        bomData[cp][dupIdx] = { p: bp, j: j, l: l, y: y };
-        skipped++;
-      } else {
-        bomData[cp].push({ p: bp, j: j, l: l, y: y });
-        if (!productList.includes(cp)) productList.push(cp);
-        added++;
-      }
-      if (!(bp in inventory)) inventory[bp] = 0;
+      if (!grouped[cp]) { grouped[cp] = []; order.push(cp); }
+      // 同一粘贴内容内同料号重复行：后者覆盖前者
+      const dupIdx = grouped[cp].findIndex(e => e.p === bp);
+      if (dupIdx >= 0) { grouped[cp][dupIdx] = { p: bp, j: j, l: l, y: y }; skipped++; }
+      else grouped[cp].push({ p: bp, j: j, l: l, y: y });
     }
   });
+  const importTs = Date.now();
+  order.forEach(cp => {
+    bomData[cp] = grouped[cp];
+    bomImportedAt[cp] = importTs;
+    if (!productList.includes(cp)) productList.push(cp);
+    added += grouped[cp].length;
+    grouped[cp].forEach(it => { if (!(it.p in inventory)) inventory[it.p] = 0; });
+  });
   if (added === 0) {
-    showToast('没有新增数据，所有条目已存在', 'info');
+    showToast('没有有效数据行', 'info');
   } else {
     bomCleared = false;
-    showToast(`已追加 ${added} 条BOM，跳过 ${skipped} 条重复`, 'success');
+    const cps = order.length;
+    showToast(`已导入 ${cps} 个成品共 ${added} 条BOM（同成品BOM以本次导入为准）`, 'success');
   }
   document.getElementById('bomLoadStatus').textContent = '✅ 已加载 ' + productList.length + ' 个成品';
   document.getElementById('bomPasteArea').value = '';
@@ -2485,6 +2524,7 @@ function clearAllBOM() {
   if (productList.length === 0) { showToast('BOM数据已为空', 'info'); return; }
   if (!confirm(`确认清除全部BOM数据？\n当前共 ${productList.length} 个成品，清除后需重新导入。\n（扫码记录和库存不受影响）`)) return;
   bomData = {};
+  bomImportedAt = {}; // 同步清空导入时间戳
   productList = [];
   importedWorkOrders = [];
   currentWorkOrder = { number: '', product: '', qty: 0, targetQty: 0, componentCounts: {} };
