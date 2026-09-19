@@ -1725,14 +1725,20 @@ function processScan(code) {
       setTimeout(() => { scanInput.className = ''; if(!document.getSelection().toString())scanInput.focus(); }, 2000);
       return;
     }
-    workOrder = parts[0] || '';
-    halfPart = parts[1] || '';
+    // 【标签剥离】新打印模板可能把中文标签拼进数据段（如"成品料号：8180916998-P5A1-P1"），逐段剥掉标签前缀
+    const stripLabel = s => {
+      const i = Math.max((s || '').lastIndexOf('：'), (s || '').lastIndexOf(':'));
+      return i >= 0 ? s.slice(i + 1).trim() : (s || '').trim();
+    };
+    const woDigits = (parts[0] || '').match(/\d{6,}/g);
+    workOrder = woDigits ? woDigits[woDigits.length - 1] : stripLabel(parts[0]);
+    halfPart = stripLabel(parts[1]);
     // parts[2] = 线长（暂不使用）
-    scanQty = parts[3] ? parseInt(parts[3]) : 1;
+    scanQty = parts[3] ? parseInt(stripLabel(parts[3]).replace(/[^\d]/g, '')) : 1;
     if (isNaN(scanQty) || scanQty <= 0) scanQty = 1;
     // 兼容5段旧格式（无批次）和6段新格式（含批次6位日期）
     if (parts.length >= 6) {
-      productionDate = parts[4] || '';
+      productionDate = stripLabel(parts[4]).replace(/[^\d]/g, '');
       // parts[5] = 流水号（暂不使用）
     }
     // parts[4]（旧格式）= 流水号，暂不使用
@@ -1792,6 +1798,16 @@ function processScan(code) {
     scanQty = 1;
   }
   
+  // 【料号标准化】扫码内容可能带中文标签前缀（新打印模板"成品料号：8180916998-P5A1-P1"），
+  // 只保留料号本体，防止"不在当前工单BOM中"误报
+  if (halfPart) {
+    const _hpM = halfPart.match(/[A-Za-z0-9]+(?:-[A-Za-z0-9]+)+/);
+    if (_hpM && _hpM[0] !== halfPart) {
+      console.log('扫码料号已剥离标签：[' + halfPart + '] -> [' + _hpM[0] + ']');
+      halfPart = _hpM[0];
+    }
+  }
+
   // 兜底检查：半品料号为空说明扫码内容不完整或格式无法识别，拒绝创建记录
   if (!halfPart) {
     scanInput.className = 'error';
