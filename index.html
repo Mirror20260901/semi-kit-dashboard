@@ -1646,6 +1646,17 @@ function hideRawScan() {
   if (box) { box.style.display = 'none'; box.textContent = ''; }
 }
 
+// 【扫码内容规范化】统一全角｜为半角|、剥中文标签前缀、去空白。
+// 同一张二维码在不同设备/输入法下原始字符串可能不同（扫码枪把|打成｜、中文标签夹空格、打印模板把"成品料号："拼进数据段等），
+// 出入库配对/查重必须比较规范化后的值，否则会把"已入库"误判成"未入库"，或让重复扫码绕过查重。
+function normalizeScanCode(code) {
+  return (code || '')
+    .replace(/｜/g, '|')
+    .replace(/\s+/g, '')
+    .replace(/[一-龥]+[：:]/g, '')
+    .trim();
+}
+
 function processScan(code) {
   if (!code) return;
   // 【关键修复】剔除二维码内容里内嵌的回车换行（现场半成品标识卡码内容含 ...P1D2\r\n|04895...）。
@@ -1942,7 +1953,7 @@ function processScan(code) {
   
   // 出库校验：没入过库的码不允许出库
   if (currentAction === '出库') {
-    const hasInbound = scanRecords.some(r => r.c === code && r.a === '入库');
+    const hasInbound = scanRecords.some(r => r.a === '入库' && normalizeScanCode(r.c) === normalizeScanCode(code));
     if (!hasInbound) {
       scanInput.className = 'error';
       scanStatus.textContent = '❌ 该二维码未入库，不允许出库！';
@@ -1954,7 +1965,7 @@ function processScan(code) {
   }
   
   // Check duplicate
-  const isDup = scanRecords.some(r => r.c === code && r.a === currentAction);
+  const isDup = scanRecords.some(r => r.a === currentAction && normalizeScanCode(r.c) === normalizeScanCode(code));
   
   // Create record
   const now = new Date();
@@ -1985,7 +1996,7 @@ function processScan(code) {
   if (currentAction === '出库') {
     let _inRec = null;
     for (let i = scanRecords.length - 1; i >= 0; i--) {
-      if (scanRecords[i].c === code && scanRecords[i].a === '入库') { _inRec = scanRecords[i]; break; }
+      if (scanRecords[i].a === '入库' && normalizeScanCode(scanRecords[i].c) === normalizeScanCode(code)) { _inRec = scanRecords[i]; break; }
     }
     if (_inRec) {
       record.w = _inRec.w || record.w || '';
