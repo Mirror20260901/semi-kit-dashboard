@@ -3039,7 +3039,8 @@ function recalculate() {
 
     
     // Extract work order numbers and quantity for this product from scan records
-    let woNo = '';
+    // 【多工单】工单号收集该成品扫过的全部工单（去重、逗号拼接），不只取第一个
+    const woSet = new Set();
     let woQty = 0;
     // 【线序料号 → 工单号】映射：同一线序料号可能跨越多个工单，逗号拼接去重
     const partWOMap = {};
@@ -3049,7 +3050,7 @@ function recalculate() {
         if (pIdx > 0) {
           const prodCode = r.x.substring(0, pIdx);
           if (prodCode === cp) {
-            if (r.wo_no && !woNo) woNo = String(r.wo_no).trim();
+            if (r.wo_no) woSet.add(String(r.wo_no).trim());
             if (r.wo_qty && !woQty) woQty = parseInt(r.wo_qty);
             // 记录该线序料号对应的工单号（保证线序行能显示自己的工单号）
             if (r.wo_no) {
@@ -3061,6 +3062,7 @@ function recalculate() {
         }
       }
     });
+    const woNo = Array.from(woSet).sort().join(', ');
     
     // 最大缺口 = 工单数量 - 数量最小的线序料号的数量
     const maxGap = (woQty > 0 && parts.length > 0) ? Math.max(0, woQty - minStock) : 0;
@@ -3134,7 +3136,11 @@ function renderTable(data) {
     filtered = filtered.filter(d => d.cp.toLowerCase().includes(search));
   }
   if (woFilter) {
-    filtered = filtered.filter(d => d.woNumbers && d.woNumbers.toLowerCase().includes(woFilter));
+    // 精确匹配：该成品是否扫过这个工单（避免 "1014" 误配 "101431285" 之类前缀包含）
+    filtered = filtered.filter(d => {
+      const wos = String(d.woNumbers || '').split(',').map(s => s.trim().toLowerCase());
+      return wos.includes(woFilter);
+    });
   }
   if (lineSeqFilter) {
     filtered = filtered.filter(d => {
@@ -3169,12 +3175,20 @@ function renderTable(data) {
   filtered.forEach((d, idx) => {
     const statusBadge = d.status === '可配套' ? 'badge-green' : (d.status === '缺料' ? 'badge-red' : 'badge-yellow');
     const hasDetail = d.shortageParts.length > 0 || (bomData[d.cp] && bomData[d.cp].length > 0);
+    // 筛选工单时，成品行只显示这一个工单号；未筛选时显示全部（逗号拼接）
+    const showWo = woFilter ? woFilter : (d.woNumbers || '-');
+    // 判断某线序料号是否属于当前筛选的工单
+    const partInWo = (p) => {
+      if (!woFilter) return true;
+      const wos = (d.partWOMap && d.partWOMap[p]) || [];
+      return wos.some(w => String(w).toLowerCase() === woFilter);
+    };
     
     html += `<tr class="${hasDetail ? 'expand-row' : ''}" ${hasDetail ? 'onclick="toggleDetail(this)"' : ''}>
       <td><strong>${d.cp}</strong></td>
       <td>${d.partCount}</td>
       <td style="text-align:center;font-weight:600;color:${d.shortageCount > 0 ? 'var(--danger)' : 'var(--success)'}">${d.shortageCount}</td>
-      <td></td>
+      <td>${showWo}</td>
       <td>${d.woQty || '-'}</td>
       <td><strong style="font-size:1.1rem;color:${d.kitQty > 0 ? 'var(--success)' : 'var(--danger)'}">${d.kitQty}</strong></td>
       <td style="text-align:center;font-weight:600;color:${parseFloat(d.kitRate) >= 100 ? 'var(--success)' : parseFloat(d.kitRate) >= 50 ? '#e67e22' : 'var(--danger)'}">${d.kitRate}%</td>
@@ -3184,15 +3198,18 @@ function renderTable(data) {
     
     if (hasDetail) {
       const parts = bomData[d.cp] || [];
+      // 筛选工单时，明细行只保留该工单扫过的线序料号
+      const shownParts = woFilter ? parts.filter(p => partInWo(p.p)) : parts;
       html += `<tr class="detail-row"><td colspan="9">
         <table style="width:100%;font-size:.84rem">
           <tr style="background:#e8f0fe"><th style="padding:6px 10px">半品料号</th><th style="padding:6px 10px">工单号</th><th style="padding:6px 10px">接头规格</th><th style="padding:6px 10px">库存</th><th style="padding:6px 10px">缺料数量</th><th style="padding:6px 10px">状态</th></tr>
       `;
-      parts.forEach(p => {
+      shownParts.forEach(p => {
         const stock = inventory[p.p] || 0;
         const woQtyNum = parseInt(d.woQty) || 0;
-        // 该线序料号对应的工单号（多工单逗号拼接）
-        const partWos = (d.partWOMap && d.partWOMap[p.p]) ? d.partWOMap[p.p].join(', ') : '-';
+        // 该线序料号对应的工单号（多工单逗号拼接；筛选某工单时只显示该工单）
+        const partWosAll = (d.partWOMap && d.partWOMap[p.p]) ? d.partWOMap[p.p] : [];
+        const partWos = woFilter ? woFilter : (partWosAll.length ? partWosAll.join(', ') : '-');
         let st, cls, shortage;
         if (woQtyNum > 0) {
           if (stock > woQtyNum) { st = '充足'; cls = 'badge-green'; }
