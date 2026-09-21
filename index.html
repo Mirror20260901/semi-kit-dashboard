@@ -482,6 +482,15 @@ function recordKey(c, t) {
   const cleanT = String(t || '').replace(/[\r\n|｜]/g, '');
   return cleanC + '||' + cleanT;
 }
+// 【合并判重key】recordKey + 动作。
+// 背景：t 是分钟级精度——同一二维码同一分钟内"先入库后出库"（冲正/换库位常见），
+// 两条合法业务记录的 recordKey 完全相同。若用 recordKey 做合并判重（Set/Map），
+// 同 key 只保留第一条，另一条被永久吞掉（2026-09-21 实测：一台设备 8180911679-P5A3-P3
+// 被吞 4 笔入库共 800 件，库存显示 -400，云端实为 +400）。
+// 加动作后入库/出库各成 key，两条都保留。墓碑匹配仍用 recordKey（c||t），不受影响。
+function dedupKey(r) {
+  return recordKey(r.c, r.t) + '|' + (r.a || '');
+}
 // 兼容旧deletedRecords（里面可能还是未清洗的key）：尝试从中提取"时间戳"部分做兜底匹配
 function recordTimestamp(t) {
   return String(t || '').replace(/[\r\n|｜]/g, '');
@@ -1109,10 +1118,12 @@ function mergeBeforePush(localData, remoteSnapshot) {
                 ' 条 < 云端 ' + remoteVisible.length + ' 条，改为并集合并推送');
 
     // 并集：以云端为基底，叠加本地独有记录
+    // 注意：Map 键必须含动作（dedupKey）——同码同分钟的入库+出库是两条独立记录，
+    // 用 recordKey 做键会互相覆盖塌缩，丢一半记录。
     const merged = new Map();
-    remoteRecs.forEach(r => merged.set(rk(r), r));
+    remoteRecs.forEach(r => merged.set(dedupKey(r), r));
     let added = 0;
-    localRecs.forEach(r => { const k = rk(r); if (!merged.has(k)) { merged.set(k, r); added++; } });
+    localRecs.forEach(r => { const k = dedupKey(r); if (!merged.has(k)) { merged.set(k, r); added++; } });
     const records = [...merged.values()].sort((a, b) => String(b.t || '').localeCompare(String(a.t || '')));
 
     // 墓碑：云端墓碑 ∪ 本地墓碑，但必须剔除所有要保留记录的 key
@@ -1311,7 +1322,7 @@ function mergeRemoteData(remote) {
   // 未来任何同分钟的正常记录都会被永久拒绝合并（表现为：恢复后记录数变少、
   // 新扫码在其他设备上不显示）。分钟级时间戳碰撞太常见，此兜底纯属误杀，已移除。
   if (remote.scanRecords && Array.isArray(remote.scanRecords)) {
-    const existCodes = new Set(scanRecords.map(r => recordKey(r.c, r.t)));
+    const existCodes = new Set(scanRecords.map(r => dedupKey(r)));
     let remoteChanged = false;
     for (const rr of remote.scanRecords) {
       const rid = recordKey(rr.c, rr.t);
@@ -1319,9 +1330,11 @@ function mergeRemoteData(remote) {
       if (tombstoneSet.has(rid)) continue;
       // 如果远程数据是旧代码污染的，跳过合并
       if (remoteIsStale) continue;
-      if (!existCodes.has(rid)) {
+      // 判重必须含动作（dedupKey）：同码同分钟的入库+出库是两条合法记录，缺一不可
+      const dkey = dedupKey(rr);
+      if (!existCodes.has(dkey)) {
         scanRecords.push(rr);
-        existCodes.add(rid);
+        existCodes.add(dkey);
         remoteChanged = true;
       }
     }
@@ -1410,8 +1423,8 @@ async function syncCycle() {
     // 记录或墓碑时，同样触发推送。
     let localHasNew = false;
     if (remote && Array.isArray(remote.scanRecords)) {
-      const _remoteKeys = new Set(remote.scanRecords.map(r => recordKey(r.c, r.t)));
-      localHasNew = scanRecords.some(r => !_remoteKeys.has(recordKey(r.c, r.t)));
+      const _remoteKeys = new Set(remote.scanRecords.map(r => dedupKey(r)));
+      localHasNew = scanRecords.some(r => !_remoteKeys.has(dedupKey(r)));
     } else {
       localHasNew = scanRecords.length > 0;
     }
@@ -1967,13 +1980,15 @@ function processScan(code) {
   // Check duplicate
   const isDup = scanRecords.some(r => r.a === currentAction && normalizeScanCode(r.c) === normalizeScanCode(code));
   
-  // Create record
+  // Create record（时间戳精确到秒：配合 2 秒防重复守卫，同一二维码 2 秒内不会被扫两次，
+  // 秒级 t 保证 recordKey 天然唯一，彻底杜绝分钟级 key 碰撞）
   const now = new Date();
-  const timeStr = now.getFullYear() + '-' + 
-    String(now.getMonth()+1).padStart(2,'0') + '-' + 
-    String(now.getDate()).padStart(2,'0') + ' ' + 
-    String(now.getHours()).padStart(2,'0') + ':' + 
-    String(now.getMinutes()).padStart(2,'0');
+  const timeStr = now.getFullYear() + '-' +
+    String(now.getMonth()+1).padStart(2,'0') + '-' +
+    String(now.getDate()).padStart(2,'0') + ' ' +
+    String(now.getHours()).padStart(2,'0') + ':' +
+    String(now.getMinutes()).padStart(2,'0') + ':' +
+    String(now.getSeconds()).padStart(2,'0');
   
   const record = {
     t: timeStr,
@@ -3333,7 +3348,7 @@ function undoClear() {
   try { bin = JSON.parse(localStorage.getItem(RECYCLE_KEY) || '[]'); } catch(e) { bin = []; }
   if (!bin.length) { showToast('没有可恢复的清除记录', 'info'); return; }
   const last = bin[bin.length - 1];
-  const exist = new Set(scanRecords.map(r => recordKey(r.c, r.t)));
+  const exist = new Set(scanRecords.map(r => dedupKey(r)));
   let restored = 0, skipped = 0;
   const back = [];
   last.records.forEach(r => {
@@ -3341,7 +3356,9 @@ function undoClear() {
     // 关键：从墓碑剔除，否则页面加载/同步时会被再次过滤掉
     const di = deletedRecords.indexOf(k);
     if (di >= 0) deletedRecords.splice(di, 1);
-    if (!exist.has(k)) { back.push(r); exist.add(k); restored++; }
+    // 判重含动作：同码同分钟的入库+出库是两条记录，恢复时都要回来
+    const dk = dedupKey(r);
+    if (!exist.has(dk)) { back.push(r); exist.add(dk); restored++; }
     else skipped++;
   });
   if (restored > 0) scanRecords.unshift(...back);
