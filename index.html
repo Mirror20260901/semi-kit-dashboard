@@ -3041,6 +3041,8 @@ function recalculate() {
     // Extract work order numbers and quantity for this product from scan records
     let woNo = '';
     let woQty = 0;
+    // 【线序料号 → 工单号】映射：同一线序料号可能跨越多个工单，逗号拼接去重
+    const partWOMap = {};
     scanRecords.forEach(r => {
       if (r.x) {
         const pIdx = r.x.indexOf('-P');
@@ -3049,6 +3051,12 @@ function recalculate() {
           if (prodCode === cp) {
             if (r.wo_no && !woNo) woNo = String(r.wo_no).trim();
             if (r.wo_qty && !woQty) woQty = parseInt(r.wo_qty);
+            // 记录该线序料号对应的工单号（保证线序行能显示自己的工单号）
+            if (r.wo_no) {
+              const wo = String(r.wo_no).trim();
+              if (!partWOMap[r.x]) partWOMap[r.x] = [];
+              if (!partWOMap[r.x].includes(wo)) partWOMap[r.x].push(wo);
+            }
           }
         }
       }
@@ -3069,6 +3077,7 @@ function recalculate() {
       status: kitQty > 0 ? '可配套' : (shortageParts.length > 0 ? '缺料' : '待备料'),
       shortageCount: shortageParts.length,
       shortageParts,
+      partWOMap,
       maxGap,
       kitRate
     };
@@ -3165,7 +3174,7 @@ function renderTable(data) {
       <td><strong>${d.cp}</strong></td>
       <td>${d.partCount}</td>
       <td style="text-align:center;font-weight:600;color:${d.shortageCount > 0 ? 'var(--danger)' : 'var(--success)'}">${d.shortageCount}</td>
-      <td>${d.woNumbers || '-'}</td>
+      <td></td>
       <td>${d.woQty || '-'}</td>
       <td><strong style="font-size:1.1rem;color:${d.kitQty > 0 ? 'var(--success)' : 'var(--danger)'}">${d.kitQty}</strong></td>
       <td style="text-align:center;font-weight:600;color:${parseFloat(d.kitRate) >= 100 ? 'var(--success)' : parseFloat(d.kitRate) >= 50 ? '#e67e22' : 'var(--danger)'}">${d.kitRate}%</td>
@@ -3177,11 +3186,13 @@ function renderTable(data) {
       const parts = bomData[d.cp] || [];
       html += `<tr class="detail-row"><td colspan="9">
         <table style="width:100%;font-size:.84rem">
-          <tr style="background:#e8f0fe"><th style="padding:6px 10px">半品料号</th><th style="padding:6px 10px">接头规格</th><th style="padding:6px 10px">库存</th><th style="padding:6px 10px">缺料数量</th><th style="padding:6px 10px">状态</th></tr>
+          <tr style="background:#e8f0fe"><th style="padding:6px 10px">半品料号</th><th style="padding:6px 10px">工单号</th><th style="padding:6px 10px">接头规格</th><th style="padding:6px 10px">库存</th><th style="padding:6px 10px">缺料数量</th><th style="padding:6px 10px">状态</th></tr>
       `;
       parts.forEach(p => {
         const stock = inventory[p.p] || 0;
         const woQtyNum = parseInt(d.woQty) || 0;
+        // 该线序料号对应的工单号（多工单逗号拼接）
+        const partWos = (d.partWOMap && d.partWOMap[p.p]) ? d.partWOMap[p.p].join(', ') : '-';
         let st, cls, shortage;
         if (woQtyNum > 0) {
           if (stock > woQtyNum) { st = '充足'; cls = 'badge-green'; }
@@ -3195,6 +3206,7 @@ function renderTable(data) {
         }
         html += `<tr>
           <td style="padding:6px 10px;font-family:monospace;font-size:.8rem">${p.p}</td>
+          <td style="padding:6px 10px;font-family:monospace;font-size:.8rem">${partWos}</td>
           <td style="padding:6px 10px">${p.j || '-'}</td>
           <td style="padding:6px 10px;text-align:center;font-weight:600;${stock < woQtyNum && woQtyNum > 0 ? 'color:var(--danger)' : ''}">${stock}</td>
           <td style="padding:6px 10px;text-align:center;font-weight:600;color:${shortage > 0 ? 'var(--danger)' : 'var(--success)'}">${shortage}</td>
